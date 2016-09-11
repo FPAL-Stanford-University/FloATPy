@@ -1,6 +1,6 @@
 # README #
 
-FPAL-Post is a post-processing tool for the numerical codes in the Flow Physics and Aeroacoustics Laboratory (FPAL).
+FPAL-Post is a post-processing tool for the numerical codes in the Flow Physics and Aeroacoustics Laboratory (FPAL) of the Stanford University.
 
 ### How do I get set up? ###
 
