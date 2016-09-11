@@ -14,4 +14,4 @@ All tests are in the fpalpost/tests directory. They can be run with IPython Note
 
 ### Who do I talk to? ###
 
-You can talk to M. L. Wong (wongml@stanford.edu) or Akshay Subramaniam (akshays@stanford.edu).
+You can talk to Man Long, Wong (wongml@stanford.edu) or Akshay Subramaniam (akshays@stanford.edu).
