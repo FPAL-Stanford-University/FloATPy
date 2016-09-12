@@ -24,7 +24,7 @@ class samraiDataReader:
         self.__x_coords = []
         self.__y_coords = []
         self.__z_coords = []
-        self.__data = []
+        self.__data = {}
         self.__data_loaded = False
     
     
@@ -160,7 +160,7 @@ class samraiDataReader:
         return self.__x_coords, self.__y_coords, self.__z_coords
     
     
-    def getData(self):
+    def getData(self, var_name):
         """
         Return the loaded data.
         """
@@ -168,7 +168,7 @@ class samraiDataReader:
         if not self.__data_loaded:
             raise RuntimeError('No data is read yet!')
         
-        return self.__data
+        return self.__data[var_name]
     
     
     def clearData(self):
@@ -179,7 +179,7 @@ class samraiDataReader:
         self.__x_coords = []
         self.__y_coords = []
         self.__z_coords = []
-        self.__data = []
+        self.__data = {}
         self.__data_loaded = False
     
     
@@ -196,7 +196,7 @@ class samraiDataReader:
         self.__x_coords = []
         self.__y_coords = []
         self.__z_coords = []
-        self.__data = []
+        self.__data = {}
         self.__data_loaded = False
     
     
@@ -281,7 +281,7 @@ class samraiDataReader:
     
     
     def readDataAtOneLevel(self, \
-            var_name,
+            var_names,
             level_num):
         """
         Read data at one particular level.
@@ -311,16 +311,19 @@ class samraiDataReader:
         
         # Get the variable names.
         
-        var_names = self.__basic_info['var_names']
-        var_idx = numpy.where(var_names == var_name)[0][0]
-        var_num_components = self.__basic_info['num_var_components'][var_idx]
+        var_num_components = {}
+        var_component_names = {}
         
-        var_component_names = [None]*var_num_components
-        if var_num_components == 1:
-            var_component_names = [var_name]
-        else:
-            for component_idx in range(0, var_num_components):
-                var_component_names[component_idx] = var_name + '.' + str(component_idx).zfill(2)
+        for var_name in var_names:
+            var_idx = numpy.where(self.__basic_info['var_names'] == var_name)[0][0]
+            var_num_components[var_name] = self.__basic_info['num_var_components'][var_idx]
+            
+            var_component_names[var_name] = [None]*var_num_components[var_name]
+            if var_num_components[var_name] == 1:
+                var_component_names[var_name] = [var_name]
+            else:
+                for component_idx in range(0, var_num_components[var_name]):
+                    var_component_names[var_name][component_idx] = var_name + '.' + str(component_idx).zfill(2)
         
         # Get the domain shape.
         
@@ -373,9 +376,10 @@ class samraiDataReader:
                
         # Initialize container to store the data. The elements in the container are initialized as NAN values.
         
-        data_shape = numpy.insert(domain_shape, 0, var_num_components)
-        self.__data = numpy.empty(data_shape)
-        self.__data[:] = numpy.NAN
+        for var_name in var_names:
+            data_shape = numpy.insert(domain_shape, 0, var_num_components[var_name])
+            self.__data[var_name] = numpy.empty(data_shape)
+            self.__data[var_name][:] = numpy.NAN
         
         # Get the data from all patches at the specified level.
         
@@ -388,7 +392,7 @@ class samraiDataReader:
                 file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
                 file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                 
-                for component_idx in range(0, var_num_components):
+                for var_name in var_names:
                     for patch_key in file_cluster_level:
                         patch_idx = int(patch_key.replace('patch.', ''))
                         global_patch_idx = patch_level_start_idx + patch_idx
@@ -401,8 +405,9 @@ class samraiDataReader:
                         x_start_idx = lo_patch[0]
                         x_end_idx = up_patch[0] + 1
                         
-                        self.__data[component_idx, x_start_idx:x_end_idx] = \
-                            file_cluster_patch[var_component_names[component_idx]].value.reshape(patch_shape, order = 'F')
+                        for component_idx in range(0, var_num_components[var_name]):
+                            self.__data[var_name][component_idx, x_start_idx:x_end_idx] = \
+                                file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
         
         elif dim == 2:
             for process_idx in range(0, num_file_clusters):
@@ -413,7 +418,7 @@ class samraiDataReader:
                 file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
                 file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                 
-                for component_idx in range(0, var_num_components):
+                for var_name in var_names:
                     for patch_key in file_cluster_level:
                         patch_idx = int(patch_key.replace('patch.', ''))
                         global_patch_idx = patch_level_start_idx + patch_idx
@@ -429,8 +434,9 @@ class samraiDataReader:
                         y_start_idx = lo_patch[1]
                         y_end_idx = up_patch[1] + 1
                         
-                        self.__data[component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx] = \
-                            file_cluster_patch[var_component_names[component_idx]].value.reshape(patch_shape, order = 'F')
+                        for component_idx in range(0, var_num_components[var_name]):
+                            self.__data[var_name][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx] = \
+                                file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
         
         elif dim == 3:
             for process_idx in range(0, num_file_clusters):
@@ -441,7 +447,7 @@ class samraiDataReader:
                 file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
                 file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                 
-                for component_idx in range(0, var_num_components):
+                for var_name in var_names:
                     for patch_key in file_cluster_level:
                         patch_idx = int(patch_key.replace('patch.', ''))
                         global_patch_idx = patch_level_start_idx + patch_idx
@@ -460,8 +466,9 @@ class samraiDataReader:
                         z_start_idx = lo_patch[2]
                         z_end_idx = up_patch[2] + 1
                         
-                        self.__data[component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx] = \
-                            file_cluster_patch[var_component_names[component_idx]].value.reshape(patch_shape, order = 'F')
+                        for component_idx in range(0, var_num_components):
+                            self.__data[var_name][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx] = \
+                                file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
         
         else:
             raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
@@ -470,7 +477,7 @@ class samraiDataReader:
     
     
     def readCombinedDataFromAllLevels(self, \
-            var_name, \
+            var_names, \
             num_ghosts, \
             periodic_dimension):
         """
@@ -507,17 +514,20 @@ class samraiDataReader:
         
         # Get the variable names.
         
-        var_names = self.__basic_info['var_names']
-        var_idx = numpy.where(var_names == var_name)[0][0]
-        var_num_components = self.__basic_info['num_var_components'][var_idx]
+        var_num_components = {}
+        var_component_names = {}
         
-        var_component_names = [None]*var_num_components
-        if var_num_components == 1:
-            var_component_names = [var_name]
-        else:
-            for component_idx in range(0, var_num_components):
-                var_component_names[component_idx] = var_name + '.' + str(component_idx).zfill(2)
-        
+        for var_name in var_names:
+            var_idx = numpy.where(self.__basic_info['var_names'] == var_name)[0][0]
+            var_num_components[var_name] = self.__basic_info['num_var_components'][var_idx]
+
+            var_component_names[var_name] = [None]*var_num_components[var_name]
+            if var_num_components[var_name] == 1:
+                var_component_names[var_name] = [var_name]
+            else:
+                for component_idx in range(0, var_num_components[var_name]):
+                    var_component_names[var_name][component_idx] = var_name + '.' + str(component_idx).zfill(2)
+                
         # Get the ratios of different levels to the finest level.
         
         ratios_to_coarser_levels = self.__basic_info['ratios_to_coarser_levels']
@@ -570,16 +580,19 @@ class samraiDataReader:
         elif dim < 1 or dim > 3:
             raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
         
-        # Initialize container to store the data. The elements in the container are initialized as NAN values.
+        # Initialize containers to store the data at different levels. The elements in the containers 
+        # are initialized as NAN values.
         
-        data_shape = numpy.insert(domain_shape, 0, var_num_components)
-        self.__data = numpy.empty(data_shape)
-        self.__data[:] = numpy.NAN
+        level_data = {}
         
-        level_data = []
-        
-        for level_idx in range(num_levels):
-            level_data.append(copy.deepcopy(self.__data))
+        for var_name in var_names:
+            data_shape = numpy.insert(domain_shape, 0, var_num_components[var_name])
+            data = numpy.empty(data_shape)
+            data[:] = numpy.NAN
+            
+            level_data[var_name] = []
+            for level_idx in range(num_levels):
+                level_data[var_name].append(copy.deepcopy(data))
         
         # Get the data from all levels and upsampling them to the finest level.
         
@@ -597,7 +610,7 @@ class samraiDataReader:
                     file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
                     file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                     
-                    for component_idx in range(0, var_num_components):
+                    for var_name in var_names:
                         for patch_key in file_cluster_level:
                             patch_idx = int(patch_key.replace('patch.', ''))
                             global_patch_idx = patch_level_start_idx + patch_idx
@@ -607,12 +620,15 @@ class samraiDataReader:
                             up_patch = self.__patch_extents[global_patch_idx][1]
                             patch_shape = up_patch[0] - lo_patch[0] + 1
                             
-                            patch_data = file_cluster_patch[var_component_names[component_idx]].value.reshape(patch_shape, order = 'F')
-                            patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
-                            
                             x_start_idx = lo_patch[0]*ratios_to_finest_level[level_num][0] + num_ghosts[0]
                             x_end_idx = (up_patch[0] + 1)*ratios_to_finest_level[level_num][0] + num_ghosts[0]
-                            level_data[level_num][component_idx, x_start_idx: x_end_idx] = patch_data
+                            
+                            for component_idx in range(0, var_num_components[var_name]):
+                                patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
+                                    patch_shape, order = 'F')
+                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
+                                
+                                level_data[var_name][level_num][component_idx, x_start_idx: x_end_idx] = patch_data
         
         elif dim == 2:
             for process_idx in range(0, num_file_clusters):
@@ -628,7 +644,7 @@ class samraiDataReader:
                     file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
                     file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                     
-                    for component_idx in range(0, var_num_components):
+                    for var_name in var_names:
                         for patch_key in file_cluster_level:
                             patch_idx = int(patch_key.replace('patch.', ''))
                             global_patch_idx = patch_level_start_idx + patch_idx
@@ -638,18 +654,21 @@ class samraiDataReader:
                             up_patch = self.__patch_extents[global_patch_idx][1]
                             patch_shape = up_patch[0:2] - lo_patch[0:2] + numpy.ones(2, dtype = numpy.int)
                             
-                            patch_data = file_cluster_patch[var_component_names[component_idx]].value.reshape(patch_shape, order = 'F')
-                            patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
-                            patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 1)
-                            
                             x_start_idx = lo_patch[0]*ratios_to_finest_level[level_num][0] + num_ghosts[0]
                             x_end_idx = (up_patch[0] + 1)*ratios_to_finest_level[level_num][0] + num_ghosts[0]
                             
                             y_start_idx = lo_patch[1]*ratios_to_finest_level[level_num][1] + num_ghosts[1]
                             y_end_idx = (up_patch[1] + 1)*ratios_to_finest_level[level_num][1] + num_ghosts[1]
                             
-                            level_data[level_num][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx] = \
-                                patch_data
+                            for component_idx in range(0, var_num_components[var_name]):
+                                patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
+                                    patch_shape, order = 'F')
+                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
+                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 1)
+                                
+                                level_data[var_name][level_num][component_idx, \
+                                    x_start_idx:x_end_idx, y_start_idx:y_end_idx] = \
+                                        patch_data
         
         elif dim == 3:
             for process_idx in range(0, num_file_clusters):
@@ -665,7 +684,7 @@ class samraiDataReader:
                     file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
                     file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                     
-                    for component_idx in range(0, var_num_components):
+                    for var_name in var_names:
                         for patch_key in file_cluster_level:
                             patch_idx = int(patch_key.replace('patch.', ''))
                             global_patch_idx = patch_level_start_idx + patch_idx
@@ -674,11 +693,6 @@ class samraiDataReader:
                             lo_patch = self.__patch_extents[global_patch_idx][0]
                             up_patch = self.__patch_extents[global_patch_idx][1]
                             patch_shape = up_patch[0:3] - lo_patch[0:3] + numpy.ones(3, dtype = numpy.int)
-                            
-                            patch_data = file_cluster_patch[var_component_names[component_idx]].value.reshape(patch_shape, order = 'F')
-                            patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
-                            patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 1)
-                            patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][2], axis = 2)
                             
                             x_start_idx = lo_patch[0]*ratios_to_finest_level[level_num][0] + num_ghosts[0]
                             x_end_idx = (up_patch[0] + 1)*ratios_to_finest_level[level_num][0] + num_ghosts[0]
@@ -689,60 +703,87 @@ class samraiDataReader:
                             z_start_idx = lo_patch[2]*ratios_to_finest_level[level_num][2] + num_ghosts[2]
                             z_end_idx = (up_patch[2] + 1)*ratios_to_finest_level[level_num][2] + num_ghosts[2]
                             
-                            level_data[level_num][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx] = \
-                                patch_data
+                            for component_idx in range(0, var_num_components[var_name]):
+                                patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
+                                    patch_shape, order = 'F')
+                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
+                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 1)
+                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][2], axis = 2)
+                                
+                                level_data[var_name][level_num][component_idx, \
+                                    x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx] = \
+                                        patch_data
         
         else:
             raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
         
         # Combine data at all levels.
         
-        self.__data = level_data[0]
-        
-        for level_idx in range(1, num_levels):
-            is_finite_idx = numpy.isfinite(level_data[level_idx])
-            self.__data[is_finite_idx] = level_data[level_idx][is_finite_idx]
-        
-        # Apply the boundary conditions.
-        
-        if dim == 1:
-            for component_idx in range(0, var_num_components):
-                if periodic_dimension[0] == True:
-                    self.__data[component_idx, 0:num_ghosts[0]] = self.__data[component_idx, -2*num_ghosts[0]:-num_ghosts[0]]
-                    self.__data[component_idx, -num_ghosts[0]:] = self.__data[component_idx, num_ghosts[0]:2*num_ghosts[0]]
-        
-        elif dim == 2:
-            for component_idx in range(0, var_num_components):
-                if periodic_dimension[0] == True:
-                    self.__data[component_idx, 0:num_ghosts[0], :] = self.__data[component_idx, -2*num_ghosts[0]:-num_ghosts[0], :]
-                    self.__data[component_idx, -num_ghosts[0]:, :] = self.__data[component_idx, num_ghosts[0]:2*num_ghosts[0], :]
-                
-                if periodic_dimension[1] == True:
-                    self.__data[component_idx, :, 0:num_ghosts[1]] = self.__data[component_idx, :, -2*num_ghosts[1]:-num_ghosts[1]]
-                    self.__data[component_idx, :, -num_ghosts[1]:] = self.__data[component_idx, :, num_ghosts[1]:2*num_ghosts[1]]
+        for var_name in var_names:
+            self.__data[var_name] = level_data[var_name][0]
+            
+            for level_idx in range(1, num_levels):
+                is_finite_idx = numpy.isfinite(level_data[var_name][level_idx])
+                self.__data[var_name][is_finite_idx] = level_data[var_name][level_idx][is_finite_idx]
+            
+            # Apply the periodic boundary conditions on the ghost cells.
+            
+            if dim == 1:
+                for component_idx in range(0, var_num_components[var_name]):
+                    if periodic_dimension[0] == True:
+                        self.__data[var_name][component_idx, 0:num_ghosts[0]] = \
+                            self.__data[var_name][component_idx, -2*num_ghosts[0]:-num_ghosts[0]]
+                        
+                        self.__data[var_name][component_idx, -num_ghosts[0]:] = \
+                            self.__data[var_name][component_idx, num_ghosts[0]:2*num_ghosts[0]]
+            
+            elif dim == 2:
+                for component_idx in range(0, var_num_components[var_name]):
+                    if periodic_dimension[0] == True:
+                        self.__data[var_name][component_idx, 0:num_ghosts[0], :] = \
+                            self.__data[var_name][component_idx, -2*num_ghosts[0]:-num_ghosts[0], :]
+                        
+                        self.__data[var_name][component_idx, -num_ghosts[0]:, :] = \
+                            self.__data[var_name][component_idx, num_ghosts[0]:2*num_ghosts[0], :]
                     
-        elif dim == 3:
-            for component_idx in range(0, var_num_components):
-                if periodic_dimension[0] == True:
-                    self.__data[component_idx, 0:num_ghosts[0], :, :] = self.__data[component_idx, -2*num_ghosts[0]:-num_ghosts[0], :, :]
-                    self.__data[component_idx, -num_ghosts[0]:, :, :] = self.__data[component_idx, num_ghosts[0]:2*num_ghosts[0], :, :]
-                
-                if periodic_dimension[1] == True:
-                    self.__data[component_idx, :, 0:num_ghosts[1], :] = self.__data[component_idx, :, -2*num_ghosts[1]:-num_ghosts[1], :]
-                    self.__data[component_idx, :, -num_ghosts[1]:, :] = self.__data[component_idx, :, num_ghosts[1]:2*num_ghosts[1], :]
-                
-                if periodic_dimension[2] == True:
-                    self.__data[component_idx, :, :, 0:num_ghosts[2]] = self.__data[component_idx, :, :, -2*num_ghosts[2]:-num_ghosts[2]]
-                    self.__data[component_idx, :, :, -num_ghosts[2]:] = self.__data[component_idx, :, :, num_ghosts[2]:2*num_ghosts[2]]
-        
-        else:
-            raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
+                    if periodic_dimension[1] == True:
+                        self.__data[var_name][component_idx, :, 0:num_ghosts[1]] = \
+                            self.__data[var_name][component_idx, :, -2*num_ghosts[1]:-num_ghosts[1]]
+                        
+                        self.__data[var_name][component_idx, :, -num_ghosts[1]:] = \
+                            self.__data[var_name][component_idx, :, num_ghosts[1]:2*num_ghosts[1]]
+            
+            elif dim == 3:
+                for component_idx in range(0, var_num_components[var_name]):
+                    if periodic_dimension[0] == True:
+                        self.__data[var_name][component_idx, 0:num_ghosts[0], :, :] = \
+                            self.__data[var_name][component_idx, -2*num_ghosts[0]:-num_ghosts[0], :, :]
+                        
+                        self.__data[var_name][component_idx, -num_ghosts[0]:, :, :] = \
+                            self.__data[var_name][component_idx, num_ghosts[0]:2*num_ghosts[0], :, :]
+                    
+                    if periodic_dimension[1] == True:
+                        self.__data[var_name][component_idx, :, 0:num_ghosts[1], :] = \
+                            self.__data[var_name][component_idx, :, -2*num_ghosts[1]:-num_ghosts[1], :]
+                        
+                        self.__data[var_name][component_idx, :, -num_ghosts[1]:, :] = \
+                            self.__data[var_name][component_idx, :, num_ghosts[1]:2*num_ghosts[1], :]
+                    
+                    if periodic_dimension[2] == True:
+                        self.__data[var_name][component_idx, :, :, 0:num_ghosts[2]] = \
+                            self.__data[var_name][component_idx, :, :, -2*num_ghosts[2]:-num_ghosts[2]]
+                        
+                        self.__data[var_name][component_idx, :, :, -num_ghosts[2]:] = \
+                            self.__data[var_name][component_idx, :, :, num_ghosts[2]:2*num_ghosts[2]]
+            
+            else:
+                raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
         
         self.__data_loaded = True
     
     
     def readCombinedDataInSubdomainFromAllLevels(self, \
-            var_name, \
+            var_names, \
             lo_subdomain, \
             up_subdomain, \
             num_ghosts, \
@@ -779,16 +820,19 @@ class samraiDataReader:
         
         # Get the variable names.
         
-        var_names = self.__basic_info['var_names']
-        var_idx = numpy.where(var_names == var_name)[0][0]
-        var_num_components = self.__basic_info['num_var_components'][var_idx]
-        
-        var_component_names = [None]*var_num_components
-        if var_num_components == 1:
-            var_component_names = [var_name]
-        else:
-            for component_idx in range(0, var_num_components):
-                var_component_names[component_idx] = var_name + '.' + str(component_idx).zfill(2)
+        var_num_components = {}
+        var_component_names = {}
+
+        for var_name in var_names:
+            var_idx = numpy.where(self.__basic_info['var_names'] == var_name)[0][0]
+            var_num_components[var_name] = self.__basic_info['num_var_components'][var_idx]
+
+            var_component_names[var_name] = [None]*var_num_components[var_name]
+            if var_num_components[var_name] == 1:
+                var_component_names[var_name] = [var_name]
+            else:
+                for component_idx in range(0, var_num_components[var_name]):
+                    var_component_names[var_name][component_idx] = var_name + '.' + str(component_idx).zfill(2)
         
         ratios_to_coarser_levels = self.__basic_info['ratios_to_coarser_levels']
         ratios_to_finest_level = numpy.empty(ratios_to_coarser_levels.shape, dtype = ratios_to_coarser_levels.dtype)
@@ -1168,8 +1212,7 @@ class samraiDataReader:
                     raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
         
         
-        # Initialize container to store the coordinates and data. The elements in the data container are
-        # initialized as NAN values.
+        # Get the coordinates of the sub-domain refined to the finest level.
         
         full_domain_shape = up_root_level[0:dim] - lo_root_level[0:dim] + numpy.ones(dim, dtype = numpy.int)
         full_domain_shape = numpy.multiply(full_domain_shape, ratios_to_finest_level[0][0:dim]) + 2*num_ghosts
@@ -1210,17 +1253,20 @@ class samraiDataReader:
         elif dim < 1 or dim > 3:
             raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
         
-        data_shape = up_subdomain[0:dim] - lo_subdomain[0:dim] + numpy.ones(dim, dtype = numpy.int)
+        # Initialize containers to store the data at different levels. The elements in the containers 
+        # are initialized as NAN values.
         
-        data_shape = numpy.insert(data_shape, 0, var_num_components)
-        data = numpy.empty(data_shape)
-        data[:] = numpy.NAN
+        level_data = {}
         
-        level_data = []
-        
-        for level_idx in range(num_levels):
-            level_data.append(copy.deepcopy(data))
-        
+        for var_name in var_names:
+            data_shape = up_subdomain[0:dim] - lo_subdomain[0:dim] + numpy.ones(dim, dtype = numpy.int)
+            data_shape = numpy.insert(data_shape, 0, var_num_components[var_name])
+            data = numpy.empty(data_shape)
+            data[:] = numpy.NAN
+            
+            level_data[var_name] = []
+            for level_idx in range(num_levels):
+                level_data[var_name].append(copy.deepcopy(data))
         
         # Get the data from all levels and upsampling them to the finest level.
         
@@ -1241,7 +1287,7 @@ class samraiDataReader:
                     file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
                     file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                     
-                    for component_idx in range(0, var_num_components):
+                    for var_name in var_names:
                         for patch_key in file_cluster_level:
                             patch_idx = int(patch_key.replace('patch.', ''))
                             global_patch_idx = patch_level_start_idx + patch_idx
@@ -1256,52 +1302,54 @@ class samraiDataReader:
                             
                             patch_shape = up_patch[0] - lo_patch[0] + 1
                             
-                            # Get the patch data and upsample the data to the finest resolution.
-                            
-                            patch_data = file_cluster_patch[var_component_names[component_idx]].value.reshape(patch_shape, order = 'F')
-                            patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
-                            
-                            # Get the indices after the refinement of the current patch.
-                            
-                            lo_patch_refined = numpy.empty(1, dtype = numpy.int)
-                            up_patch_refined = numpy.empty(1, dtype = numpy.int)
-                            
-                            lo_patch_refined[0] = lo_patch[0]*ratios_to_finest_level[level_num][0]
-                            
-                            up_patch_refined[0] = (up_patch[0] + 1)*ratios_to_finest_level[level_num][0] - 1
-                            
-                            self.__loadDataFromPatchToSubdomain(lo_subdomain, up_subdomain, \
-                                lo_patch_refined, up_patch_refined, \
-                                level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check whether the sub-domain touches periodic boundaries.
-                            # If the sub-domain touches the periodic boundaries, check whether ghost cell region
-                            # overlaps with the patches.
-                            
-                            lo_subdomain_shifted = numpy.empty(1, dtype = numpy.int)
-                            up_subdomain_shifted = numpy.empty(1, dtype = numpy.int)
-                            
-                            # Check the left boundary.
-                            
-                            if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True):
-                                if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the right boundary.
-                            
-                            if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True):
-                                if (lo_patch_refined[0] - num_ghosts[0]  < lo_root_level_refined[0]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
+                            for component_idx in range(0, var_num_components[var_name]):
+                                # Get the patch data and upsample the data to the finest resolution.
+                                
+                                patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
+                                    patch_shape, order = 'F')
+                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
+                                
+                                # Get the indices after the refinement of the current patch.
+                                
+                                lo_patch_refined = numpy.empty(1, dtype = numpy.int)
+                                up_patch_refined = numpy.empty(1, dtype = numpy.int)
+                                
+                                lo_patch_refined[0] = lo_patch[0]*ratios_to_finest_level[level_num][0]
+                                
+                                up_patch_refined[0] = (up_patch[0] + 1)*ratios_to_finest_level[level_num][0] - 1
+                                
+                                self.__loadDataFromPatchToSubdomain(lo_subdomain, up_subdomain, \
+                                    lo_patch_refined, up_patch_refined, \
+                                    level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check whether the sub-domain touches periodic boundaries.
+                                # If the sub-domain touches the periodic boundaries, check whether ghost cell region
+                                # overlaps with the patches.
+                                
+                                lo_subdomain_shifted = numpy.empty(1, dtype = numpy.int)
+                                up_subdomain_shifted = numpy.empty(1, dtype = numpy.int)
+                                
+                                # Check the left boundary.
+                                
+                                if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True):
+                                    if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the right boundary.
+                                
+                                if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True):
+                                    if (lo_patch_refined[0] - num_ghosts[0]  < lo_root_level_refined[0]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
         
         elif dim == 2:
             for process_idx in range(0, num_file_clusters):
@@ -1317,7 +1365,7 @@ class samraiDataReader:
                     file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
                     file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                     
-                    for component_idx in range(0, var_num_components):
+                    for var_name in var_names:
                         for patch_key in file_cluster_level:
                             patch_idx = int(patch_key.replace('patch.', ''))
                             global_patch_idx = patch_level_start_idx + patch_idx
@@ -1332,157 +1380,159 @@ class samraiDataReader:
                             
                             patch_shape = up_patch[0:2] - lo_patch[0:2] + numpy.ones(2, dtype = numpy.int)
                             
-                            # Get the patch data and upsample the data to the finest resolution.
-                            
-                            patch_data = file_cluster_patch[var_component_names[component_idx]].value.reshape(patch_shape, order = 'F')
-                            patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
-                            patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 1)
-                            
-                            # Get the indices after the refinement of the current patch.
-                            
-                            lo_patch_refined = numpy.empty(2, dtype = numpy.int)
-                            up_patch_refined = numpy.empty(2, dtype = numpy.int)
-                            
-                            lo_patch_refined[0] = lo_patch[0]*ratios_to_finest_level[level_num][0]
-                            lo_patch_refined[1] = lo_patch[1]*ratios_to_finest_level[level_num][1]
-                            
-                            up_patch_refined[0] = (up_patch[0] + 1)*ratios_to_finest_level[level_num][0] - 1
-                            up_patch_refined[1] = (up_patch[1] + 1)*ratios_to_finest_level[level_num][1] - 1
-                            
-                            self.__loadDataFromPatchToSubdomain(lo_subdomain, up_subdomain, \
-                                lo_patch_refined, up_patch_refined, \
-                                level_data[level_num][component_idx, :, :], patch_data)
-                            
-                            # Check whether the sub-domain touches periodic boundaries.
-                            # If the sub-domain touches the periodic boundaries, check whether ghost cell region
-                            # overlaps with the patches.
-                            
-                            lo_subdomain_shifted = numpy.empty(2, dtype = numpy.int)
-                            up_subdomain_shifted = numpy.empty(2, dtype = numpy.int)
-                            
-                            # Check the left edge.
-                            
-                            if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True):
-                                if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
-                                   (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the right edge.
-                            
-                            if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True):
-                                if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
-                                   (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the bottom edge.
-                            
-                            if (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True):
-                                if (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]) and \
-                                   (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the top edge.
-                            
-                            if (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True):
-                                if (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]) and \
-                                   (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the left-bottom corner.
-                            
-                            if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True):
-                                if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
-                                   (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the left-top corner.
-                            
-                            if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True):
-                                if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
-                                   (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the right-bottom corner.
-                            
-                            if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True):
-                                if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
-                                   (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the right-top corner.
-                            
-                            if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True):
-                                if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
-                                   (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
+                            for component_idx in range(0, var_num_components[var_name]):
+                                # Get the patch data and upsample the data to the finest resolution.
+                                
+                                patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
+                                    patch_shape, order = 'F')
+                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
+                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 1)
+                                
+                                # Get the indices after the refinement of the current patch.
+                                
+                                lo_patch_refined = numpy.empty(2, dtype = numpy.int)
+                                up_patch_refined = numpy.empty(2, dtype = numpy.int)
+                                
+                                lo_patch_refined[0] = lo_patch[0]*ratios_to_finest_level[level_num][0]
+                                lo_patch_refined[1] = lo_patch[1]*ratios_to_finest_level[level_num][1]
+                                
+                                up_patch_refined[0] = (up_patch[0] + 1)*ratios_to_finest_level[level_num][0] - 1
+                                up_patch_refined[1] = (up_patch[1] + 1)*ratios_to_finest_level[level_num][1] - 1
+                                
+                                self.__loadDataFromPatchToSubdomain(lo_subdomain, up_subdomain, \
+                                    lo_patch_refined, up_patch_refined, \
+                                    level_data[var_name][level_num][component_idx, :, :], patch_data)
+                                
+                                # Check whether the sub-domain touches periodic boundaries.
+                                # If the sub-domain touches the periodic boundaries, check whether ghost cell region
+                                # overlaps with the patches.
+                                
+                                lo_subdomain_shifted = numpy.empty(2, dtype = numpy.int)
+                                up_subdomain_shifted = numpy.empty(2, dtype = numpy.int)
+                                
+                                # Check the left edge.
+                                
+                                if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True):
+                                    if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
+                                       (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the right edge.
+                                
+                                if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True):
+                                    if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
+                                       (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the bottom edge.
+                                
+                                if (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True):
+                                    if (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]) and \
+                                       (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the top edge.
+                                
+                                if (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True):
+                                    if (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]) and \
+                                       (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the left-bottom corner.
+                                
+                                if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True):
+                                    if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
+                                       (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the left-top corner.
+                                
+                                if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True):
+                                    if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
+                                       (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the right-bottom corner.
+                                
+                                if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True):
+                                    if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
+                                       (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the right-top corner.
+                                
+                                if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True):
+                                    if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
+                                       (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
         
         elif dim == 3:
             for process_idx in range(0, num_file_clusters):
@@ -1498,7 +1548,7 @@ class samraiDataReader:
                     file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
                     file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                     
-                    for component_idx in range(0, var_num_components):
+                    for var_name in var_names:
                         for patch_key in file_cluster_level:
                             patch_idx = int(patch_key.replace('patch.', ''))
                             global_patch_idx = patch_level_start_idx + patch_idx
@@ -1513,546 +1563,549 @@ class samraiDataReader:
                             
                             patch_shape = up_patch - lo_patch + numpy.ones(3, dtype = numpy.int)
                             
-                            # Get the patch data and upsample the data to the finest resolution.
-                            
-                            patch_data = file_cluster_patch[var_component_names[component_idx]].value.reshape(patch_shape, order = 'F')
-                            patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
-                            patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 1)
-                            patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][2], axis = 2)
-                            
-                            # Get the indices after the refinement of the current patch.
-                            
-                            lo_patch_refined = numpy.empty(3, dtype = numpy.int)
-                            up_patch_refined = numpy.empty(3, dtype = numpy.int)
-                            
-                            lo_patch_refined[0] = lo_patch[0]*ratios_to_finest_level[level_num][0]
-                            lo_patch_refined[1] = lo_patch[1]*ratios_to_finest_level[level_num][1]
-                            lo_patch_refined[2] = lo_patch[2]*ratios_to_finest_level[level_num][2]
-                            
-                            up_patch_refined[0] = (up_patch[0] + 1)*ratios_to_finest_level[level_num][0] - 1
-                            up_patch_refined[1] = (up_patch[1] + 1)*ratios_to_finest_level[level_num][1] - 1
-                            up_patch_refined[2] = (up_patch[2] + 1)*ratios_to_finest_level[level_num][1] - 1
-                            
-                            self.__loadDataFromPatchToSubdomain(lo_subdomain, up_subdomain, \
-                                lo_patch_refined, up_patch_refined, \
-                                level_data[level_num][component_idx, :, :, :], patch_data)
-                            
-                            # Check whether the sub-domain touches periodic boundaries.
-                            # If the sub-domain touches the periodic boundaries, check whether ghost cell region
-                            # overlaps with the patches.
-                            
-                            lo_subdomain_shifted = numpy.empty(3, dtype = numpy.int)
-                            up_subdomain_shifted = numpy.empty(3, dtype = numpy.int)
-                            
-                            # Check the left face.
-                            
-                            if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]) and \
-                               (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
-                                if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the right face.
-                            
-                            if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]) and \
-                               (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
-                                if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the bottom face.
-                            
-                            if (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]) and \
-                               (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
-                                if (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the top face.
-                            
-                            if (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]) and \
-                               (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
-                                if (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the back face.
-                            
-                            if (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True) and \
-                               (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]) and \
-                               (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
-                                if (up_patch_refined[2] + num_ghosts[2] > up_root_level_refined[1]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the front face.
-                            
-                            if (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True) and \
-                               (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]) and \
-                               (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
-                                if (lo_patch_refined[2] - num_ghosts[2] < lo_root_level_refined[2]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the left-bottom edge.
-                            
-                            if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the left-top edge.
-                            
-                            if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the left-back edge.
-                            
-                            if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True) and \
-                               (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the left-front edge.
-                            
-                            if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True) and \
-                               (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the right-bottom edge.
-                            
-                            if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the right-top edge.
-                            
-                            if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the right-back edge.
-                            
-                            if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True) and \
-                               (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the right-front edge.
-                            
-                            if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True) and \
-                               (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the bottom-back edge.
-                            
-                            if (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True) and \
-                               (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the bottom-front edge.
-                            
-                            if (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True) and \
-                               (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the top-back edge.
-                            
-                            if (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True) and \
-                               (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the top-front edge.
-                            
-                            if (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True) and \
-                               (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the left-bottom-back corner.
-                            
-                            if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True):
-                                if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
-                                   (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]) and \
-                                   (up_patch_refined[2] + num_ghosts[2] > up_root_level_refined[2]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the left-top-back corner.
-                            
-                            if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True):
-                                if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
-                                   (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]) and \
-                                   (up_patch_refined[2] + num_ghosts[2] > up_root_level_refined[2]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the right-bottom-back corner.
-                            
-                            if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True):
-                                if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
-                                   (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]) and \
-                                   (up_patch_refined[2] + num_ghosts[2] > up_root_level_refined[2]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the right-top-back corner.
-                            
-                            if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True):
-                                if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
-                                   (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]) and \
-                                   (up_patch_refined[2] + num_ghosts[2] > up_root_level_refined[2]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the left-bottom-front corner.
-                            
-                            if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True):
-                                if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
-                                   (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]) and \
-                                   (lo_patch_refined[2] - num_ghosts[2] < lo_root_level_refined[2]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the left-top-front corner.
-                            
-                            if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True):
-                                if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
-                                   (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]) and \
-                                   (lo_patch_refined[2] - num_ghosts[2] < lo_root_level_refined[2]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the right-bottom-front corner.
-                            
-                            if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True):
-                                if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
-                                   (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]) and \
-                                   (lo_patch_refined[2] - num_ghosts[2] < lo_root_level_refined[2]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
-                            
-                            # Check the right-top-front corner.
-                            
-                            if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
-                               (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
-                               (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True):
-                                if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
-                                   (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]) and \
-                                   (lo_patch_refined[2] - num_ghosts[2] < lo_root_level_refined[2]):
-                                    lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
-                                    up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
-                                    
-                                    lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
-                                    up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
-                                    
-                                    lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
-                                    up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
-                                    
-                                    self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
-                                        lo_patch_refined, up_patch_refined, \
-                                        level_data[level_num][component_idx, :], patch_data)
+                            for component_idx in range(0, var_num_components[var_name]):
+                                # Get the patch data and upsample the data to the finest resolution.
+                                
+                                patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
+                                    patch_shape, order = 'F')
+                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
+                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 1)
+                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][2], axis = 2)
+                                
+                                # Get the indices after the refinement of the current patch.
+                                
+                                lo_patch_refined = numpy.empty(3, dtype = numpy.int)
+                                up_patch_refined = numpy.empty(3, dtype = numpy.int)
+                                
+                                lo_patch_refined[0] = lo_patch[0]*ratios_to_finest_level[level_num][0]
+                                lo_patch_refined[1] = lo_patch[1]*ratios_to_finest_level[level_num][1]
+                                lo_patch_refined[2] = lo_patch[2]*ratios_to_finest_level[level_num][2]
+                                
+                                up_patch_refined[0] = (up_patch[0] + 1)*ratios_to_finest_level[level_num][0] - 1
+                                up_patch_refined[1] = (up_patch[1] + 1)*ratios_to_finest_level[level_num][1] - 1
+                                up_patch_refined[2] = (up_patch[2] + 1)*ratios_to_finest_level[level_num][1] - 1
+                                
+                                self.__loadDataFromPatchToSubdomain(lo_subdomain, up_subdomain, \
+                                    lo_patch_refined, up_patch_refined, \
+                                    level_data[var_name][level_num][component_idx, :, :, :], patch_data)
+                                
+                                # Check whether the sub-domain touches periodic boundaries.
+                                # If the sub-domain touches the periodic boundaries, check whether ghost cell region
+                                # overlaps with the patches.
+                                
+                                lo_subdomain_shifted = numpy.empty(3, dtype = numpy.int)
+                                up_subdomain_shifted = numpy.empty(3, dtype = numpy.int)
+                                
+                                # Check the left face.
+                                
+                                if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]) and \
+                                   (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
+                                    if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the right face.
+                                
+                                if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]) and \
+                                   (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
+                                    if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the bottom face.
+                                
+                                if (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]) and \
+                                   (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
+                                    if (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the top face.
+                                
+                                if (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]) and \
+                                   (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
+                                    if (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the back face.
+                                
+                                if (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True) and \
+                                   (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]) and \
+                                   (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
+                                    if (up_patch_refined[2] + num_ghosts[2] > up_root_level_refined[1]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the front face.
+                                
+                                if (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True) and \
+                                   (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]) and \
+                                   (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
+                                    if (lo_patch_refined[2] - num_ghosts[2] < lo_root_level_refined[2]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the left-bottom edge.
+                                
+                                if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the left-top edge.
+                                
+                                if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the left-back edge.
+                                
+                                if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True) and \
+                                   (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the left-front edge.
+                                
+                                if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True) and \
+                                   (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the right-bottom edge.
+                                
+                                if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the right-top edge.
+                                
+                                if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (lo_patch_refined[2] <= up_subdomain[2]) and (up_patch_refined[2] >= lo_subdomain[2]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the right-back edge.
+                                
+                                if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True) and \
+                                   (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the right-front edge.
+                                
+                                if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True) and \
+                                   (lo_patch_refined[1] <= up_subdomain[1]) and (up_patch_refined[1] >= lo_subdomain[1]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the bottom-back edge.
+                                
+                                if (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True) and \
+                                   (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the bottom-front edge.
+                                
+                                if (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True) and \
+                                   (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the top-back edge.
+                                
+                                if (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True) and \
+                                   (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the top-front edge.
+                                
+                                if (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True) and \
+                                   (lo_patch_refined[0] <= up_subdomain[0]) and (up_patch_refined[0] >= lo_subdomain[0]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the left-bottom-back corner.
+                                
+                                if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True):
+                                    if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
+                                       (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]) and \
+                                       (up_patch_refined[2] + num_ghosts[2] > up_root_level_refined[2]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the left-top-back corner.
+                                
+                                if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True):
+                                    if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
+                                       (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]) and \
+                                       (up_patch_refined[2] + num_ghosts[2] > up_root_level_refined[2]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the right-bottom-back corner.
+                                
+                                if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True):
+                                    if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
+                                       (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]) and \
+                                       (up_patch_refined[2] + num_ghosts[2] > up_root_level_refined[2]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the right-top-back corner.
+                                
+                                if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (lo_subdomain[2] == lo_root_level_refined[2] - num_ghosts[2]) and (periodic_dimension[2] == True):
+                                    if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
+                                       (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]) and \
+                                       (up_patch_refined[2] + num_ghosts[2] > up_root_level_refined[2]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] + domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] + domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the left-bottom-front corner.
+                                
+                                if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True):
+                                    if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
+                                       (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]) and \
+                                       (lo_patch_refined[2] - num_ghosts[2] < lo_root_level_refined[2]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the left-top-front corner.
+                                
+                                if (lo_subdomain[0] == lo_root_level_refined[0] - num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True):
+                                    if (up_patch_refined[0] + num_ghosts[0] > up_root_level_refined[0]) and \
+                                       (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]) and \
+                                       (lo_patch_refined[2] - num_ghosts[2] < lo_root_level_refined[2]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] + domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] + domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the right-bottom-front corner.
+                                
+                                if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (lo_subdomain[1] == lo_root_level_refined[1] - num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True):
+                                    if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
+                                       (up_patch_refined[1] + num_ghosts[1] > up_root_level_refined[1]) and \
+                                       (lo_patch_refined[2] - num_ghosts[2] < lo_root_level_refined[2]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] + domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] + domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
+                                
+                                # Check the right-top-front corner.
+                                
+                                if (up_subdomain[0] == up_root_level_refined[0] + num_ghosts[0]) and (periodic_dimension[0] == True) and \
+                                   (up_subdomain[1] == up_root_level_refined[1] + num_ghosts[1]) and (periodic_dimension[1] == True) and \
+                                   (up_subdomain[2] == up_root_level_refined[2] + num_ghosts[2]) and (periodic_dimension[2] == True):
+                                    if (lo_patch_refined[0] - num_ghosts[0] < lo_root_level_refined[0]) and \
+                                       (lo_patch_refined[1] - num_ghosts[1] < lo_root_level_refined[1]) and \
+                                       (lo_patch_refined[2] - num_ghosts[2] < lo_root_level_refined[2]):
+                                        lo_subdomain_shifted[0] = lo_subdomain[0] - domain_shape[0]
+                                        up_subdomain_shifted[0] = up_subdomain[0] - domain_shape[0]
+                                        
+                                        lo_subdomain_shifted[1] = lo_subdomain[1] - domain_shape[1]
+                                        up_subdomain_shifted[1] = up_subdomain[1] - domain_shape[1]
+                                        
+                                        lo_subdomain_shifted[2] = lo_subdomain[2] - domain_shape[2]
+                                        up_subdomain_shifted[2] = up_subdomain[2] - domain_shape[2]
+                                        
+                                        self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
+                                            lo_patch_refined, up_patch_refined, \
+                                            level_data[var_name][level_num][component_idx, :], patch_data)
         
         else:
             raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
         
         
         # Combine data at all levels.
-        
-        self.__data = level_data[0]
-        
-        for level_idx in range(1, num_levels):
-            is_finite_idx = numpy.isfinite(level_data[level_idx])
-            self.__data[is_finite_idx] = level_data[level_idx][is_finite_idx]
+       
+        for var_name in var_names:
+            self.__data[var_name] = level_data[var_name][0]
+            
+            for level_idx in range(1, num_levels):
+                is_finite_idx = numpy.isfinite(level_data[var_name][level_idx])
+                self.__data[var_name][is_finite_idx] = level_data[var_name][level_idx][is_finite_idx]
         
         self.__data_loaded = True
     
