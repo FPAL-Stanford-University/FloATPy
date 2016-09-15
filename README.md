@@ -1,16 +1,16 @@
 # README #
 
-FPAL-Post is a post-processing tool for the numerical codes in the Flow Physics and Aeroacoustics Laboratory (FPAL) of the Stanford University.
+UFloAT (Unsteady Flow Physics and Aeroacoustics Toolbox) is a post-processing toolbox for the numerical codes in the UFPA lab (Unsteady Flow Physics and Aeroacoustics Laboratory) at Stanford University.
 
 ### How do I get set up? ###
 
-To set-up the code, you can use the following command:
+To set up the code, you can use the following command:
 
 $ python setup.py install
 
 ### Contribution guidelines ###
 
-All tests are in the fpalpost/tests directory. They can be run with IPython Notebook.
+All tests are in the ufloat/tests directory. They can be run with IPython Notebook.
 
 ### Who do I talk to? ###
 
