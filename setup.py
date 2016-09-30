@@ -5,19 +5,19 @@ import sys
 
 # Python version
 if sys.version_info[:2] < (2, 7):
-    print('UFloAT requires Python 2.7 or newer')
+    print('FloATPy requires Python 2.7 or newer')
     sys.exit(-1)
 
 version = '1.0'
 
 # Modules.
-modules = ['ufloat.derivatives',
-           'ufloat.readers']
+modules = ['floatpy.derivatives',
+           'floatpy.readers']
 
-setup(name='UFloAT',
+setup(name='FloATPy',
       version=version,
-      description='Postprocessing utilities for codes in UFPA lab',
-      author='Unsteady Flow Physics and Aeroacoustics Laboratory of Stanford University',
+      description='Postprocessing utilities for codes in FPAL',
+      author='Flow Physics and Aeroacoustics Laboratory of Stanford University',
       author_email='wongml@stanford.edu',
-      packages=['ufloat'] + modules,
+      packages=['floatpy'] + modules,
       )
