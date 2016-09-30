@@ -1,6 +1,6 @@
 # README #
 
-UFloAT (Unsteady Flow Physics and Aeroacoustics Toolbox) is a post-processing toolbox for the numerical codes in the UFPA lab (Unsteady Flow Physics and Aeroacoustics Laboratory) at Stanford University.
+FloATPy (Flow Physics and Aeroacoustics Toolbox with Python) is a post-processing toolbox for the numerical codes in the FPAL (Flow Physics and Aeroacoustics Laboratory) at Stanford University.
 
 ### How do I get set up? ###
 
@@ -10,7 +10,7 @@ $ python setup.py install
 
 ### Contribution guidelines ###
 
-All tests are in the ufloat/tests directory. They can be run with IPython Notebook.
+All tests are in the floatpy/tests directory. They can be run with IPython Notebook.
 
 ### Who do I talk to? ###
 
