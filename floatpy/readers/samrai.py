@@ -179,7 +179,7 @@ class samraiDataReader:
         self.__x_coords = []
         self.__y_coords = []
         self.__z_coords = []
-        self.__data = {}
+        self.__data.clear()
         self.__data_loaded = False
     
     
@@ -190,13 +190,13 @@ class samraiDataReader:
         
         self.__data_directory_path = ""
         
-        self.__basic_info = {}
+        self.__basic_info.clear()
         self.__summary_loaded = False
         
         self.__x_coords = []
         self.__y_coords = []
         self.__z_coords = []
-        self.__data = {}
+        self.__data.clear()
         self.__data_loaded = False
     
     
