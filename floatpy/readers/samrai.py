@@ -408,6 +408,8 @@ class samraiDataReader:
                         for component_idx in range(0, var_num_components[var_name]):
                             self.__data[var_name][component_idx, x_start_idx:x_end_idx] = \
                                 file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
+                
+                f_input.close()
         
         elif dim == 2:
             for process_idx in range(0, num_file_clusters):
@@ -437,6 +439,8 @@ class samraiDataReader:
                         for component_idx in range(0, var_num_components[var_name]):
                             self.__data[var_name][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx] = \
                                 file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
+                
+                f_input.close()
         
         elif dim == 3:
             for process_idx in range(0, num_file_clusters):
@@ -469,6 +473,8 @@ class samraiDataReader:
                         for component_idx in range(0, var_num_components):
                             self.__data[var_name][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx] = \
                                 file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
+                
+                f_input.close()
         
         else:
             raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
@@ -629,6 +635,8 @@ class samraiDataReader:
                                 patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
                                 
                                 level_data[var_name][level_num][component_idx, x_start_idx: x_end_idx] = patch_data
+                
+                f_input.close()
         
         elif dim == 2:
             for process_idx in range(0, num_file_clusters):
@@ -669,6 +677,8 @@ class samraiDataReader:
                                 level_data[var_name][level_num][component_idx, \
                                     x_start_idx:x_end_idx, y_start_idx:y_end_idx] = \
                                         patch_data
+                
+                f_input.close()
         
         elif dim == 3:
             for process_idx in range(0, num_file_clusters):
@@ -713,6 +723,8 @@ class samraiDataReader:
                                 level_data[var_name][level_num][component_idx, \
                                     x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx] = \
                                         patch_data
+            
+            f_input.close()
         
         else:
             raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
@@ -1350,6 +1362,8 @@ class samraiDataReader:
                                         self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
                                             lo_patch_refined, up_patch_refined, \
                                             level_data[var_name][level_num][component_idx, :], patch_data)
+                
+                f_input.close()
         
         elif dim == 2:
             for process_idx in range(0, num_file_clusters):
@@ -1533,6 +1547,8 @@ class samraiDataReader:
                                         self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
                                             lo_patch_refined, up_patch_refined, \
                                             level_data[var_name][level_num][component_idx, :], patch_data)
+                
+                f_input.close()
         
         elif dim == 3:
             for process_idx in range(0, num_file_clusters):
@@ -2093,6 +2109,8 @@ class samraiDataReader:
                                         self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, up_subdomain_shifted, \
                                             lo_patch_refined, up_patch_refined, \
                                             level_data[var_name][level_num][component_idx, :], patch_data)
+                
+                f_input.close()
         
         else:
             raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
