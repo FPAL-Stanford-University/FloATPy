@@ -470,7 +470,7 @@ class samraiDataReader:
                         z_start_idx = lo_patch[2]
                         z_end_idx = up_patch[2] + 1
                         
-                        for component_idx in range(0, var_num_components):
+                        for component_idx in range(0, var_num_components[var_name]):
                             self.__data[var_name][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx] = \
                                 file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
                 
