@@ -505,7 +505,7 @@ class samraiDataReader:
         num_levels = self.__basic_info['num_levels']
         num_patches = self.__basic_info['num_patches']
         
-        # Check that cooresponding element of num_ghosts is greater than zero if the dimension is periodic.
+        # Check that corresponding element of num_ghosts is greater than zero if the dimension is periodic.
         
         if (periodic_dimension[0] == True and num_ghosts[0] < 1):
             raise RuntimeError('The periodic dimension is not consistent with the number of ghost cells in the first direction!')
@@ -547,7 +547,7 @@ class samraiDataReader:
         domain_shape = self.getRefinedDomainSize()
         domain_shape = domain_shape + 2*num_ghosts[0:dim]
         
-        # Get the coordinates of the domain refiend to the finest level.
+        # Get the coordinates of the domain refined to the finest level.
         
         num_patches_root_level = num_patches[0]
         dx = self.__basic_info['dx']
@@ -888,7 +888,6 @@ class samraiDataReader:
         
         lo_subdomain = lo_subdomain[0:dim] - num_ghosts[0:dim]
         up_subdomain = up_subdomain[0:dim] + num_ghosts[0:dim]
-        
         
         # Determine which file clusters to load.
         
