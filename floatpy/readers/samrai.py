@@ -2143,7 +2143,7 @@ class samraiDataReader:
         if dim == 1:
             # Get the global start and end indices.
             
-            x_gelf.__basic_infoobal_start_idx = max(lo_patch_refined[0], lo_subdomain[0])
+            x_global_start_idx = max(lo_patch_refined[0], lo_subdomain[0])
             x_global_end_idx = min(up_patch_refined[0] + 1, up_subdomain[0] + 1)
             
             # Get the local start and end indices in the sub-domain.
