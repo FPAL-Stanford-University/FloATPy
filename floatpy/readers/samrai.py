@@ -538,7 +538,7 @@ class samraiDataReader:
         
         ratios_to_coarser_levels = self.__basic_info['ratios_to_coarser_levels']
         ratios_to_finest_level = numpy.empty(ratios_to_coarser_levels.shape, dtype = ratios_to_coarser_levels.dtype)
-        ratios_to_finest_level[num_levels - 1] = -1*ratios_to_coarser_levels[0]
+        ratios_to_finest_level[num_levels - 1] = -ratios_to_coarser_levels[0]
         for level_idx in range(num_levels - 2, -1, -1):
             ratios_to_finest_level[level_idx] = numpy.multiply(ratios_to_coarser_levels[level_idx + 1], ratios_to_finest_level[level_idx + 1])
         
@@ -848,7 +848,7 @@ class samraiDataReader:
         
         ratios_to_coarser_levels = self.__basic_info['ratios_to_coarser_levels']
         ratios_to_finest_level = numpy.empty(ratios_to_coarser_levels.shape, dtype = ratios_to_coarser_levels.dtype)
-        ratios_to_finest_level[num_levels - 1] = -1*ratios_to_coarser_levels[0]
+        ratios_to_finest_level[num_levels - 1] = -ratios_to_coarser_levels[0]
         for level_idx in range(num_levels - 2, -1, -1):
             ratios_to_finest_level[level_idx] = numpy.multiply(ratios_to_coarser_levels[level_idx + 1], \
                                                 ratios_to_finest_level[level_idx + 1])
