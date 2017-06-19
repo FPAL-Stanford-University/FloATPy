@@ -14,7 +14,7 @@ If you don't have root access, you can do:
 
 ### Contribution guidelines ###
 
-All tests are in the `floatpy/tests directory`. They can be run with Jupyter Notebook.
+All tests are in the `floatpy/tests` directory. They can be run with Jupyter Notebook.
 
 ### Who do I talk to? ###
 
