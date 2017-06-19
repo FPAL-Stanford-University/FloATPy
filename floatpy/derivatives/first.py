@@ -46,17 +46,26 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     diff_data = numpy.empty(data_shape)
     diff_data[:] = numpy.NAN
     
+    # Get the component's data.
+    data_component = None
+    if diff_data.ndim == 1:
+        data_component = data[component_idx, :]
+    elif diff_data.ndim == 2:
+        data_component = data[component_idx, :, :]
+    elif diff_data.ndim == 3:
+        data_component = data[component_idx, :, :, :]
+    
     # Compute the derivatives in the interior of the domain.
     
     if direction == 0:
         if diff_data.ndim == 1:
-            diff_data[1:-1] = (-1.0/2.0*data[component_idx, 0:-2] + 1.0/2.0*data[component_idx, 2:])/dx
+            diff_data[1:-1] = (-1.0/2.0*data_component[0:-2] + 1.0/2.0*data_component[2:])/dx
         
         elif diff_data.ndim == 2:
-            diff_data[1:-1, :] = (-1.0/2.0*data[component_idx, 0:-2, :] + 1.0/2.0*data[component_idx, 2:, :])/dx
+            diff_data[1:-1, :] = (-1.0/2.0*data_component[0:-2, :] + 1.0/2.0*data_component[2:, :])/dx
         
         elif diff_data.ndim == 3:
-            diff_data[1:-1, :, :] = (-1.0/2.0*data[component_idx, 0:-2, :, :] + 1.0/2.0*data[component_idx, 2:, :, :])/dx
+            diff_data[1:-1, :, :] = (-1.0/2.0*data_component[0:-2, :, :] + 1.0/2.0*data_component[2:, :, :])/dx
         
         else:
             raise RuntimeError('Data dimension > 3 not supported!')
@@ -66,10 +75,10 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
             raise IOError('There is no second direction in data with less than two dimensions!')
         
         elif diff_data.ndim == 2:
-            diff_data[:, 1:-1] = (-1.0/2.0*data[component_idx, :, 0:-2] + 1.0/2.0*data[component_idx, :, 2:])/dx
+            diff_data[:, 1:-1] = (-1.0/2.0*data_component[:, 0:-2] + 1.0/2.0*data_component[:, 2:])/dx
         
         elif diff_data.ndim == 3:
-            diff_data[:, 1:-1, :] = (-1.0/2.0*data[component_idx, :, 0:-2, :] + 1.0/2.0*data[component_idx, :, 2:, :])/dx
+            diff_data[:, 1:-1, :] = (-1.0/2.0*data_component[:, 0:-2, :] + 1.0/2.0*data_component[:, 2:, :])/dx
         
         else:
             raise RuntimeError('Data dimension > 3 not supported!')
@@ -79,7 +88,7 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
             raise IOError('There is no third direction in data with less than three dimensions!')
         
         elif diff_data.ndim == 3:
-            diff_data[:, :, 1:-1] = (-1.0/2.0*data[component_idx, :, :, 0:-2] + 1.0/2.0*data[component_idx, :, :, 2:])/dx
+            diff_data[:, :, 1:-1] = (-1.0/2.0*data_component[:, :, 0:-2] + 1.0/2.0*data_component[:, :, 2:])/dx
         
         else:
             raise RuntimeError('Data dimension > 3 not supported!')
@@ -89,25 +98,25 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     if uses_one_sided == True:
         if direction == 0:
             if diff_data.ndim == 1:
-                diff_data[0] = (-3.0/2.0*data[component_idx, 0] + 2.0*data[component_idx, 1] \
-                                - 1.0/2.0*data[component_idx, 2])/dx
+                diff_data[0] = (-3.0/2.0*data_component[0] + 2.0*data_component[1] \
+                                - 1.0/2.0*data_component[2])/dx
                 
-                diff_data[-1] = (1.0/2.0*data[component_idx, -3] - 2.0*data[component_idx, -2] \
-                                 + 3.0/2.0*data[component_idx, -1])/dx
+                diff_data[-1] = (1.0/2.0*data_component[-3] - 2.0*data_component[-2] \
+                                 + 3.0/2.0*data_component[-1])/dx
             
             elif diff_data.ndim == 2:
-                diff_data[0, :] = (-3.0/2.0*data[component_idx, 0, :] + 2.0*data[component_idx, 1, :] \
-                                   - 1.0/2.0*data[component_idx, 2, :])/dx
+                diff_data[0, :] = (-3.0/2.0*data_component[0, :] + 2.0*data_component[1, :] \
+                                   - 1.0/2.0*data_component[2, :])/dx
                 
-                diff_data[-1, :] = (1.0/2.0*data[component_idx, -3, :] - 2.0*data[component_idx, -2, :] \
-                                    + 3.0/2.0*data[component_idx, -1, :])/dx
+                diff_data[-1, :] = (1.0/2.0*data_component[-3, :] - 2.0*data_component[-2, :] \
+                                    + 3.0/2.0*data_component[-1, :])/dx
             
             elif diff_data.ndim == 3:
-                diff_data[0, :, :] = (-3.0/2.0*data[component_idx, 0, :, :] + 2.0*data[component_idx, 1, :, :] \
-                                      - 1.0/2.0*data[component_idx, 2, :, :])/dx
+                diff_data[0, :, :] = (-3.0/2.0*data_component[0, :, :] + 2.0*data_component[1, :, :] \
+                                      - 1.0/2.0*data_component[2, :, :])/dx
                 
-                diff_data[-1:, :, :] = (1.0/2.0*data[component_idx, -3, :, :] - 2.0*data[component_idx, -2, :, :] \
-                                        + 3.0/2.0*data[component_idx, -1, :, :])/dx
+                diff_data[-1:, :, :] = (1.0/2.0*data_component[-3, :, :] - 2.0*data_component[-2, :, :] \
+                                        + 3.0/2.0*data_component[-1, :, :])/dx
             
             else:
                 raise RuntimeError('Data dimension > 3 not supported!')
@@ -117,18 +126,18 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
                 raise RuntimeError('There is no second direction in data with less than two dimensions!')
             
             elif diff_data.ndim == 2:
-                diff_data[:, 0] = (-3.0/2.0*data[component_idx, :, 0] + 2.0*data[component_idx, :, 1] \
-                                   - 1.0/2.0*data[component_idx, :, 2])/dx
+                diff_data[:, 0] = (-3.0/2.0*data_component[:, 0] + 2.0*data_component[:, 1] \
+                                   - 1.0/2.0*data_component[:, 2])/dx
                 
-                diff_data[:, -1] = (1.0/2.0*data[component_idx, :, -3] - 2.0*data[component_idx, :, -2] \
-                                    + 3.0/2.0*data[component_idx, :, -1])/dx
+                diff_data[:, -1] = (1.0/2.0*data_component[:, -3] - 2.0*data_component[:, -2] \
+                                    + 3.0/2.0*data_component[:, -1])/dx
             
             elif diff_data.ndim == 3:
-                diff_data[:, 0, :] = (-3.0/2.0*data[component_idx, :, 0, :] + 2.0*data[component_idx, :, 1, :] \
-                                      - 1.0/2.0*data[component_idx, :, 2, :])/dx
+                diff_data[:, 0, :] = (-3.0/2.0*data_component[:, 0, :] + 2.0*data_component[:, 1, :] \
+                                      - 1.0/2.0*data_component[:, 2, :])/dx
                 
-                diff_data[:, -1, :] = (1.0/2.0*data[component_idx, :, -3, :] - 2.0*data[component_idx, :, -2, :] \
-                                       + 3.0/2.0*data[component_idx, :, -1, :])/dx
+                diff_data[:, -1, :] = (1.0/2.0*data_component[:, -3, :] - 2.0*data_component[:, -2, :] \
+                                       + 3.0/2.0*data_component[:, -1, :])/dx
             
             else:
                 raise RuntimeError('Data dimension > 3 not supported!')
@@ -138,11 +147,11 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
                 raise IOError('There is no third direction in data with less than three dimensions!')
             
             elif diff_data.ndim == 3:
-                diff_data[:, :, 0] = (-3.0/2.0*data[component_idx, :, :, 0] + 2.0*data[component_idx, :, :, 1] \
-                                      - 1.0/2.0*data[component_idx, :, :, 2])/dx
+                diff_data[:, :, 0] = (-3.0/2.0*data_component[:, :, 0] + 2.0*data_component[:, :, 1] \
+                                      - 1.0/2.0*data_component[:, :, 2])/dx
                 
-                diff_data[:, :, -1] = (1.0/2.0*data[component_idx, :, :, -3] - 2.0*data[component_idx, :, :, -2] \
-                                       + 3.0/2.0*data[component_idx, :, :, -1])/dx
+                diff_data[:, :, -1] = (1.0/2.0*data_component[:, :, -3] - 2.0*data_component[:, :, -2] \
+                                       + 3.0/2.0*data_component[:, :, -1])/dx
             
             else:
                 raise RuntimeError('Data dimension > 3 not supported!')
@@ -192,20 +201,29 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     diff_data = numpy.empty(data_shape)
     diff_data[:] = numpy.NAN
     
+    # Get the component's data.
+    data_component = None
+    if diff_data.ndim == 1:
+        data_component = data[component_idx, :]
+    elif diff_data.ndim == 2:
+        data_component = data[component_idx, :, :]
+    elif diff_data.ndim == 3:
+        data_component = data[component_idx, :, :, :]
+    
     # Compute the derivatives in the interior of the domain.
     
     if direction == 0:
         if diff_data.ndim == 1:
-            diff_data[2:-2] = (1.0/12.0*data[component_idx, 0:-4] - 2.0/3.0*data[component_idx, 1:-3] \
-                               + 2.0/3.0*data[component_idx, 3:-1] - 1.0/12.0*data[component_idx, 4:])/dx
+            diff_data[2:-2] = (1.0/12.0*data_component[0:-4] - 2.0/3.0*data_component[1:-3] \
+                               + 2.0/3.0*data_component[3:-1] - 1.0/12.0*data_component[4:])/dx
         
         elif diff_data.ndim == 2:
-            diff_data[2:-2, :] = (1.0/12.0*data[component_idx, 0:-4, :] - 2.0/3.0*data[component_idx, 1:-3, :] \
-                                  + 2.0/3.0*data[component_idx, 3:-1, :] - 1.0/12.0*data[component_idx, 4:, :])/dx
+            diff_data[2:-2, :] = (1.0/12.0*data_component[0:-4, :] - 2.0/3.0*data_component[1:-3, :] \
+                                  + 2.0/3.0*data_component[3:-1, :] - 1.0/12.0*data_component[4:, :])/dx
         
         elif diff_data.ndim == 3:
-            diff_data[2:-2, :, :] = (1.0/12.0*data[component_idx, 0:-4, :, :] - 2.0/3.0*data[component_idx, 1:-3, :, :] \
-                                     + 2.0/3.0*data[component_idx, 3:-1, :, :] - 1.0/12.0*data[component_idx, 4:, :, :])/dx
+            diff_data[2:-2, :, :] = (1.0/12.0*data_component[0:-4, :, :] - 2.0/3.0*data_component[1:-3, :, :] \
+                                     + 2.0/3.0*data_component[3:-1, :, :] - 1.0/12.0*data_component[4:, :, :])/dx
         else:
             raise RuntimeError('Data dimension > 3 not supported!')
     
@@ -214,12 +232,12 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
             raise IOError('There is no second direction in data with less than two dimensions!')
         
         elif diff_data.ndim == 2:
-            diff_data[:, 2:-2] = (1.0/12.0*data[component_idx, :, 0:-4] - 2.0/3.0*data[component_idx, :, 1:-3] \
-                                  + 2.0/3.0*data[component_idx, :, 3:-1] - 1.0/12.0*data[component_idx, :, 4:])/dx
+            diff_data[:, 2:-2] = (1.0/12.0*data_component[:, 0:-4] - 2.0/3.0*data_component[:, 1:-3] \
+                                  + 2.0/3.0*data_component[:, 3:-1] - 1.0/12.0*data_component[:, 4:])/dx
         
         elif diff_data.ndim == 3:
-            diff_data[:, 2:-2, :] = (1.0/12.0*data[component_idx, :, 0:-4, :] - 2.0/3.0*data[component_idx, :, 1:-3, :] \
-                                     + 2.0/3.0*data[component_idx, :, 3:-1, :] - 1.0/12.0*data[component_idx, :, 4:, :])/dx
+            diff_data[:, 2:-2, :] = (1.0/12.0*data_component[:, 0:-4, :] - 2.0/3.0*data_component[:, 1:-3, :] \
+                                     + 2.0/3.0*data_component[:, 3:-1, :] - 1.0/12.0*data_component[:, 4:, :])/dx
         
         else:
             raise RuntimeError('Data dimension > 3 not supported!')
@@ -229,8 +247,8 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
             raise IOError('There is no third direction in data with less than three dimensions!')
         
         elif diff_data.ndim == 3:
-            diff_data[:, :, 2:-2] = (1.0/12.0*data[component_idx, :, :, 0:-4] - 2.0/3.0*data[component_idx, :, :, 1:-3] \
-                                     + 2.0/3.0*data[component_idx, :, :, 3:-1] - 1.0/12.0*data[component_idx, :, :, 4:])/dx
+            diff_data[:, :, 2:-2] = (1.0/12.0*data_component[:, :, 0:-4] - 2.0/3.0*data_component[:, :, 1:-3] \
+                                     + 2.0/3.0*data_component[:, :, 3:-1] - 1.0/12.0*data_component[:, :, 4:])/dx
         
         else:
             raise RuntimeError('Data dimension > 3 not supported!')
@@ -240,55 +258,55 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     if uses_one_sided == True:
         if direction == 0:
             if diff_data.ndim == 1:
-                diff_data[0] = (-25.0/12.0*data[component_idx, 0] + 4.0*data[component_idx, 1] \
-                                - 3.0*data[component_idx, 2] + 4.0/3.0*data[component_idx, 3] \
-                                - 1.0/4.0*data[component_idx, 4])/dx
+                diff_data[0] = (-25.0/12.0*data_component[0] + 4.0*data_component[1] \
+                                - 3.0*data_component[2] + 4.0/3.0*data_component[3] \
+                                - 1.0/4.0*data_component[4])/dx
                 
-                diff_data[1] = (-1.0/4.0*data[component_idx, 0] - 5.0/6.0*data[component_idx, 1] \
-                                + 3.0/2.0*data[component_idx, 2] - 1.0/2.0*data[component_idx, 3] \
-                                + 1.0/12.0*data[component_idx, 4])/dx
+                diff_data[1] = (-1.0/4.0*data_component[0] - 5.0/6.0*data_component[1] \
+                                + 3.0/2.0*data_component[2] - 1.0/2.0*data_component[3] \
+                                + 1.0/12.0*data_component[4])/dx
                 
-                diff_data[-2] = (-1.0/12.0*data[component_idx, -5] + 1.0/2.0*data[component_idx, -4] \
-                                 - 3.0/2.0*data[component_idx, -3] + 5.0/6.0*data[component_idx, -2] \
-                                 + 1.0/4.0*data[component_idx, -1])/dx
+                diff_data[-2] = (-1.0/12.0*data_component[-5] + 1.0/2.0*data_component[-4] \
+                                 - 3.0/2.0*data_component[-3] + 5.0/6.0*data_component[-2] \
+                                 + 1.0/4.0*data_component[-1])/dx
                 
-                diff_data[-1] = (1.0/4.0*data[component_idx, -5] - 4.0/3.0*data[component_idx, -4] \
-                                 + 3.0*data[component_idx, -3] - 4.0*data[component_idx, -2] \
-                                 + 25.0/12.0*data[component_idx, -1])/dx
+                diff_data[-1] = (1.0/4.0*data_component[-5] - 4.0/3.0*data_component[-4] \
+                                 + 3.0*data_component[-3] - 4.0*data_component[-2] \
+                                 + 25.0/12.0*data_component[-1])/dx
             
             elif diff_data.ndim == 2:
-                diff_data[0, :] = (-25.0/12.0*data[component_idx, 0, :] + 4.0*data[component_idx, 1, :] \
-                                   - 3.0*data[component_idx, 2, :] + 4.0/3.0*data[component_idx, 3, :] \
-                                   - 1.0/4.0*data[component_idx, 4, :])/dx
+                diff_data[0, :] = (-25.0/12.0*data_component[0, :] + 4.0*data_component[1, :] \
+                                   - 3.0*data_component[2, :] + 4.0/3.0*data_component[3, :] \
+                                   - 1.0/4.0*data_component[4, :])/dx
                 
-                diff_data[1, :] = (-1.0/4.0*data[component_idx, 0, :] - 5.0/6.0*data[component_idx, 1, :] \
-                                   + 3.0/2.0*data[component_idx, 2, :] - 1.0/2.0*data[component_idx, 3, :] \
-                                   + 1.0/12.0*data[component_idx, 4, :])/dx
+                diff_data[1, :] = (-1.0/4.0*data_component[0, :] - 5.0/6.0*data_component[1, :] \
+                                   + 3.0/2.0*data_component[2, :] - 1.0/2.0*data_component[3, :] \
+                                   + 1.0/12.0*data_component[4, :])/dx
                 
-                diff_data[-2, :] = (-1.0/12.0*data[component_idx, -5, :] + 1.0/2.0*data[component_idx, -4, :] \
-                                    - 3.0/2.0*data[component_idx, -3, :] + 5.0/6.0*data[component_idx, -2, :] \
-                                    + 1.0/4.0*data[component_idx, -1, :])/dx
+                diff_data[-2, :] = (-1.0/12.0*data_component[-5, :] + 1.0/2.0*data_component[-4, :] \
+                                    - 3.0/2.0*data_component[-3, :] + 5.0/6.0*data_component[-2, :] \
+                                    + 1.0/4.0*data_component[-1, :])/dx
                 
-                diff_data[-1, :] = (1.0/4.0*data[component_idx, -5, :] - 4.0/3.0*data[component_idx, -4, :] \
-                                    + 3.0*data[component_idx, -3, :] - 4.0*data[component_idx, -2, :] \
-                                    + 25.0/12.0*data[component_idx, -1, :])/dx
+                diff_data[-1, :] = (1.0/4.0*data_component[-5, :] - 4.0/3.0*data_component[-4, :] \
+                                    + 3.0*data_component[-3, :] - 4.0*data_component[-2, :] \
+                                    + 25.0/12.0*data_component[-1, :])/dx
             
             elif diff_data.ndim == 3:
-                diff_data[0, :, :] = (-25.0/12.0*data[component_idx, 0, :, :] + 4.0*data[component_idx, 1, :, :] \
-                                      - 3.0*data[component_idx, 2, :, :] + 4.0/3.0*data[component_idx, 3, :, :] \
-                                      - 1.0/4.0*data[component_idx, 4, :, :])/dx
+                diff_data[0, :, :] = (-25.0/12.0*data_component[0, :, :] + 4.0*data_component[1, :, :] \
+                                      - 3.0*data_component[2, :, :] + 4.0/3.0*data_component[3, :, :] \
+                                      - 1.0/4.0*data_component[4, :, :])/dx
                 
-                diff_data[1, :, :] = (-1.0/4.0*data[component_idx, 0, :, :] - 5.0/6.0*data[component_idx, 1, :, :] \
-                                      + 3.0/2.0*data[component_idx, 2, :, :] - 1.0/2.0*data[component_idx, 3, :, :] \
-                                      + 1.0/12.0*data[component_idx, 4, :, :])/dx
+                diff_data[1, :, :] = (-1.0/4.0*data_component[0, :, :] - 5.0/6.0*data_component[1, :, :] \
+                                      + 3.0/2.0*data_component[2, :, :] - 1.0/2.0*data_component[3, :, :] \
+                                      + 1.0/12.0*data_component[4, :, :])/dx
                 
-                diff_data[-2, :, :] = (-1.0/12.0*data[component_idx, -5, :, :] + 1.0/2.0*data[component_idx, -4, :, :] \
-                                       - 3.0/2.0*data[component_idx, -3, :, :] + 5.0/6.0*data[component_idx, -2, :, :] \
-                                       + 1.0/4.0*data[component_idx, -1, :, :])/dx
+                diff_data[-2, :, :] = (-1.0/12.0*data_component[-5, :, :] + 1.0/2.0*data_component[-4, :, :] \
+                                       - 3.0/2.0*data_component[-3, :, :] + 5.0/6.0*data_component[-2, :, :] \
+                                       + 1.0/4.0*data_component[-1, :, :])/dx
                 
-                diff_data[-1, :, :] = (1.0/4.0*data[component_idx, -5, :, :] - 4.0/3.0*data[component_idx, -4, :, :] \
-                                       + 3.0*data[component_idx, -3, :, :] - 4.0*data[component_idx, -2, :, :] \
-                                       + 25.0/12.0*data[component_idx, -1, :, :])/dx
+                diff_data[-1, :, :] = (1.0/4.0*data_component[-5, :, :] - 4.0/3.0*data_component[-4, :, :] \
+                                       + 3.0*data_component[-3, :, :] - 4.0*data_component[-2, :, :] \
+                                       + 25.0/12.0*data_component[-1, :, :])/dx
             
             else:
                 raise RuntimeError('Data dimension > 3 not supported!')
@@ -298,38 +316,38 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
                 raise RuntimeError('There is no second direction in data with less than two dimensions!')
             
             elif diff_data.ndim == 2:
-                diff_data[:, 0] = (-25.0/12.0*data[component_idx, :, 0] + 4.0*data[component_idx, :, 1] \
-                                   - 3.0*data[component_idx, :, 2] + 4.0/3.0*data[component_idx, :, 3] \
-                                   - 1.0/4.0*data[component_idx, :, 4])/dx
+                diff_data[:, 0] = (-25.0/12.0*data_component[:, 0] + 4.0*data_component[:, 1] \
+                                   - 3.0*data_component[:, 2] + 4.0/3.0*data_component[:, 3] \
+                                   - 1.0/4.0*data_component[:, 4])/dx
                 
-                diff_data[:, 1] = (-1.0/4.0*data[component_idx, :, 0] - 5.0/6.0*data[component_idx, :, 1] \
-                                   + 3.0/2.0*data[component_idx, :, 2] - 1.0/2.0*data[component_idx, :, 3] \
-                                   + 1.0/12.0*data[component_idx, :, 4])/dx
+                diff_data[:, 1] = (-1.0/4.0*data_component[:, 0] - 5.0/6.0*data_component[:, 1] \
+                                   + 3.0/2.0*data_component[:, 2] - 1.0/2.0*data_component[:, 3] \
+                                   + 1.0/12.0*data_component[:, 4])/dx
                 
-                diff_data[:, -2] = (-1.0/12.0*data[component_idx, :, -5] + 1.0/2.0*data[component_idx, :, -4] \
-                                    - 3.0/2.0*data[component_idx, :, -3] + 5.0/6.0*data[component_idx, :, -2] \
-                                    + 1.0/4.0*data[component_idx, :, -1])/dx
+                diff_data[:, -2] = (-1.0/12.0*data_component[:, -5] + 1.0/2.0*data_component[:, -4] \
+                                    - 3.0/2.0*data_component[:, -3] + 5.0/6.0*data_component[:, -2] \
+                                    + 1.0/4.0*data_component[:, -1])/dx
                 
-                diff_data[:, -1] = (1.0/4.0*data[component_idx, :, -5] - 4.0/3.0*data[component_idx, :, -4] \
-                                    + 3.0*data[component_idx, :, -3] - 4.0*data[component_idx, :, -2] \
-                                    + 25.0/12.0*data[component_idx, :, -1])/dx
+                diff_data[:, -1] = (1.0/4.0*data_component[:, -5] - 4.0/3.0*data_component[:, -4] \
+                                    + 3.0*data_component[:, -3] - 4.0*data_component[:, -2] \
+                                    + 25.0/12.0*data_component[:, -1])/dx
             
             elif diff_data.ndim == 3:
-                diff_data[:, 0, :] = (-25.0/12.0*data[component_idx, :, 0, :] + 4.0*data[component_idx, :, 1, :] \
-                                      - 3.0*data[component_idx, :, 2, :] + 4.0/3.0*data[component_idx, :, 3, :] \
-                                      - 1.0/4.0*data[component_idx, :, 4, :])/dx
+                diff_data[:, 0, :] = (-25.0/12.0*data_component[:, 0, :] + 4.0*data_component[:, 1, :] \
+                                      - 3.0*data_component[:, 2, :] + 4.0/3.0*data_component[:, 3, :] \
+                                      - 1.0/4.0*data_component[:, 4, :])/dx
                 
-                diff_data[:, 1, :] = (-1.0/4.0*data[component_idx, :, 0, :] - 5.0/6.0*data[component_idx, :, 1, :] \
-                                      + 3.0/2.0*data[component_idx, :, 2, :] - 1.0/2.0*data[component_idx, :, 3, :] \
-                                      + 1.0/12.0*data[component_idx, :, 4, :])/dx
+                diff_data[:, 1, :] = (-1.0/4.0*data_component[:, 0, :] - 5.0/6.0*data_component[:, 1, :] \
+                                      + 3.0/2.0*data_component[:, 2, :] - 1.0/2.0*data_component[:, 3, :] \
+                                      + 1.0/12.0*data_component[:, 4, :])/dx
                 
-                diff_data[:, -2, :] = (-1.0/12.0*data[component_idx, :, -5, :] + 1.0/2.0*data[component_idx, :, -4, :] \
-                                       - 3.0/2.0*data[component_idx, :, -3, :] + 5.0/6.0*data[component_idx, :, -2, :] \
-                                       + 1.0/4.0*data[component_idx, :, -1, :])/dx
+                diff_data[:, -2, :] = (-1.0/12.0*data_component[:, -5, :] + 1.0/2.0*data_component[:, -4, :] \
+                                       - 3.0/2.0*data_component[:, -3, :] + 5.0/6.0*data_component[:, -2, :] \
+                                       + 1.0/4.0*data_component[:, -1, :])/dx
                 
-                diff_data[:, -1, :] = (1.0/4.0*data[component_idx, :, -5, :] - 4.0/3.0*data[component_idx, :, -4, :] \
-                                       + 3.0*data[component_idx, :, -3, :] - 4.0*data[component_idx, :, -2, :] \
-                                       + 25.0/12.0*data[component_idx, :, -1, :])/dx
+                diff_data[:, -1, :] = (1.0/4.0*data_component[:, -5, :] - 4.0/3.0*data_component[:, -4, :] \
+                                       + 3.0*data_component[:, -3, :] - 4.0*data_component[:, -2, :] \
+                                       + 25.0/12.0*data_component[:, -1, :])/dx
             
             else:
                 raise RuntimeError('Data dimension > 3 not supported!')
@@ -339,21 +357,21 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
                 raise IOError('There is no third direction in data with less than three dimensions!')
             
             elif diff_data.ndim == 3:
-                diff_data[:, :, 0] = (-25.0/12.0*data[component_idx, :, :, 0] + 4.0*data[component_idx, :, :, 1] \
-                                      - 3.0*data[component_idx, :, :, 2] + 4.0/3.0*data[component_idx, :, :, 3] \
-                                      - 1.0/4.0*data[component_idx, :, :, 4])/dx
+                diff_data[:, :, 0] = (-25.0/12.0*data_component[:, :, 0] + 4.0*data_component[:, :, 1] \
+                                      - 3.0*data_component[:, :, 2] + 4.0/3.0*data_component[:, :, 3] \
+                                      - 1.0/4.0*data_component[:, :, 4])/dx
                 
-                diff_data[:, :, 1] = (-1.0/4.0*data[component_idx, :, :, 0] - 5.0/6.0*data[component_idx, :, :, 1] \
-                                      + 3.0/2.0*data[component_idx, :, :, 2] - 1.0/2.0*data[component_idx, :, :, 3] \
-                                      + 1.0/12.0*data[component_idx, :, :, 4])/dx
+                diff_data[:, :, 1] = (-1.0/4.0*data_component[:, :, 0] - 5.0/6.0*data_component[:, :, 1] \
+                                      + 3.0/2.0*data_component[:, :, 2] - 1.0/2.0*data_component[:, :, 3] \
+                                      + 1.0/12.0*data_component[:, :, 4])/dx
                 
-                diff_data[:, :, -2] = (-1.0/12.0*data[component_idx, :, :, -5] + 1.0/2.0*data[component_idx, :, :, -4] \
-                                       - 3.0/2.0*data[component_idx, :, :, -3] + 5.0/6.0*data[component_idx, :, :, -2] \
-                                       + 1.0/4.0*data[component_idx, :, :, -1])/dx
+                diff_data[:, :, -2] = (-1.0/12.0*data_component[:, :, -5] + 1.0/2.0*data_component[:, :, -4] \
+                                       - 3.0/2.0*data_component[:, :, -3] + 5.0/6.0*data_component[:, :, -2] \
+                                       + 1.0/4.0*data_component[:, :, -1])/dx
                 
-                diff_data[:, :, -1] = (1.0/4.0*data[component_idx, :, :, -5] - 4.0/3.0*data[component_idx, :, :, -4] \
-                                       + 3.0*data[component_idx, :, :, -3] - 4.0*data[component_idx, :, :, -2] \
-                                       + 25.0/12.0*data[component_idx, :, :, -1])/dx
+                diff_data[:, :, -1] = (1.0/4.0*data_component[:, :, -5] - 4.0/3.0*data_component[:, :, -4] \
+                                       + 3.0*data_component[:, :, -3] - 4.0*data_component[:, :, -2] \
+                                       + 25.0/12.0*data_component[:, :, -1])/dx
             
             else:
                 raise RuntimeError('Data dimension > 3 not supported!')
@@ -403,23 +421,32 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
     diff_data = numpy.empty(data_shape)
     diff_data[:] = numpy.NAN
     
+    # Get the component's data.
+    data_component = None
+    if diff_data.ndim == 1:
+        data_component = data[component_idx, :]
+    elif diff_data.ndim == 2:
+        data_component = data[component_idx, :, :]
+    elif diff_data.ndim == 3:
+        data_component = data[component_idx, :, :, :]
+    
     # Compute the derivatives in the interior of the domain.
     
     if direction == 0:
         if diff_data.ndim == 1:
-            diff_data[3:-3] = (-1.0/60.0*data[component_idx, 0:-6] + 3.0/20.0*data[component_idx, 1:-5] \
-                               - 3.0/4.0*data[component_idx, 2:-4] + 3.0/4.0*data[component_idx, 4:-2] \
-                               - 3.0/20.0*data[component_idx, 5:-1] + 1.0/60.0*data[component_idx, 6:])/dx
+            diff_data[3:-3] = (-1.0/60.0*data_component[0:-6] + 3.0/20.0*data_component[1:-5] \
+                               - 3.0/4.0*data_component[2:-4] + 3.0/4.0*data_component[4:-2] \
+                               - 3.0/20.0*data_component[5:-1] + 1.0/60.0*data_component[6:])/dx
         
         elif diff_data.ndim == 2:
-            diff_data[3:-3, :] = (-1.0/60.0*data[component_idx, 0:-6, :] + 3.0/20.0*data[component_idx, 1:-5, :] \
-                                  - 3.0/4.0*data[component_idx, 2:-4, :] + 3.0/4.0*data[component_idx, 4:-2, :] \
-                                  - 3.0/20.0*data[component_idx, 5:-1, :] + 1.0/60.0*data[component_idx, 6:, :])/dx
+            diff_data[3:-3, :] = (-1.0/60.0*data_component[0:-6, :] + 3.0/20.0*data_component[1:-5, :] \
+                                  - 3.0/4.0*data_component[2:-4, :] + 3.0/4.0*data_component[4:-2, :] \
+                                  - 3.0/20.0*data_component[5:-1, :] + 1.0/60.0*data_component[6:, :])/dx
         
         elif diff_data.ndim == 3:
-            diff_data[3:-3, :, :] = (-1.0/60.0*data[component_idx, 0:-6, :, :] + 3.0/20.0*data[component_idx, 1:-5, :, :] \
-                                     - 3.0/4.0*data[component_idx, 2:-4, :, :] + 3.0/4.0*data[component_idx, 4:-2, :, :] \
-                                     - 3.0/20.0*data[component_idx, 5:-1, :, :] + 1.0/60.0*data[component_idx, 6:, :, :])/dx
+            diff_data[3:-3, :, :] = (-1.0/60.0*data_component[0:-6, :, :] + 3.0/20.0*data_component[1:-5, :, :] \
+                                     - 3.0/4.0*data_component[2:-4, :, :] + 3.0/4.0*data_component[4:-2, :, :] \
+                                     - 3.0/20.0*data_component[5:-1, :, :] + 1.0/60.0*data_component[6:, :, :])/dx
         
         else:
             raise RuntimeError('Data dimension > 3 not supported!')
@@ -429,14 +456,14 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
             raise IOError('There is no second direction in data with less than two dimensions!')
         
         elif diff_data.ndim == 2:
-            diff_data[:, 3:-3] = (-1.0/60.0*data[component_idx, :, 0:-6] + 3.0/20.0*data[component_idx, :, 1:-5] \
-                                  - 3.0/4.0*data[component_idx, :, 2:-4] + 3.0/4.0*data[component_idx, :, 4:-2] \
-                                  - 3.0/20.0*data[component_idx, :, 5:-1] + 1.0/60.0*data[component_idx, :, 6:])/dx
+            diff_data[:, 3:-3] = (-1.0/60.0*data_component[:, 0:-6] + 3.0/20.0*data_component[:, 1:-5] \
+                                  - 3.0/4.0*data_component[:, 2:-4] + 3.0/4.0*data_component[:, 4:-2] \
+                                  - 3.0/20.0*data_component[:, 5:-1] + 1.0/60.0*data_component[:, 6:])/dx
         
         elif diff_data.ndim == 3:
-            diff_data[:, 3:-3, :] = (-1.0/60.0*data[component_idx, :, 0:-6, :] + 3.0/20.0*data[component_idx, :, 1:-5, :] \
-                                     - 3.0/4.0*data[component_idx, :, 2:-4, :] + 3.0/4.0*data[component_idx, :, 4:-2, :] \
-                                     - 3.0/20.0*data[component_idx, :, 5:-1, :] + 1.0/60.0*data[component_idx, :, 6:, :])/dx
+            diff_data[:, 3:-3, :] = (-1.0/60.0*data_component[:, 0:-6, :] + 3.0/20.0*data_component[:, 1:-5, :] \
+                                     - 3.0/4.0*data_component[:, 2:-4, :] + 3.0/4.0*data_component[:, 4:-2, :] \
+                                     - 3.0/20.0*data_component[:, 5:-1, :] + 1.0/60.0*data_component[:, 6:, :])/dx
         
         else:
             raise RuntimeError('Data dimension > 3 not supported!')
@@ -446,9 +473,9 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
             raise IOError('There is no third direction in data with less than three dimensions!')
         
         elif diff_data.ndim == 3:
-            diff_data[:, :, 3:-3] = (-1.0/60.0*data[component_idx, :, :, 0:-6] + 3.0/20.0*data[component_idx, :, :, 1:-5] \
-                                     - 3.0/4.0*data[component_idx, :, :, 2:-4] + 3.0/4.0*data[component_idx, :, :, 4:-2] \
-                                     - 3.0/20.0*data[component_idx, :, :, 5:-1] + 1.0/60.0*data[component_idx, :, :, 6:])/dx
+            diff_data[:, :, 3:-3] = (-1.0/60.0*data_component[:, :, 0:-6] + 3.0/20.0*data_component[:, :, 1:-5] \
+                                     - 3.0/4.0*data_component[:, :, 2:-4] + 3.0/4.0*data_component[:, :, 4:-2] \
+                                     - 3.0/20.0*data_component[:, :, 5:-1] + 1.0/60.0*data_component[:, :, 6:])/dx
         
         else:
             raise RuntimeError('Data dimension > 3 not supported!')
@@ -458,97 +485,97 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
     if uses_one_sided == True:
         if direction == 0:
             if diff_data.ndim == 1:
-                diff_data[0] = (-49.0/20.0*data[component_idx, 0] + 6.0*data[component_idx, 1] \
-                                - 15.0/2.0*data[component_idx, 2] + 20.0/3.0*data[component_idx, 3] \
-                                - 15.0/4.0*data[component_idx, 4] + 6.0/5.0*data[component_idx, 5] \
-                                - 1.0/6.0*data[component_idx, 6])/dx
+                diff_data[0] = (-49.0/20.0*data_component[0] + 6.0*data_component[1] \
+                                - 15.0/2.0*data_component[2] + 20.0/3.0*data_component[3] \
+                                - 15.0/4.0*data_component[4] + 6.0/5.0*data_component[5] \
+                                - 1.0/6.0*data_component[6])/dx
                 
-                diff_data[1] = (-1.0/6.0*data[component_idx, 0] - 77.0/60.0*data[component_idx, 1] \
-                                + 5.0/2.0*data[component_idx, 2] - 5.0/3.0*data[component_idx, 3] \
-                                + 5.0/6.0*data[component_idx, 4] - 1.0/4.0*data[component_idx, 5] \
-                                + 1.0/30.0*data[component_idx, 6])/dx
+                diff_data[1] = (-1.0/6.0*data_component[0] - 77.0/60.0*data_component[1] \
+                                + 5.0/2.0*data_component[2] - 5.0/3.0*data_component[3] \
+                                + 5.0/6.0*data_component[4] - 1.0/4.0*data_component[5] \
+                                + 1.0/30.0*data_component[6])/dx
                 
-                diff_data[2] = (1.0/30.0*data[component_idx, 0] - 2.0/5.0*data[component_idx, 1] \
-                                - 7.0/12.0*data[component_idx, 2] + 4.0/3.0*data[component_idx, 3] \
-                                - 1.0/2.0*data[component_idx, 4] + 2.0/15.0*data[component_idx, 5] \
-                                - 1.0/60.0*data[component_idx, 6])/dx
+                diff_data[2] = (1.0/30.0*data_component[0] - 2.0/5.0*data_component[1] \
+                                - 7.0/12.0*data_component[2] + 4.0/3.0*data_component[3] \
+                                - 1.0/2.0*data_component[4] + 2.0/15.0*data_component[5] \
+                                - 1.0/60.0*data_component[6])/dx
                 
-                diff_data[-3] = (1.0/60.0*data[component_idx, -7] - 2.0/15.0*data[component_idx, -6] \
-                                 + 1.0/2.0*data[component_idx, -5] - 4.0/3.0*data[component_idx, -4] \
-                                 + 7.0/12.0*data[component_idx, -3] + 2.0/5.0*data[component_idx, -2] \
-                                 - 1.0/30.0*data[component_idx, -1])/dx
+                diff_data[-3] = (1.0/60.0*data_component[-7] - 2.0/15.0*data_component[-6] \
+                                 + 1.0/2.0*data_component[-5] - 4.0/3.0*data_component[-4] \
+                                 + 7.0/12.0*data_component[-3] + 2.0/5.0*data_component[-2] \
+                                 - 1.0/30.0*data_component[-1])/dx
                 
-                diff_data[-2] = (-1.0/30.0*data[component_idx, -7] + 1.0/4.0*data[component_idx, -6] \
-                                 - 5.0/6.0*data[component_idx, -5] + 5.0/3.0*data[component_idx, -4] \
-                                 - 5.0/2.0*data[component_idx, -3] + 77.0/60.0*data[component_idx, -2] \
-                                 + 1.0/6.0*data[component_idx, -1])/dx
+                diff_data[-2] = (-1.0/30.0*data_component[-7] + 1.0/4.0*data_component[-6] \
+                                 - 5.0/6.0*data_component[-5] + 5.0/3.0*data_component[-4] \
+                                 - 5.0/2.0*data_component[-3] + 77.0/60.0*data_component[-2] \
+                                 + 1.0/6.0*data_component[-1])/dx
                 
-                diff_data[-1] = (1.0/6.0*data[component_idx, -7] - 6.0/5.0*data[component_idx, -6] \
-                                 + 15.0/4.0*data[component_idx, -5] - 20.0/3.0*data[component_idx, -4] \
-                                 + 15.0/2.0*data[component_idx, -3] - 6.0*data[component_idx, -2] \
-                                 + 49.0/20.0*data[component_idx, -1])/dx
+                diff_data[-1] = (1.0/6.0*data_component[-7] - 6.0/5.0*data_component[-6] \
+                                 + 15.0/4.0*data_component[-5] - 20.0/3.0*data_component[-4] \
+                                 + 15.0/2.0*data_component[-3] - 6.0*data_component[-2] \
+                                 + 49.0/20.0*data_component[-1])/dx
             
             elif diff_data.ndim == 2:
-                diff_data[0, :] = (-49.0/20.0*data[component_idx, 0, :] + 6.0*data[component_idx, 1, :] \
-                                   - 15.0/2.0*data[component_idx, 2, :] + 20.0/3.0*data[component_idx, 3, :] \
-                                   - 15.0/4.0*data[component_idx, 4, :] + 6.0/5.0*data[component_idx, 5, :] \
-                                   - 1.0/6.0*data[component_idx, 6, :])/dx
+                diff_data[0, :] = (-49.0/20.0*data_component[0, :] + 6.0*data_component[1, :] \
+                                   - 15.0/2.0*data_component[2, :] + 20.0/3.0*data_component[3, :] \
+                                   - 15.0/4.0*data_component[4, :] + 6.0/5.0*data_component[5, :] \
+                                   - 1.0/6.0*data_component[6, :])/dx
                 
-                diff_data[1, :] = (-1.0/6.0*data[component_idx, 0, :] - 77.0/60.0*data[component_idx, 1, :] \
-                                   + 5.0/2.0*data[component_idx, 2, :] - 5.0/3.0*data[component_idx, 3, :] \
-                                   + 5.0/6.0*data[component_idx, 4, :] - 1.0/4.0*data[component_idx, 5, :] \
-                                   + 1.0/30.0*data[component_idx, 6, :])/dx
+                diff_data[1, :] = (-1.0/6.0*data_component[0, :] - 77.0/60.0*data_component[1, :] \
+                                   + 5.0/2.0*data_component[2, :] - 5.0/3.0*data_component[3, :] \
+                                   + 5.0/6.0*data_component[4, :] - 1.0/4.0*data_component[5, :] \
+                                   + 1.0/30.0*data_component[6, :])/dx
                 
-                diff_data[2, :] = (1.0/30.0*data[component_idx, 0, :] - 2.0/5.0*data[component_idx, 1, :] \
-                                   - 7.0/12.0*data[component_idx, 2, :] + 4.0/3.0*data[component_idx, 3, :] \
-                                   - 1.0/2.0*data[component_idx, 4, :] + 2.0/15.0*data[component_idx, 5, :] \
-                                   - 1.0/60.0*data[component_idx, 6, :])/dx
+                diff_data[2, :] = (1.0/30.0*data_component[0, :] - 2.0/5.0*data_component[1, :] \
+                                   - 7.0/12.0*data_component[2, :] + 4.0/3.0*data_component[3, :] \
+                                   - 1.0/2.0*data_component[4, :] + 2.0/15.0*data_component[5, :] \
+                                   - 1.0/60.0*data_component[6, :])/dx
                 
-                diff_data[-3, :] = (1.0/60.0*data[component_idx, -7, :] - 2.0/15.0*data[component_idx, -6, :] \
-                                    + 1.0/2.0*data[component_idx, -5, :] - 4.0/3.0*data[component_idx, -4, :] \
-                                    + 7.0/12.0*data[component_idx, -3, :] + 2.0/5.0*data[component_idx, -2, :] \
-                                    - 1.0/30.0*data[component_idx, -1, :])/dx
+                diff_data[-3, :] = (1.0/60.0*data_component[-7, :] - 2.0/15.0*data_component[-6, :] \
+                                    + 1.0/2.0*data_component[-5, :] - 4.0/3.0*data_component[-4, :] \
+                                    + 7.0/12.0*data_component[-3, :] + 2.0/5.0*data_component[-2, :] \
+                                    - 1.0/30.0*data_component[-1, :])/dx
                 
-                diff_data[-2, :] = (-1.0/30.0*data[component_idx, -7, :] + 1.0/4.0*data[component_idx, -6, :] \
-                                    - 5.0/6.0*data[component_idx, -5, :] + 5.0/3.0*data[component_idx, -4, :] \
-                                    - 5.0/2.0*data[component_idx, -3, :] + 77.0/60.0*data[component_idx, -2, :] \
-                                    + 1.0/6.0*data[component_idx, -1, :])/dx
+                diff_data[-2, :] = (-1.0/30.0*data_component[-7, :] + 1.0/4.0*data_component[-6, :] \
+                                    - 5.0/6.0*data_component[-5, :] + 5.0/3.0*data_component[-4, :] \
+                                    - 5.0/2.0*data_component[-3, :] + 77.0/60.0*data_component[-2, :] \
+                                    + 1.0/6.0*data_component[-1, :])/dx
                 
-                diff_data[-1, :] = (1.0/6.0*data[component_idx, -7, :] - 6.0/5.0*data[component_idx, -6, :] \
-                                    + 15.0/4.0*data[component_idx, -5, :] - 20.0/3.0*data[component_idx, -4, :] \
-                                    + 15.0/2.0*data[component_idx, -3, :] - 6.0*data[component_idx, -2, :] \
-                                    + 49.0/20.0*data[component_idx, -1, :])/dx
+                diff_data[-1, :] = (1.0/6.0*data_component[-7, :] - 6.0/5.0*data_component[-6, :] \
+                                    + 15.0/4.0*data_component[-5, :] - 20.0/3.0*data_component[-4, :] \
+                                    + 15.0/2.0*data_component[-3, :] - 6.0*data_component[-2, :] \
+                                    + 49.0/20.0*data_component[-1, :])/dx
             
             elif diff_data.ndim == 3:
-                diff_data[0, :, :] = (-49.0/20.0*data[component_idx, 0, :, :] + 6.0*data[component_idx, 1, :, :] \
-                                      - 15.0/2.0*data[component_idx, 2, :, :] + 20.0/3.0*data[component_idx, 3, :, :] \
-                                      - 15.0/4.0*data[component_idx, 4, :, :] + 6.0/5.0*data[component_idx, 5, :, :] \
-                                      - 1.0/6.0*data[component_idx, 6, :, :])/dx
+                diff_data[0, :, :] = (-49.0/20.0*data_component[0, :, :] + 6.0*data_component[1, :, :] \
+                                      - 15.0/2.0*data_component[2, :, :] + 20.0/3.0*data_component[3, :, :] \
+                                      - 15.0/4.0*data_component[4, :, :] + 6.0/5.0*data_component[5, :, :] \
+                                      - 1.0/6.0*data_component[6, :, :])/dx
                 
-                diff_data[1, :, :] = (-1.0/6.0*data[component_idx, 0, :, :] - 77.0/60.0*data[component_idx, 1, :, :] \
-                                      + 5.0/2.0*data[component_idx, 2, :, :] - 5.0/3.0*data[component_idx, 3, :, :] \
-                                      + 5.0/6.0*data[component_idx, 4, :, :] - 1.0/4.0*data[component_idx, 5, :, :] \
-                                      + 1.0/30.0*data[component_idx, 6, :, :])/dx
+                diff_data[1, :, :] = (-1.0/6.0*data_component[0, :, :] - 77.0/60.0*data_component[1, :, :] \
+                                      + 5.0/2.0*data_component[2, :, :] - 5.0/3.0*data_component[3, :, :] \
+                                      + 5.0/6.0*data_component[4, :, :] - 1.0/4.0*data_component[5, :, :] \
+                                      + 1.0/30.0*data_component[6, :, :])/dx
                 
-                diff_data[2, :, :] = (1.0/30.0*data[component_idx, 0, :, :] - 2.0/5.0*data[component_idx, 1, :, :] \
-                                      - 7.0/12.0*data[component_idx, 2, :, :] + 4.0/3.0*data[component_idx, 3, :, :] \
-                                      - 1.0/2.0*data[component_idx, 4, :, :] + 2.0/15.0*data[component_idx, 5, :, :] \
-                                      - 1.0/60.0*data[component_idx, 6, :, :])/dx
+                diff_data[2, :, :] = (1.0/30.0*data_component[0, :, :] - 2.0/5.0*data_component[1, :, :] \
+                                      - 7.0/12.0*data_component[2, :, :] + 4.0/3.0*data_component[3, :, :] \
+                                      - 1.0/2.0*data_component[4, :, :] + 2.0/15.0*data_component[5, :, :] \
+                                      - 1.0/60.0*data_component[6, :, :])/dx
                 
-                diff_data[-3, :, :] = (1.0/60.0*data[component_idx, -7, :, :] - 2.0/15.0*data[component_idx, -6, :, :] \
-                                       + 1.0/2.0*data[component_idx, -5, :, :] - 4.0/3.0*data[component_idx, -4, :, :] \
-                                       + 7.0/12.0*data[component_idx, -3, :, :] + 2.0/5.0*data[component_idx, -2, :, :] \
-                                       - 1.0/30.0*data[component_idx, -1, :, :])/dx
+                diff_data[-3, :, :] = (1.0/60.0*data_component[-7, :, :] - 2.0/15.0*data_component[-6, :, :] \
+                                       + 1.0/2.0*data_component[-5, :, :] - 4.0/3.0*data_component[-4, :, :] \
+                                       + 7.0/12.0*data_component[-3, :, :] + 2.0/5.0*data_component[-2, :, :] \
+                                       - 1.0/30.0*data_component[-1, :, :])/dx
                 
-                diff_data[-2, :, :] = (-1.0/30.0*data[component_idx, -7, :, :] + 1.0/4.0*data[component_idx, -6, :, :] \
-                                       - 5.0/6.0*data[component_idx, -5, :, :] + 5.0/3.0*data[component_idx, -4, :, :] \
-                                       - 5.0/2.0*data[component_idx, -3, :, :] + 77.0/60.0*data[component_idx, -2, :, :] \
-                                       + 1.0/6.0*data[component_idx, -1, :, :])/dx
+                diff_data[-2, :, :] = (-1.0/30.0*data_component[-7, :, :] + 1.0/4.0*data_component[-6, :, :] \
+                                       - 5.0/6.0*data_component[-5, :, :] + 5.0/3.0*data_component[-4, :, :] \
+                                       - 5.0/2.0*data_component[-3, :, :] + 77.0/60.0*data_component[-2, :, :] \
+                                       + 1.0/6.0*data_component[-1, :, :])/dx
                 
-                diff_data[-1, :, :] = (1.0/6.0*data[component_idx, -7, :, :] - 6.0/5.0*data[component_idx, -6, :, :] \
-                                       + 15.0/4.0*data[component_idx, -5, :, :] - 20.0/3.0*data[component_idx, -4, :, :] \
-                                       + 15.0/2.0*data[component_idx, -3, :, :] - 6.0*data[component_idx, -2, :, :] \
-                                       + 49.0/20.0*data[component_idx, -1, :, :])/dx
+                diff_data[-1, :, :] = (1.0/6.0*data_component[-7, :, :] - 6.0/5.0*data_component[-6, :, :] \
+                                       + 15.0/4.0*data_component[-5, :, :] - 20.0/3.0*data_component[-4, :, :] \
+                                       + 15.0/2.0*data_component[-3, :, :] - 6.0*data_component[-2, :, :] \
+                                       + 49.0/20.0*data_component[-1, :, :])/dx
             
             else:
                 raise RuntimeError('Data dimension > 3 not supported!')
@@ -558,66 +585,66 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
                 raise RuntimeError('There is no second direction in data with less than two dimensions!')
             
             elif diff_data.ndim == 2:
-                diff_data[:, 0] = (-49.0/20.0*data[component_idx, :, 0] + 6.0*data[component_idx, :, 1] \
-                                   - 15.0/2.0*data[component_idx, :, 2] + 20.0/3.0*data[component_idx, :, 3] \
-                                   - 15.0/4.0*data[component_idx, :, 4] + 6.0/5.0*data[component_idx, :, 5] \
-                                   - 1.0/6.0*data[component_idx, :, 6])/dx
+                diff_data[:, 0] = (-49.0/20.0*data_component[:, 0] + 6.0*data_component[:, 1] \
+                                   - 15.0/2.0*data_component[:, 2] + 20.0/3.0*data_component[:, 3] \
+                                   - 15.0/4.0*data_component[:, 4] + 6.0/5.0*data_component[:, 5] \
+                                   - 1.0/6.0*data_component[:, 6])/dx
                 
-                diff_data[:, 1] = (-1.0/6.0*data[component_idx, :, 0] - 77.0/60.0*data[component_idx, :, 1] \
-                                   + 5.0/2.0*data[component_idx, :, 2] - 5.0/3.0*data[component_idx, :, 3] \
-                                   + 5.0/6.0*data[component_idx, :, 4] - 1.0/4.0*data[component_idx, :, 5] \
-                                   + 1.0/30.0*data[component_idx, :, 6])/dx
+                diff_data[:, 1] = (-1.0/6.0*data_component[:, 0] - 77.0/60.0*data_component[:, 1] \
+                                   + 5.0/2.0*data_component[:, 2] - 5.0/3.0*data_component[:, 3] \
+                                   + 5.0/6.0*data_component[:, 4] - 1.0/4.0*data_component[:, 5] \
+                                   + 1.0/30.0*data_component[:, 6])/dx
                 
-                diff_data[:, 2] = (1.0/30.0*data[component_idx, :, 0] - 2.0/5.0*data[component_idx, :, 1] \
-                                   - 7.0/12.0*data[component_idx, :, 2] + 4.0/3.0*data[component_idx, :, 3] \
-                                   - 1.0/2.0*data[component_idx, :, 4] + 2.0/15.0*data[component_idx, :, 5] \
-                                   - 1.0/60.0*data[component_idx, :, 6])/dx
+                diff_data[:, 2] = (1.0/30.0*data_component[:, 0] - 2.0/5.0*data_component[:, 1] \
+                                   - 7.0/12.0*data_component[:, 2] + 4.0/3.0*data_component[:, 3] \
+                                   - 1.0/2.0*data_component[:, 4] + 2.0/15.0*data_component[:, 5] \
+                                   - 1.0/60.0*data_component[:, 6])/dx
                 
-                diff_data[:, -3] = (1.0/60.0*data[component_idx, :, -7] - 2.0/15.0*data[component_idx, :, -6] \
-                                    + 1.0/2.0*data[component_idx, :, -5] - 4.0/3.0*data[component_idx, :, -4] \
-                                    + 7.0/12.0*data[component_idx, :, -3] + 2.0/5.0*data[component_idx, :, -2] \
-                                    - 1.0/30.0*data[component_idx, :, -1])/dx
+                diff_data[:, -3] = (1.0/60.0*data_component[:, -7] - 2.0/15.0*data_component[:, -6] \
+                                    + 1.0/2.0*data_component[:, -5] - 4.0/3.0*data_component[:, -4] \
+                                    + 7.0/12.0*data_component[:, -3] + 2.0/5.0*data_component[:, -2] \
+                                    - 1.0/30.0*data_component[:, -1])/dx
                 
-                diff_data[:, -2] = (-1.0/30.0*data[component_idx, :, -7] + 1.0/4.0*data[component_idx, :, -6] \
-                                    - 5.0/6.0*data[component_idx, :, -5] + 5.0/3.0*data[component_idx, :, -4] \
-                                    - 5.0/2.0*data[component_idx, :, -3] + 77.0/60.0*data[component_idx, :, -2] \
-                                    + 1.0/6.0*data[component_idx, :, -1])/dx
+                diff_data[:, -2] = (-1.0/30.0*data_component[:, -7] + 1.0/4.0*data_component[:, -6] \
+                                    - 5.0/6.0*data_component[:, -5] + 5.0/3.0*data_component[:, -4] \
+                                    - 5.0/2.0*data_component[:, -3] + 77.0/60.0*data_component[:, -2] \
+                                    + 1.0/6.0*data_component[:, -1])/dx
                 
-                diff_data[:, -1] = (1.0/6.0*data[component_idx, :, -7] - 6.0/5.0*data[component_idx, :, -6] \
-                                    + 15.0/4.0*data[component_idx, :, -5] - 20.0/3.0*data[component_idx, :, -4] \
-                                    + 15.0/2.0*data[component_idx, :, -3] - 6.0*data[component_idx, :, -2] \
-                                    + 49.0/20.0*data[component_idx, :, -1])/dx
+                diff_data[:, -1] = (1.0/6.0*data_component[:, -7] - 6.0/5.0*data_component[:, -6] \
+                                    + 15.0/4.0*data_component[:, -5] - 20.0/3.0*data_component[:, -4] \
+                                    + 15.0/2.0*data_component[:, -3] - 6.0*data_component[:, -2] \
+                                    + 49.0/20.0*data_component[:, -1])/dx
             
             elif diff_data.ndim == 3:
-                diff_data[:, 0, :] = (-49.0/20.0*data[component_idx, :, 0, :] + 6.0*data[component_idx, :, 1, :] \
-                                      - 15.0/2.0*data[component_idx, :, 2, :] + 20.0/3.0*data[component_idx, :, 3, :] \
-                                      - 15.0/4.0*data[component_idx, :, 4, :] + 6.0/5.0*data[component_idx, :, 5, :] \
-                                      - 1.0/6.0*data[component_idx, :, 6, :])/dx
+                diff_data[:, 0, :] = (-49.0/20.0*data_component[:, 0, :] + 6.0*data_component[:, 1, :] \
+                                      - 15.0/2.0*data_component[:, 2, :] + 20.0/3.0*data_component[:, 3, :] \
+                                      - 15.0/4.0*data_component[:, 4, :] + 6.0/5.0*data_component[:, 5, :] \
+                                      - 1.0/6.0*data_component[:, 6, :])/dx
                 
-                diff_data[:, 1, :] = (-1.0/6.0*data[component_idx, :, 0, :] - 77.0/60.0*data[component_idx, :, 1, :] \
-                                      + 5.0/2.0*data[component_idx, :, 2, :] - 5.0/3.0*data[component_idx, :, 3, :] \
-                                      + 5.0/6.0*data[component_idx, :, 4, :] - 1.0/4.0*data[component_idx, :, 5, :] \
-                                      + 1.0/30.0*data[component_idx, :, 6, :])/dx
+                diff_data[:, 1, :] = (-1.0/6.0*data_component[:, 0, :] - 77.0/60.0*data_component[:, 1, :] \
+                                      + 5.0/2.0*data_component[:, 2, :] - 5.0/3.0*data_component[:, 3, :] \
+                                      + 5.0/6.0*data_component[:, 4, :] - 1.0/4.0*data_component[:, 5, :] \
+                                      + 1.0/30.0*data_component[:, 6, :])/dx
                 
-                diff_data[:, 2, :] = (1.0/30.0*data[component_idx, :, 0, :] - 2.0/5.0*data[component_idx, :, 1, :] \
-                                      - 7.0/12.0*data[component_idx, :, 2, :] + 4.0/3.0*data[component_idx, :, 3, :] \
-                                      - 1.0/2.0*data[component_idx, :, 4, :] + 2.0/15.0*data[component_idx, :, 5, :] \
-                                      - 1.0/60.0*data[component_idx, :, 6, :])/dx
+                diff_data[:, 2, :] = (1.0/30.0*data_component[:, 0, :] - 2.0/5.0*data_component[:, 1, :] \
+                                      - 7.0/12.0*data_component[:, 2, :] + 4.0/3.0*data_component[:, 3, :] \
+                                      - 1.0/2.0*data_component[:, 4, :] + 2.0/15.0*data_component[:, 5, :] \
+                                      - 1.0/60.0*data_component[:, 6, :])/dx
                 
-                diff_data[:, -3, :] = (1.0/60.0*data[component_idx, :, -7, :] - 2.0/15.0*data[component_idx, :, -6, :] \
-                                       + 1.0/2.0*data[component_idx, :, -5, :] - 4.0/3.0*data[component_idx, :, -4, :] \
-                                       + 7.0/12.0*data[component_idx, :, -3, :] + 2.0/5.0*data[component_idx, :, -2, :] \
-                                       - 1.0/30.0*data[component_idx, :, -1, :])/dx
+                diff_data[:, -3, :] = (1.0/60.0*data_component[:, -7, :] - 2.0/15.0*data_component[:, -6, :] \
+                                       + 1.0/2.0*data_component[:, -5, :] - 4.0/3.0*data_component[:, -4, :] \
+                                       + 7.0/12.0*data_component[:, -3, :] + 2.0/5.0*data_component[:, -2, :] \
+                                       - 1.0/30.0*data_component[:, -1, :])/dx
                 
-                diff_data[:, -2, :] = (-1.0/30.0*data[component_idx, :, -7, :] + 1.0/4.0*data[component_idx, :, -6, :] \
-                                       - 5.0/6.0*data[component_idx, :, -5, :] + 5.0/3.0*data[component_idx, :, -4, :] \
-                                       - 5.0/2.0*data[component_idx, :, -3, :] + 77.0/60.0*data[component_idx, :, -2, :] \
-                                       + 1.0/6.0*data[component_idx, :, -1, :])/dx
+                diff_data[:, -2, :] = (-1.0/30.0*data_component[:, -7, :] + 1.0/4.0*data_component[:, -6, :] \
+                                       - 5.0/6.0*data_component[:, -5, :] + 5.0/3.0*data_component[:, -4, :] \
+                                       - 5.0/2.0*data_component[:, -3, :] + 77.0/60.0*data_component[:, -2, :] \
+                                       + 1.0/6.0*data_component[:, -1, :])/dx
                 
-                diff_data[:, -1, :] = (1.0/6.0*data[component_idx, :, -7, :] - 6.0/5.0*data[component_idx, :, -6, :] \
-                                       + 15.0/4.0*data[component_idx, :, -5, :] - 20.0/3.0*data[component_idx, :, -4, :] \
-                                       + 15.0/2.0*data[component_idx, :, -3, :] - 6.0*data[component_idx, :, -2, :] \
-                                       + 49.0/20.0*data[component_idx, :, -1, :])/dx
+                diff_data[:, -1, :] = (1.0/6.0*data_component[:, -7, :] - 6.0/5.0*data_component[:, -6, :] \
+                                       + 15.0/4.0*data_component[:, -5, :] - 20.0/3.0*data_component[:, -4, :] \
+                                       + 15.0/2.0*data_component[:, -3, :] - 6.0*data_component[:, -2, :] \
+                                       + 49.0/20.0*data_component[:, -1, :])/dx
             
             else:
                 raise RuntimeError('Data dimension > 3 not supported!')
@@ -627,35 +654,35 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
                 raise IOError('There is no third direction in data with less than three dimensions!')
             
             elif diff_data.ndim == 3:
-                diff_data[:, :, 0] = (-49.0/20.0*data[component_idx, :, :, 0] + 6.0*data[component_idx, :, :, 1] \
-                                      - 15.0/2.0*data[component_idx, :, :, 2] + 20.0/3.0*data[component_idx, :, :, 3] \
-                                      - 15.0/4.0*data[component_idx, :, :, 4] + 6.0/5.0*data[component_idx, :, :, 5] \
-                                      - 1.0/6.0*data[component_idx, :, :, 6])/dx
+                diff_data[:, :, 0] = (-49.0/20.0*data_component[:, :, 0] + 6.0*data_component[:, :, 1] \
+                                      - 15.0/2.0*data_component[:, :, 2] + 20.0/3.0*data_component[:, :, 3] \
+                                      - 15.0/4.0*data_component[:, :, 4] + 6.0/5.0*data_component[:, :, 5] \
+                                      - 1.0/6.0*data_component[:, :, 6])/dx
                 
-                diff_data[:, :, 1] = (-1.0/6.0*data[component_idx, :, :, 0] - 77.0/60.0*data[component_idx, :, :, 1] \
-                                      + 5.0/2.0*data[component_idx, :, :, 2] - 5.0/3.0*data[component_idx, :, :, 3] \
-                                      + 5.0/6.0*data[component_idx, :, :, 4] - 1.0/4.0*data[component_idx, :, :, 5] \
-                                      + 1.0/30.0*data[component_idx, :, :, 6])/dx
+                diff_data[:, :, 1] = (-1.0/6.0*data_component[:, :, 0] - 77.0/60.0*data_component[:, :, 1] \
+                                      + 5.0/2.0*data_component[:, :, 2] - 5.0/3.0*data_component[:, :, 3] \
+                                      + 5.0/6.0*data_component[:, :, 4] - 1.0/4.0*data_component[:, :, 5] \
+                                      + 1.0/30.0*data_component[:, :, 6])/dx
                 
-                diff_data[:, :, 2] = (1.0/30.0*data[component_idx, :, :, 0] - 2.0/5.0*data[component_idx, :, :, 1] \
-                                      - 7.0/12.0*data[component_idx, :, :, 2] + 4.0/3.0*data[component_idx, :, :, 3] \
-                                      - 1.0/2.0*data[component_idx, :, :, 4] + 2.0/15.0*data[component_idx, :, :, 5] \
-                                      - 1.0/60.0*data[component_idx, :, :, 6])/dx
+                diff_data[:, :, 2] = (1.0/30.0*data_component[:, :, 0] - 2.0/5.0*data_component[:, :, 1] \
+                                      - 7.0/12.0*data_component[:, :, 2] + 4.0/3.0*data_component[:, :, 3] \
+                                      - 1.0/2.0*data_component[:, :, 4] + 2.0/15.0*data_component[:, :, 5] \
+                                      - 1.0/60.0*data_component[:, :, 6])/dx
                 
-                diff_data[:, :, -3] = (1.0/60.0*data[component_idx, :, :, -7] - 2.0/15.0*data[component_idx, :, :, -6] \
-                                       + 1.0/2.0*data[component_idx, :, :, -5] - 4.0/3.0*data[component_idx, :, :, -4] \
-                                       + 7.0/12.0*data[component_idx, :, :, -3] + 2.0/5.0*data[component_idx, :, :, -2] \
-                                       - 1.0/30.0*data[component_idx, :, :, -1])/dx
+                diff_data[:, :, -3] = (1.0/60.0*data_component[:, :, -7] - 2.0/15.0*data_component[:, :, -6] \
+                                       + 1.0/2.0*data_component[:, :, -5] - 4.0/3.0*data_component[:, :, -4] \
+                                       + 7.0/12.0*data_component[:, :, -3] + 2.0/5.0*data_component[:, :, -2] \
+                                       - 1.0/30.0*data_component[:, :, -1])/dx
                 
-                diff_data[:, :, -2] = (-1.0/30.0*data[component_idx, :, :, -7] + 1.0/4.0*data[component_idx, :, :, -6] \
-                                       - 5.0/6.0*data[component_idx, :, :, -5] + 5.0/3.0*data[component_idx, :, :, -4] \
-                                       - 5.0/2.0*data[component_idx, :, :, -3] + 77.0/60.0*data[component_idx, :, :, -2] \
-                                       + 1.0/6.0*data[component_idx, :, :, -1])/dx
+                diff_data[:, :, -2] = (-1.0/30.0*data_component[:, :, -7] + 1.0/4.0*data_component[:, :, -6] \
+                                       - 5.0/6.0*data_component[:, :, -5] + 5.0/3.0*data_component[:, :, -4] \
+                                       - 5.0/2.0*data_component[:, :, -3] + 77.0/60.0*data_component[:, :, -2] \
+                                       + 1.0/6.0*data_component[:, :, -1])/dx
                 
-                diff_data[:, :, -1] = (1.0/6.0*data[component_idx, :, :, -7] - 6.0/5.0*data[component_idx, :, :, -6] \
-                                       + 15.0/4.0*data[component_idx, :, :, -5] - 20.0/3.0*data[component_idx, :, :, -4] \
-                                       + 15.0/2.0*data[component_idx, :, :, -3] - 6.0*data[component_idx, :, :, -2] \
-                                       + 49.0/20.0*data[component_idx, :, :, -1])/dx
+                diff_data[:, :, -1] = (1.0/6.0*data_component[:, :, -7] - 6.0/5.0*data_component[:, :, -6] \
+                                       + 15.0/4.0*data_component[:, :, -5] - 20.0/3.0*data_component[:, :, -4] \
+                                       + 15.0/2.0*data_component[:, :, -3] - 6.0*data_component[:, :, -2] \
+                                       + 49.0/20.0*data_component[:, :, -1])/dx
             
             else:
                 raise RuntimeError('Data dimension > 3 not supported!')   
