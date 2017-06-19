@@ -12,6 +12,7 @@ version = '1.0'
 
 # Modules.
 modules = ['floatpy.derivatives',
+           'floatpy.upsampling',
            'floatpy.readers']
 
 setup(name='FloATPy',
