@@ -10,7 +10,7 @@ $ python setup.py install
 
 ### Contribution guidelines ###
 
-All tests are in the floatpy/tests directory. They can be run with IPython Notebook.
+All tests are in the floatpy/tests directory. They can be run with Jupyter Notebook.
 
 ### Who do I talk to? ###
 
