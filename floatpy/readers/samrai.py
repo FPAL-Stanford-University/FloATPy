@@ -57,7 +57,7 @@ class samraiDataReader:
         # Open the summary file.
         
         summary_file_path = self.__data_directory_path + '/summary.samrai'
-        f_summary = h5py.File(summary_file_path)
+        f_summary = h5py.File(summary_file_path, 'r')
         
         # Get the basic information.
         
@@ -114,6 +114,9 @@ class samraiDataReader:
         # Set the flag for loading summary file to be true.
         
         self.__summary_loaded = True
+        
+        # Close the summary file.
+        f_summary.close()
     
     
     def getBasicInfo(self):
