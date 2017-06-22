@@ -6,11 +6,15 @@ FloATPy (Flow Physics and Aeroacoustics Toolbox with Python) is a post-processin
 
 To set up the code, you can use the following command:
 
-$ python setup.py install
+`python setup.py install`
+
+If you don't have root access, you can do:
+
+`python setup.py install --user`
 
 ### Contribution guidelines ###
 
-All tests are in the floatpy/tests directory. They can be run with IPython Notebook.
+All tests are in the `floatpy/tests` directory. They can be run with Jupyter Notebook.
 
 ### Who do I talk to? ###
 
