@@ -26,6 +26,7 @@ class samraiDataReader:
         self.__z_coords = []
         self.__data = {}
         self.__data_loaded = False
+        self.__data_order  = 'C'
     
     
     def setDataDirectoryPath(self, data_directory_path):
@@ -42,8 +43,24 @@ class samraiDataReader:
         """
         
         return self.__data_directory_path
-    
-    
+
+
+    def setDataOrder(self, order):
+        """
+        Set the data order to be either C order or Fortran order.
+        """
+        
+        if self.__data_loaded:
+            raise RuntimeError('Data is already read!')
+        
+        if order == 'C':
+            self.__data_order = 'C'
+        elif order == 'F':
+            self.__data_order = 'F'
+        else:
+            raise RuntimeError("Unknown order '" + order + "' for data!")
+
+
     def readSummary(self):
         """
         Get the basic information, patch extents and path map from the summary file.
@@ -116,6 +133,7 @@ class samraiDataReader:
         self.__summary_loaded = True
         
         # Close the summary file.
+        
         f_summary.close()
     
     
@@ -380,8 +398,12 @@ class samraiDataReader:
         # Initialize container to store the data. The elements in the container are initialized as NAN values.
         
         for var_name in var_names:
-            data_shape = numpy.insert(domain_shape, 0, var_num_components[var_name])
-            self.__data[var_name] = numpy.empty(data_shape)
+            if self.__data_order == 'C':
+                data_shape = numpy.insert(domain_shape, 0, var_num_components[var_name])
+            else:
+                data_shape = numpy.append(domain_shape, var_num_components[var_name])
+            
+            self.__data[var_name] = numpy.empty(data_shape, dtype = numpy.float64, order = self.__data_order)
             self.__data[var_name][:] = numpy.NAN
         
         # Get the data from all patches at the specified level.
@@ -409,8 +431,12 @@ class samraiDataReader:
                         x_end_idx = up_patch[0] + 1
                         
                         for component_idx in range(0, var_num_components[var_name]):
-                            self.__data[var_name][component_idx, x_start_idx:x_end_idx] = \
-                                file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
+                            if self.__data_order == 'C':
+                                self.__data[var_name][component_idx, x_start_idx:x_end_idx] = \
+                                    file_cluster_patch[var_component_names[var_name][component_idx]].value
+                            else:
+                                self.__data[var_name][x_start_idx:x_end_idx, component_idx] = \
+                                    file_cluster_patch[var_component_names[var_name][component_idx]].value
                 
                 f_input.close()
         
@@ -440,8 +466,12 @@ class samraiDataReader:
                         y_end_idx = up_patch[1] + 1
                         
                         for component_idx in range(0, var_num_components[var_name]):
-                            self.__data[var_name][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx] = \
-                                file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
+                            if self.__data_order == 'C':
+                                self.__data[var_name][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx] = \
+                                    file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
+                            else:
+                                self.__data[var_name][x_start_idx:x_end_idx, y_start_idx:y_end_idx, component_idx] = \
+                                    file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
                 
                 f_input.close()
         
@@ -474,8 +504,12 @@ class samraiDataReader:
                         z_end_idx = up_patch[2] + 1
                         
                         for component_idx in range(0, var_num_components[var_name]):
-                            self.__data[var_name][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx] = \
-                                file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
+                            if self.__data_order == 'C':
+                                self.__data[var_name][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx] = \
+                                    file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
+                            else:
+                                self.__data[var_name][x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx, component_idx] = \
+                                    file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape(patch_shape, order = 'F')
                 
                 f_input.close()
         
@@ -595,8 +629,12 @@ class samraiDataReader:
         level_data = {}
         
         for var_name in var_names:
-            data_shape = numpy.insert(domain_shape, 0, var_num_components[var_name])
-            data = numpy.empty(data_shape)
+            if self.__data_order == 'C':
+                data_shape = numpy.insert(domain_shape, 0, var_num_components[var_name])
+            else:
+                data_shape = numpy.append(domain_shape, var_num_components[var_name])
+            
+            data = numpy.empty(data_shape, dtype = numpy.float64, order = self.__data_order)
             data[:] = numpy.NAN
             
             level_data[var_name] = []
@@ -633,11 +671,13 @@ class samraiDataReader:
                             x_end_idx = (up_patch[0] + 1)*ratios_to_finest_level[level_num][0] + num_ghosts[0]
                             
                             for component_idx in range(0, var_num_components[var_name]):
-                                patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
-                                    patch_shape, order = 'F')
+                                patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value
                                 patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
                                 
-                                level_data[var_name][level_num][component_idx, x_start_idx: x_end_idx] = patch_data
+                                if self.__data_order == 'C':
+                                    level_data[var_name][level_num][component_idx, x_start_idx: x_end_idx] = patch_data
+                                else:
+                                    level_data[var_name][level_num][x_start_idx: x_end_idx, component_idx] = patch_data
                 
                 f_input.close()
         
@@ -672,14 +712,29 @@ class samraiDataReader:
                             y_end_idx = (up_patch[1] + 1)*ratios_to_finest_level[level_num][1] + num_ghosts[1]
                             
                             for component_idx in range(0, var_num_components[var_name]):
-                                patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
-                                    patch_shape, order = 'F')
-                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
-                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 1)
+                                if self.__data_order == 'C':
+                                    patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
+                                        patch_shape, order = 'F')
+                                    
+                                    patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
+                                    patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 1)
+                                    
+                                    level_data[var_name][level_num][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx] = \
+                                            patch_data
                                 
-                                level_data[var_name][level_num][component_idx, \
-                                    x_start_idx:x_end_idx, y_start_idx:y_end_idx] = \
-                                        patch_data
+                                else:
+                                    patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
+                                        (patch_shape[1], patch_shape[0]), order = 'C')
+                                    
+                                    patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 0)
+                                    patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 1)
+                                    
+                                    patch_data = numpy.ravel(patch_data, order = 'C')
+                                    patch_data = patch_data.reshape(
+                                        patch_shape*ratios_to_finest_level[level_num][0:dim], order = 'F')
+                                    
+                                    level_data[var_name][level_num][x_start_idx:x_end_idx, y_start_idx:y_end_idx, component_idx] = \
+                                            patch_data
                 
                 f_input.close()
         
@@ -717,15 +772,32 @@ class samraiDataReader:
                             z_end_idx = (up_patch[2] + 1)*ratios_to_finest_level[level_num][2] + num_ghosts[2]
                             
                             for component_idx in range(0, var_num_components[var_name]):
-                                patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
-                                    patch_shape, order = 'F')
-                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
-                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 1)
-                                patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][2], axis = 2)
-                                
-                                level_data[var_name][level_num][component_idx, \
-                                    x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx] = \
-                                        patch_data
+                                if self.__data_order == 'C':
+                                    patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
+                                        patch_shape, order = 'F')
+                                    
+                                    patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 0)
+                                    patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 1)
+                                    patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][2], axis = 2)
+                                    
+                                    level_data[var_name][level_num]\
+                                        [component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx] = \
+                                            patch_data
+                                else:
+                                    patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
+                                        (patch_shape[2], patch_shape[1], patch_shape[0]), order = 'C')
+                                    
+                                    patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][2], axis = 0)
+                                    patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][1], axis = 1)
+                                    patch_data = numpy.repeat(patch_data, ratios_to_finest_level[level_num][0], axis = 2)
+                                    
+                                    patch_data = numpy.ravel(patch_data, order = 'C')
+                                    patch_data = patch_data.reshape(
+                                        patch_shape*ratios_to_finest_level[level_num][0:dim], order = 'F')
+                                    
+                                    level_data[var_name][level_num]\
+                                        [x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx, component_idx] = \
+                                            patch_data
             
             f_input.close()
         
@@ -741,58 +813,113 @@ class samraiDataReader:
                 is_finite_idx = numpy.isfinite(level_data[var_name][level_idx])
                 self.__data[var_name][is_finite_idx] = level_data[var_name][level_idx][is_finite_idx]
             
-            # Apply the periodic boundary conditions on the ghost cells.
-            
-            if dim == 1:
-                for component_idx in range(0, var_num_components[var_name]):
-                    if periodic_dimension[0] == True:
-                        self.__data[var_name][component_idx, 0:num_ghosts[0]] = \
-                            self.__data[var_name][component_idx, -2*num_ghosts[0]:-num_ghosts[0]]
+            if self.__data_order == 'C':
+                # Apply the periodic boundary conditions on the ghost cells.
+                
+                if dim == 1:
+                    for component_idx in range(0, var_num_components[var_name]):
+                        if periodic_dimension[0] == True:
+                            self.__data[var_name][component_idx, 0:num_ghosts[0]] = \
+                                self.__data[var_name][component_idx, -2*num_ghosts[0]:-num_ghosts[0]]
+                            
+                            self.__data[var_name][component_idx, -num_ghosts[0]:] = \
+                                self.__data[var_name][component_idx, num_ghosts[0]:2*num_ghosts[0]]
+                
+                elif dim == 2:
+                    for component_idx in range(0, var_num_components[var_name]):
+                        if periodic_dimension[0] == True:
+                            self.__data[var_name][component_idx, 0:num_ghosts[0], :] = \
+                                self.__data[var_name][component_idx, -2*num_ghosts[0]:-num_ghosts[0], :]
+                            
+                            self.__data[var_name][component_idx, -num_ghosts[0]:, :] = \
+                                self.__data[var_name][component_idx, num_ghosts[0]:2*num_ghosts[0], :]
                         
-                        self.__data[var_name][component_idx, -num_ghosts[0]:] = \
-                            self.__data[var_name][component_idx, num_ghosts[0]:2*num_ghosts[0]]
-            
-            elif dim == 2:
-                for component_idx in range(0, var_num_components[var_name]):
-                    if periodic_dimension[0] == True:
-                        self.__data[var_name][component_idx, 0:num_ghosts[0], :] = \
-                            self.__data[var_name][component_idx, -2*num_ghosts[0]:-num_ghosts[0], :]
+                        if periodic_dimension[1] == True:
+                            self.__data[var_name][component_idx, :, 0:num_ghosts[1]] = \
+                                self.__data[var_name][component_idx, :, -2*num_ghosts[1]:-num_ghosts[1]]
+                            
+                            self.__data[var_name][component_idx, :, -num_ghosts[1]:] = \
+                                self.__data[var_name][component_idx, :, num_ghosts[1]:2*num_ghosts[1]]
+                
+                elif dim == 3:
+                    for component_idx in range(0, var_num_components[var_name]):
+                        if periodic_dimension[0] == True:
+                            self.__data[var_name][component_idx, 0:num_ghosts[0], :, :] = \
+                                self.__data[var_name][component_idx, -2*num_ghosts[0]:-num_ghosts[0], :, :]
+                            
+                            self.__data[var_name][component_idx, -num_ghosts[0]:, :, :] = \
+                                self.__data[var_name][component_idx, num_ghosts[0]:2*num_ghosts[0], :, :]
                         
-                        self.__data[var_name][component_idx, -num_ghosts[0]:, :] = \
-                            self.__data[var_name][component_idx, num_ghosts[0]:2*num_ghosts[0], :]
-                    
-                    if periodic_dimension[1] == True:
-                        self.__data[var_name][component_idx, :, 0:num_ghosts[1]] = \
-                            self.__data[var_name][component_idx, :, -2*num_ghosts[1]:-num_ghosts[1]]
+                        if periodic_dimension[1] == True:
+                            self.__data[var_name][component_idx, :, 0:num_ghosts[1], :] = \
+                                self.__data[var_name][component_idx, :, -2*num_ghosts[1]:-num_ghosts[1], :]
+                            
+                            self.__data[var_name][component_idx, :, -num_ghosts[1]:, :] = \
+                                self.__data[var_name][component_idx, :, num_ghosts[1]:2*num_ghosts[1], :]
                         
-                        self.__data[var_name][component_idx, :, -num_ghosts[1]:] = \
-                            self.__data[var_name][component_idx, :, num_ghosts[1]:2*num_ghosts[1]]
-            
-            elif dim == 3:
-                for component_idx in range(0, var_num_components[var_name]):
-                    if periodic_dimension[0] == True:
-                        self.__data[var_name][component_idx, 0:num_ghosts[0], :, :] = \
-                            self.__data[var_name][component_idx, -2*num_ghosts[0]:-num_ghosts[0], :, :]
-                        
-                        self.__data[var_name][component_idx, -num_ghosts[0]:, :, :] = \
-                            self.__data[var_name][component_idx, num_ghosts[0]:2*num_ghosts[0], :, :]
-                    
-                    if periodic_dimension[1] == True:
-                        self.__data[var_name][component_idx, :, 0:num_ghosts[1], :] = \
-                            self.__data[var_name][component_idx, :, -2*num_ghosts[1]:-num_ghosts[1], :]
-                        
-                        self.__data[var_name][component_idx, :, -num_ghosts[1]:, :] = \
-                            self.__data[var_name][component_idx, :, num_ghosts[1]:2*num_ghosts[1], :]
-                    
-                    if periodic_dimension[2] == True:
-                        self.__data[var_name][component_idx, :, :, 0:num_ghosts[2]] = \
-                            self.__data[var_name][component_idx, :, :, -2*num_ghosts[2]:-num_ghosts[2]]
-                        
-                        self.__data[var_name][component_idx, :, :, -num_ghosts[2]:] = \
-                            self.__data[var_name][component_idx, :, :, num_ghosts[2]:2*num_ghosts[2]]
+                        if periodic_dimension[2] == True:
+                            self.__data[var_name][component_idx, :, :, 0:num_ghosts[2]] = \
+                                self.__data[var_name][component_idx, :, :, -2*num_ghosts[2]:-num_ghosts[2]]
+                            
+                            self.__data[var_name][component_idx, :, :, -num_ghosts[2]:] = \
+                                self.__data[var_name][component_idx, :, :, num_ghosts[2]:2*num_ghosts[2]]
+                
+                else:
+                    raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
             
             else:
-                raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
+                # Apply the periodic boundary conditions on the ghost cells.
+                
+                if dim == 1:
+                    for component_idx in range(0, var_num_components[var_name]):
+                        if periodic_dimension[0] == True:
+                            self.__data[var_name][0:num_ghosts[0], component_idx] = \
+                                self.__data[var_name][-2*num_ghosts[0]:-num_ghosts[0], component_idx]
+                            
+                            self.__data[var_name][-num_ghosts[0]:, component_idx] = \
+                                self.__data[var_name][num_ghosts[0]:2*num_ghosts[0], component_idx]
+                
+                elif dim == 2:
+                    for component_idx in range(0, var_num_components[var_name]):
+                        if periodic_dimension[0] == True:
+                            self.__data[var_name][0:num_ghosts[0], :, component_idx] = \
+                                self.__data[var_name][-2*num_ghosts[0]:-num_ghosts[0], :, component_idx]
+                            
+                            self.__data[var_name][-num_ghosts[0]:, :, component_idx] = \
+                                self.__data[var_name][num_ghosts[0]:2*num_ghosts[0], :, component_idx]
+                        
+                        if periodic_dimension[1] == True:
+                            self.__data[var_name][:, 0:num_ghosts[1], component_idx] = \
+                                self.__data[var_name][:, -2*num_ghosts[1]:-num_ghosts[1], component_idx]
+                            
+                            self.__data[var_name][:, -num_ghosts[1]:, component_idx] = \
+                                self.__data[var_name][:, num_ghosts[1]:2*num_ghosts[1], component_idx]
+                
+                elif dim == 3:
+                    for component_idx in range(0, var_num_components[var_name]):
+                        if periodic_dimension[0] == True:
+                            self.__data[var_name][0:num_ghosts[0], :, :, component_idx] = \
+                                self.__data[var_name][-2*num_ghosts[0]:-num_ghosts[0], :, :, component_idx]
+                            
+                            self.__data[var_name][-num_ghosts[0]:, :, :, component_idx] = \
+                                self.__data[var_name][num_ghosts[0]:2*num_ghosts[0], :, :, component_idx]
+                        
+                        if periodic_dimension[1] == True:
+                            self.__data[var_name][:, 0:num_ghosts[1], :, component_idx] = \
+                                self.__data[var_name][:, -2*num_ghosts[1]:-num_ghosts[1], :, component_idx]
+                            
+                            self.__data[var_name][:, -num_ghosts[1]:, :, component_idx] = \
+                                self.__data[var_name][:, num_ghosts[1]:2*num_ghosts[1], :, component_idx]
+                        
+                        if periodic_dimension[2] == True:
+                            self.__data[var_name][:, :, 0:num_ghosts[2], component_idx] = \
+                                self.__data[var_name][:, :, -2*num_ghosts[2]:-num_ghosts[2], component_idx]
+                            
+                            self.__data[var_name][:, :, -num_ghosts[2]:, component_idx] = \
+                                self.__data[var_name][:, :, num_ghosts[2]:2*num_ghosts[2], component_idx]
+                
+                else:
+                    raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
         
         self.__data_loaded = True
     
