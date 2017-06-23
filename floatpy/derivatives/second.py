@@ -4,6 +4,37 @@ Module for computing second deriatives with finite differencing.
 
 import numpy
 
+def getNumberOfGhostCellsSecondDerivative(method = 'second_order'):
+    """
+    Determine the number of ghost cells needed for computing second derivative using an explicit finite difference
+    method in the interior of domain.
+    """
+    
+    if method == 'second_order':
+        return 1
+    elif method == 'fourth_order':
+        return 2
+    elif method == 'sixth_order':
+        return 3
+    else:
+        raise RuntimeError("Unknown method '" + method + "' for number of ghost cells!")
+
+
+def computeSecondDerivative(data, dx, direction = 0, component_idx = 0, uses_one_sided = True, method = 'second_order'):
+    """
+    Computing second derivative using explicit finite differencing.
+    """
+    
+    if method == 'second_order':
+        return computeSecondOrderSecondDerivative(data, dx, direction, component_idx, uses_one_sided)
+    elif method == 'fourth_order':
+        return computeFourthOrderSecondDerivative(data, dx, direction, component_idx, uses_one_sided)
+    elif method == 'sixth_order':
+        return computeSixthOrderSecondDerivative(data, dx, direction, component_idx, uses_one_sided)
+    else:
+        raise RuntimeError("Unknown method '" + method + "' for computing second derivative!")
+
+
 def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 0, uses_one_sided = True):
     """
     Computing second derivative using explicit second order finite differencing.
@@ -72,7 +103,7 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
     # Initialize container to store the derivatives. The elements in the container
     # are initialized as NAN values.
     
-    diff_data = numpy.empty(data_shape)
+    diff_data = numpy.empty(data_shape, dtype = data.dtype, order = data_order)
     diff_data[:] = numpy.NAN
     
     # Get the component's data.
@@ -273,7 +304,7 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
     # Initialize container to store the derivatives. The elements in the container
     # are initialized as NAN values.
 
-    diff_data = numpy.empty(data_shape)
+    diff_data = numpy.empty(data_shape, dtype = data.dtype, order = data_order)
     diff_data[:] = numpy.NAN
     
     # Get the component's data.
@@ -539,7 +570,7 @@ def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0
     # Initialize container to store the derivatives. The elements in the container
     # are initialized as NAN values.
     
-    diff_data = numpy.empty(data_shape)
+    diff_data = numpy.empty(data_shape, dtype = data.dtype, order = data_order)
     diff_data[:] = numpy.NAN
     
     # Get the component's data.

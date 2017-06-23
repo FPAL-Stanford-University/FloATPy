@@ -1,8 +1,39 @@
 """
-Module for computing first deriatives with finite differencing.
+Module for computing first deriatives with explicit finite differencing.
 """
 
 import numpy
+
+def getNumberOfGhostCellsFirstDerivative(method = 'second_order'):
+    """
+    Determine the number of ghost cells needed for computing first derivative using an explicit finite difference
+    method in the interior of domain.
+    """
+    
+    if method == 'second_order':
+        return 1
+    elif method == 'fourth_order':
+        return 2
+    elif method == 'sixth_order':
+        return 3
+    else:
+        raise RuntimeError("Unknown method '" + method + "' for number of ghost cells!")
+
+
+def computeFirstDerivative(data, dx, direction = 0, component_idx = 0, uses_one_sided = True, method = 'second_order'):
+    """
+    Computing first derivative using explicit finite differencing.
+    """
+    
+    if method == 'second_order':
+        return computeSecondOrderFirstDerivative(data, dx, direction, component_idx, uses_one_sided)
+    elif method == 'fourth_order':
+        return computeFourthOrderFirstDerivative(data, dx, direction, component_idx, uses_one_sided)
+    elif method == 'sixth_order':
+        return computeSixthOrderFirstDerivative(data, dx, direction, component_idx, uses_one_sided)
+    else:
+        raise RuntimeError("Unknown method '" + method + "' for computing first derivative!")
+
 
 def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0, uses_one_sided = True):
     """
