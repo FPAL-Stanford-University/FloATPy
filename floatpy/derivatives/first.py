@@ -9,6 +9,12 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     Computing first derivative using explicit second order finite differencing.
     """
     
+    # Get the order and shape of data.
+    
+    data_order = 'C'
+    if numpy.isfortran(data):
+        data_order = 'F'
+    
     data_shape = data.shape
     
     # Check whether the direction is valid.
@@ -21,39 +27,58 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     if data.ndim < 2:
         raise RuntimeError('Shape of data is invalid!')
     
-    # Check whether the component_idx is valid.
+    # Check whether the component_idx is valid and get the shape of the component's data.
     
-    if component_idx >= data_shape[0] or component_idx < 0:
-        raise RuntimeError('Component index is invalid!')
+    if data_order == 'C':
+        if component_idx >= data_shape[0] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = data_shape[1:]
+    
+    else:
+        if component_idx >= data_shape[-1] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = data_shape[:-1]
     
     # Check whether data size is large enough for second order first derivative.
     
     if direction == 0:
-        if data_shape[1] < 3:
+        if data_shape[0] < 3:
             raise RuntimeError('First dimension of data is not large enough!')
     
     elif direction == 1:
-        if data_shape[2] < 3:
+        if data_shape[1] < 3:
             raise RuntimeError('Second dimension of data is not large enough!')
         
     elif direction == 2:
-        if data_shape[3] < 3:
+        if data_shape[2] < 3:
             raise RuntimeError('Third dimension of data is not large enough!')
     
     # Initialize container to store the derivatives. The elements in the container
     # are initialized as NAN values.
-    data_shape = numpy.delete(data_shape, [0])
-    diff_data = numpy.empty(data_shape)
+    
+    diff_data = numpy.empty(data_shape, dtype = data.dtype)
     diff_data[:] = numpy.NAN
     
     # Get the component's data.
+    
     data_component = None
-    if diff_data.ndim == 1:
-        data_component = data[component_idx, :]
-    elif diff_data.ndim == 2:
-        data_component = data[component_idx, :, :]
-    elif diff_data.ndim == 3:
-        data_component = data[component_idx, :, :, :]
+    
+    if data_order == 'C':
+        if diff_data.ndim == 1:
+            data_component = data[component_idx, :]
+        elif diff_data.ndim == 2:
+            data_component = data[component_idx, :, :]
+        elif diff_data.ndim == 3:
+            data_component = data[component_idx, :, :, :]
+    else:
+        if diff_data.ndim == 1:
+            data_component = data[:, component_idx]
+        elif diff_data.ndim == 2:
+            data_component = data[:, :, component_idx]
+        elif diff_data.ndim == 3:
+            data_component = data[:, :, :, component_idx]
     
     # Compute the derivatives in the interior of the domain.
     
@@ -164,6 +189,12 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     Computing first derivative using explicit fourth order finite differencing.
     """
     
+    # Get the order and shape of data.
+    
+    data_order = 'C'
+    if numpy.isfortran(data):
+        data_order = 'F'
+    
     data_shape = data.shape
     
     # Check whether the direction is valid.
@@ -176,39 +207,58 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     if data.ndim < 2:
         raise RuntimeError('Shape of data is invalid!')
     
-    # Check whether the component_idx is valid.
+    # Check whether the component_idx is valid and get the shape of the component's data.
     
-    if component_idx >= data_shape[0] or component_idx < 0:
-        raise RuntimeError('Component index is invalid!')
+    if data_order == 'C':
+        if component_idx >= data_shape[0] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = data_shape[1:]
+    
+    else:
+        if component_idx >= data_shape[-1] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = data_shape[:-1]
     
     # Check whether data size is large enough for fourth order first derivative.
     
     if direction == 0:
-        if data_shape[1] < 5:
+        if data_shape[0] < 5:
             raise RuntimeError('First dimension of data is not large enough!')
     
     elif direction == 1:
-        if data_shape[2] < 5:
+        if data_shape[1] < 5:
             raise RuntimeError('Second dimension of data is not large enough!')
         
     elif direction == 2:
-        if data_shape[3] < 5:
+        if data_shape[2] < 5:
             raise RuntimeError('Third dimension of data is not large enough!')
     
     # Initialize container to store the derivatives. The elements in the container
     # are initialized as NAN values.
-    data_shape = numpy.delete(data_shape, [0])
+    
     diff_data = numpy.empty(data_shape)
     diff_data[:] = numpy.NAN
     
     # Get the component's data.
+    
     data_component = None
-    if diff_data.ndim == 1:
-        data_component = data[component_idx, :]
-    elif diff_data.ndim == 2:
-        data_component = data[component_idx, :, :]
-    elif diff_data.ndim == 3:
-        data_component = data[component_idx, :, :, :]
+    
+    if data_order == 'C':
+        if diff_data.ndim == 1:
+            data_component = data[component_idx, :]
+        elif diff_data.ndim == 2:
+            data_component = data[component_idx, :, :]
+        elif diff_data.ndim == 3:
+            data_component = data[component_idx, :, :, :]
+    else:
+        if diff_data.ndim == 1:
+            data_component = data[:, component_idx]
+        elif diff_data.ndim == 2:
+            data_component = data[:, :, component_idx]
+        elif diff_data.ndim == 3:
+            data_component = data[:, :, :, component_idx]
     
     # Compute the derivatives in the interior of the domain.
     
@@ -384,6 +434,12 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
     Computing first derivative using explicit sixth order finite differencing.
     """
     
+    # Get the order and shape of data.
+    
+    data_order = 'C'
+    if numpy.isfortran(data):
+        data_order = 'F'
+    
     data_shape = data.shape
     
     # Check whether the direction is valid.
@@ -396,39 +452,58 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
     if data.ndim < 2:
         raise RuntimeError('Shape of data is invalid!')
     
-    # Check whether the component_idx is valid.
+    # Check whether the component_idx is valid and get the shape of the component's data.
     
-    if component_idx >= data_shape[0] or component_idx < 0:
-        raise RuntimeError('Component index is invalid!')
+    if data_order == 'C':
+        if component_idx >= data_shape[0] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = data_shape[1:]
+    
+    else:
+        if component_idx >= data_shape[-1] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = data_shape[:-1]
     
     # Check whether data size is large enough for sixth order first derivative.
     
     if direction == 0:
-        if data_shape[1] < 7:
+        if data_shape[0] < 7:
             raise RuntimeError('First dimension of data is not large enough!')
     
     elif direction == 1:
-        if data_shape[2] < 7:
+        if data_shape[1] < 7:
             raise RuntimeError('Second dimension of data is not large enough!')
         
     elif direction == 2:
-        if data_shape[3] < 7:
+        if data_shape[2] < 7:
             raise RuntimeError('Third dimension of data is not large enough!')
     
     # Initialize container to store the derivatives. The elements in the container
     # are initialized as NAN values.
-    data_shape = numpy.delete(data_shape, [0])
-    diff_data = numpy.empty(data_shape)
+    
+    diff_data = numpy.empty(data_shape, dtype = data.dtype)
     diff_data[:] = numpy.NAN
     
     # Get the component's data.
+    
     data_component = None
-    if diff_data.ndim == 1:
-        data_component = data[component_idx, :]
-    elif diff_data.ndim == 2:
-        data_component = data[component_idx, :, :]
-    elif diff_data.ndim == 3:
-        data_component = data[component_idx, :, :, :]
+    
+    if data_order == 'C':
+        if diff_data.ndim == 1:
+            data_component = data[component_idx, :]
+        elif diff_data.ndim == 2:
+            data_component = data[component_idx, :, :]
+        elif diff_data.ndim == 3:
+            data_component = data[component_idx, :, :, :]
+    else:
+        if diff_data.ndim == 1:
+            data_component = data[:, component_idx]
+        elif diff_data.ndim == 2:
+            data_component = data[:, :, component_idx]
+        elif diff_data.ndim == 3:
+            data_component = data[:, :, :, component_idx]
     
     # Compute the derivatives in the interior of the domain.
     
