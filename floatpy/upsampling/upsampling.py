@@ -4,12 +4,14 @@ Module for upsampling data.
 
 import numpy
 
-def getNumberOfGhostCellsUpsampling(method = 'second_order_Lagrange'):
+def getNumberOfGhostCellsUpsampling(method = 'constant'):
     """
     Determine the number of ghost cells needed for upsampling in the interior of domain.
     """
     
-    if method == 'second_order_Lagrange':
+    if method == 'constant':
+        return 0
+    elif method == 'second_order_Lagrange':
         return 1
     elif method == 'fourth_order_Lagrange':
         return 2
@@ -19,12 +21,14 @@ def getNumberOfGhostCellsUpsampling(method = 'second_order_Lagrange'):
         raise RuntimeError("Unknown method '" + method + "' for number of ghost cells!")
 
 
-def upsample(data, refine_ratio, component_idx = 0, method = 'second_order_Lagrange'):
+def upsample(data, refine_ratio, component_idx = 0, method = 'constant'):
     """
     Upsampling the data.
     """
     
-    if method == 'second_order_Lagrange':
+    if method == 'constant':
+        return upsampleConstant(data, refine_ratio, component_idx)
+    elif method == 'second_order_Lagrange':
         return upsampleSecondOrderLagrange(data, refine_ratio, component_idx)
     elif method == 'fourth_order_Lagrange':
         return upsampleFourthOrderLagrange(data, refine_ratio, component_idx)
@@ -32,6 +36,95 @@ def upsample(data, refine_ratio, component_idx = 0, method = 'second_order_Lagra
         return upsampleSixthOrderLagrange(data, refine_ratio, component_idx)
     else:
         raise RuntimeError("Unknown method '" + method + "' for upsampling!")
+
+
+def upsampleConstant(data, refine_ratio, component_idx = 0):
+    """
+    Upsampling the data using second order Lagrange interpolation.
+    """
+    
+    r = refine_ratio
+    
+    data_order = 'C'
+    if numpy.isfortran(data):
+        data_order = 'F'
+    
+    data_shape = data.shape
+    
+    if data_order == 'C':
+        data_shape = data_shape[1:]
+    else:
+        data_shape = data_shape[:-1]
+    
+    data_shape = numpy.array(data_shape)
+    
+    dim = data_shape.shape[0]
+    
+    # Initialize container to store the upsampled data.
+    
+    upsampled_data = None
+    
+    # Get the component's data.
+    
+    data_component = None
+    
+    if data_order == 'C':
+        if dim == 1:
+            data_component = data[component_idx, :]
+        elif dim == 2:
+            data_component = data[component_idx, :, :]
+        elif dim == 3:
+            data_component = data[component_idx, :, :, :]
+    else:
+        if dim == 1:
+            data_component = data[:, component_idx]
+        elif dim == 2:
+            data_component = data[:, :, component_idx]
+        elif dim == 3:
+            data_component = data[:, :, :, component_idx]
+    
+    # Upsample the data with constant interpolation.
+    
+    if dim == 1:
+        upsampled_data = numpy.repeat(data_component, r[0], axis = 0)
+    
+    elif dim == 2:
+        if data_order == 'C':
+            upsampled_data = numpy.repeat(data_component, r[0], axis = 0)
+            upsampled_data = numpy.repeat(upsampled_data, r[1], axis = 1)
+        
+        else:
+            upsampled_data = numpy.ravel(data_component, order = 'F')
+            upsampled_data = upsampled_data.reshape(
+                (data_shape[1], data_shape[0]), order = 'C')
+            
+            upsampled_data = numpy.repeat(upsampled_data, r[1], axis = 0)
+            upsampled_data = numpy.repeat(upsampled_data, r[0], axis = 1)
+            
+            upsampled_data = numpy.ravel(upsampled_data, order = 'C')
+            upsampled_data = upsampled_data.reshape(
+                data_shape*r[0:dim], order = 'F')
+    
+    elif dim == 3:
+        if data_order == 'C':
+            upsampled_data = numpy.repeat(data_component, r[0], axis = 0)
+            upsampled_data = numpy.repeat(upsampled_data, r[1], axis = 1)
+            upsampled_data = numpy.repeat(upsampled_data, r[2], axis = 2)
+        
+        else:
+            upsampled_data = numpy.ravel(data_component, order = 'F')
+            upsampled_data = upsampled_data.reshape(
+                (data_shape[2], data_shape[1], data_shape[0]), order = 'C')
+            
+            upsampled_data = numpy.repeat(upsampled_data, r[2], axis = 0)
+            upsampled_data = numpy.repeat(upsampled_data, r[1], axis = 1)
+            upsampled_data = numpy.repeat(upsampled_data, r[0], axis = 2)
+            
+            upsampled_data = numpy.ravel(upsampled_data, order = 'C')
+            upsampled_data = upsampled_data.reshape(
+                data_shape*r[0:dim], order = 'F')
+    
+    return upsampled_data
 
 
 def upsampleSecondOrderLagrange(data, refine_ratio, component_idx = 0):
@@ -127,7 +220,7 @@ def upsampleSecondOrderLagrange(data, refine_ratio, component_idx = 0):
                         if (i != j):
                             c_2[s, i] = c_2[s, i] * (idx_r - j)/(i - j)
     
-    # Initialize containers to store the upsampled data. The elements in the container
+    # Initialize containers to store the upsampled data. The elements in the containers
     # are initialized as NAN values.
     
     upsampled_data_shape_0 = None
@@ -193,7 +286,7 @@ def upsampleSecondOrderLagrange(data, refine_ratio, component_idx = 0):
         elif dim == 3:
             data_component = data[:, :, :, component_idx]
     
-    # Upsample the data with sixth order Lagrange interpolation.
+    # Upsample the data with second order Lagrange interpolation.
     
     if dim == 1:
         start_idx_fine = (half_stencil_size - 1)*r[0] + (r[0] + 1)/2
@@ -400,7 +493,7 @@ def upsampleFourthOrderLagrange(data, refine_ratio, component_idx = 0):
                         if (i != j):
                             c_2[s, i] = c_2[s, i] * (idx_r - j)/(i - j)
         
-    # Initialize containers to store the upsampled data. The elements in the container
+    # Initialize containers to store the upsampled data. The elements in the containers
     # are initialized as NAN values.
     
     upsampled_data_shape_0 = None
@@ -466,7 +559,7 @@ def upsampleFourthOrderLagrange(data, refine_ratio, component_idx = 0):
         elif dim == 3:
             data_component = data[:, :, :, component_idx]
     
-    # Upsample the data with sixth order Lagrange interpolation.
+    # Upsample the data with fourth order Lagrange interpolation.
     
     if dim == 1:
         start_idx_fine = (half_stencil_size - 1)*r[0] + (r[0] + 1)/2
@@ -683,7 +776,7 @@ def upsampleSixthOrderLagrange(data, refine_ratio, component_idx = 0):
                         if (i != j):
                             c_2[s, i] = c_2[s, i] * (idx_r - j)/(i - j)
     
-    # Initialize containers to store the upsampled data. The elements in the container
+    # Initialize containers to store the upsampled data. The elements in the containers
     # are initialized as NAN values.
     
     upsampled_data_shape_0 = None
