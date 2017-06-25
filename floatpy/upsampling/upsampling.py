@@ -51,26 +51,21 @@ def upsampleConstant(data, refine_ratio, component_idx = 0):
     if numpy.isfortran(data):
         data_order = 'F'
     
-    # Check whether the direction is valid.
-    
-    if direction < 0 or direction > 2:
-        raise RuntimeError('Direction < 0 or > 2 is invalid!')
-    
     # Check whether the dimension of data is valid.
     
-    if data.ndim < 2:
+    if data.ndim < 2 or data.ndim > 4:
         raise RuntimeError('Shape of data is invalid!')
     
     # Check whether the component_idx is valid and get the shape of the component's data.
     
     if data_order == 'C':
-        if component_idx >= data_shape[0] or component_idx < 0:
+        if component_idx >= data.shape[0] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[1:])
     
     else:
-        if component_idx >= data_shape[-1] or component_idx < 0:
+        if component_idx >= data.shape[-1] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[:-1])
@@ -162,26 +157,21 @@ def upsampleSecondOrderLagrange(data, refine_ratio, component_idx = 0):
     if numpy.isfortran(data):
         data_order = 'F'
     
-    # Check whether the direction is valid.
-    
-    if direction < 0 or direction > 2:
-        raise RuntimeError('Direction < 0 or > 2 is invalid!')
-    
     # Check whether the dimension of data is valid.
     
-    if data.ndim < 2:
+    if data.ndim < 2 or data.ndim > 4:
         raise RuntimeError('Shape of data is invalid!')
     
     # Check whether the component_idx is valid and get the shape of the component's data.
     
     if data_order == 'C':
-        if component_idx >= data_shape[0] or component_idx < 0:
+        if component_idx >= data.shape[0] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[1:])
     
     else:
-        if component_idx >= data_shape[-1] or component_idx < 0:
+        if component_idx >= data.shape[-1] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[:-1])
@@ -190,17 +180,16 @@ def upsampleSecondOrderLagrange(data, refine_ratio, component_idx = 0):
     
     dim = data_shape.shape[0]
     
-    # Check whether data size is large enough for second order first derivative.
+    # Check whether data size is large enough for second order Lagrange interpolation.
     
-    if direction == 0:
-        if data_shape[0] < 3:
-            raise RuntimeError('First dimension of data is not large enough!')
+    if data_shape[0] < 3:
+        raise RuntimeError('First dimension of data is not large enough!')
     
-    elif direction == 1:
+    if dim > 1:
         if data_shape[1] < 3:
             raise RuntimeError('Second dimension of data is not large enough!')
         
-    elif direction == 2:
+    elif dim > 2:
         if data_shape[2] < 3:
             raise RuntimeError('Third dimension of data is not large enough!')
     
@@ -468,26 +457,21 @@ def upsampleFourthOrderLagrange(data, refine_ratio, component_idx = 0):
     if numpy.isfortran(data):
         data_order = 'F'
     
-    # Check whether the direction is valid.
-    
-    if direction < 0 or direction > 2:
-        raise RuntimeError('Direction < 0 or > 2 is invalid!')
-    
     # Check whether the dimension of data is valid.
     
-    if data.ndim < 2:
+    if data.ndim < 2 or data.ndim > 4:
         raise RuntimeError('Shape of data is invalid!')
     
     # Check whether the component_idx is valid and get the shape of the component's data.
     
     if data_order == 'C':
-        if component_idx >= data_shape[0] or component_idx < 0:
+        if component_idx >= data.shape[0] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[1:])
     
     else:
-        if component_idx >= data_shape[-1] or component_idx < 0:
+        if component_idx >= data.shape[-1] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[:-1])
@@ -496,21 +480,19 @@ def upsampleFourthOrderLagrange(data, refine_ratio, component_idx = 0):
     
     dim = data_shape.shape[0]
     
-    # Check whether data size is large enough for second order first derivative.
+    # Check whether data size is large enough for fourth order Lagrange interpolation.
     
-    if direction == 0:
-        if data_shape[0] < 5:
-            raise RuntimeError('First dimension of data is not large enough!')
+    if data_shape[0] < 5:
+        raise RuntimeError('First dimension of data is not large enough!')
     
-    elif direction == 1:
+    if dim > 1:
         if data_shape[1] < 5:
             raise RuntimeError('Second dimension of data is not large enough!')
         
-    elif direction == 2:
+    elif dim > 2:
         if data_shape[2] < 5:
             raise RuntimeError('Third dimension of data is not large enough!')
     
-    # Check whether data size is large enough for second order first derivative.
     # Compute the coefficients for fourth order Lagrange interpolation.
     
     c_0 = None
@@ -785,26 +767,21 @@ def upsampleSixthOrderLagrange(data, refine_ratio, component_idx = 0):
     if numpy.isfortran(data):
         data_order = 'F'
     
-    # Check whether the direction is valid.
-    
-    if direction < 0 or direction > 2:
-        raise RuntimeError('Direction < 0 or > 2 is invalid!')
-    
     # Check whether the dimension of data is valid.
     
-    if data.ndim < 2:
+    if data.ndim < 2 or data.ndim > 4:
         raise RuntimeError('Shape of data is invalid!')
     
     # Check whether the component_idx is valid and get the shape of the component's data.
     
     if data_order == 'C':
-        if component_idx >= data_shape[0] or component_idx < 0:
+        if component_idx >= data.shape[0] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[1:])
     
     else:
-        if component_idx >= data_shape[-1] or component_idx < 0:
+        if component_idx >= data.shape[-1] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[:-1])
@@ -813,17 +790,16 @@ def upsampleSixthOrderLagrange(data, refine_ratio, component_idx = 0):
     
     dim = data_shape.shape[0]
     
-    # Check whether data size is large enough for second order first derivative.
+    # Check whether data size is large enough for sixth order Lagrange interpolation.
     
-    if direction == 0:
-        if data_shape[0] < 7:
-            raise RuntimeError('First dimension of data is not large enough!')
+    if data_shape[0] < 7:
+        raise RuntimeError('First dimension of data is not large enough!')
     
-    elif direction == 1:
+    if dim > 1:
         if data_shape[1] < 7:
             raise RuntimeError('Second dimension of data is not large enough!')
         
-    elif direction == 2:
+    elif dim > 2:
         if data_shape[2] < 7:
             raise RuntimeError('Third dimension of data is not large enough!')
     

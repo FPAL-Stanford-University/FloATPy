@@ -53,19 +53,19 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     
     # Check whether the dimension of data is valid.
     
-    if data.ndim < 2:
+    if data.ndim < 2 or data.ndim > 4:
         raise RuntimeError('Shape of data is invalid!')
     
     # Check whether the component_idx is valid and get the shape of the component's data.
     
     if data_order == 'C':
-        if component_idx >= data_shape[0] or component_idx < 0:
+        if component_idx >= data.shape[0] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[1:])
     
     else:
-        if component_idx >= data_shape[-1] or component_idx < 0:
+        if component_idx >= data.shape[-1] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[:-1])
@@ -235,19 +235,19 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     
     # Check whether the dimension of data is valid.
     
-    if data.ndim < 2:
+    if data.ndim < 2 or data.ndim > 4:
         raise RuntimeError('Shape of data is invalid!')
     
     # Check whether the component_idx is valid and get the shape of the component's data.
     
     if data_order == 'C':
-        if component_idx >= data_shape[0] or component_idx < 0:
+        if component_idx >= data.shape[0] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[1:])
     
     else:
-        if component_idx >= data_shape[-1] or component_idx < 0:
+        if component_idx >= data.shape[-1] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[:-1])
@@ -482,19 +482,19 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
     
     # Check whether the dimension of data is valid.
     
-    if data.ndim < 2:
+    if data.ndim < 2 or data.ndim > 4:
         raise RuntimeError('Shape of data is invalid!')
     
     # Check whether the component_idx is valid and get the shape of the component's data.
     
     if data_order == 'C':
-        if component_idx >= data_shape[0] or component_idx < 0:
+        if component_idx >= data.shape[0] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[1:])
     
     else:
-        if component_idx >= data_shape[-1] or component_idx < 0:
+        if component_idx >= data.shape[-1] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
         data_shape = numpy.array(data.shape[:-1])
