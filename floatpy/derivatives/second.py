@@ -64,13 +64,17 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
         if component_idx >= data_shape[0] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
-        data_shape = data_shape[1:]
+        data_shape = numpy.array(data.shape[1:])
     
     else:
         if component_idx >= data_shape[-1] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
-        data_shape = data_shape[:-1]
+        data_shape = numpy.array(data.shape[:-1])
+    
+    # Get the dimension of data.
+    
+    dim = data_shape.shape[0]
     
     # Check whether data size is large enough for second order second derivative.
     
@@ -111,32 +115,32 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
     data_component = None
     
     if data_order == 'C':
-        if diff_data.ndim == 1:
+        if dim == 1:
             data_component = data[component_idx, :]
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             data_component = data[component_idx, :, :]
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             data_component = data[component_idx, :, :, :]
     else:
-        if diff_data.ndim == 1:
+        if dim == 1:
             data_component = data[:, component_idx]
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             data_component = data[:, :, component_idx]
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             data_component = data[:, :, :, component_idx]
     
     # Compute the derivatives in the interior of the domain.
     
     if direction == 0:
-        if diff_data.ndim == 1:
+        if dim == 1:
             diff_data[1:-1] = (data_component[0:-2] - 2.0*data_component[1:-1] \
                                + data_component[2:])/(dx*dx)
         
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             diff_data[1:-1, :] = (data_component[0:-2, :] - 2.0*data_component[1:-1, :] \
                                   + data_component[2:, :])/(dx*dx)
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[1:-1, :, :] = (data_component[0:-2, :, :] - 2.0*data_component[1:-1, :, :] \
                                   + data_component[2:, :, :])/(dx*dx)
         
@@ -144,14 +148,14 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
             raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 1:
-        if diff_data.ndim < 2:
+        if dim < 2:
             raise IOError('There is no second direction in data with less than two dimensions!')
         
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             diff_data[:, 1:-1] = (data_component[:, 0:-2] - 2.0*data_component[:, 1:-1] \
                                   + data_component[:, 2:])/(dx*dx)
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[:, 1:-1, :] = (data_component[:, 0:-2, :] - 2.0*data_component[:, 1:-1, :] \
                                      + data_component[:, 2:, :])/(dx*dx)
         
@@ -159,10 +163,10 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
             raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 2:
-        if diff_data.ndim < 3:
+        if dim < 3:
             raise IOError('There is no third direction in data with less than three dimensions!')
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[:, :, 1:-1] = (data_component[:, :, 0:-2] - 2.0*data_component[:, :, 1:-1] \
                                      + data_component[:, :, 2:])/(dx*dx)
         
@@ -173,14 +177,14 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
     
     if uses_one_sided == True:
         if direction == 0:
-            if diff_data.ndim == 1:
+            if dim == 1:
                 diff_data[0] = (2.0*data_component[0] - 5.0*data_component[1] \
                                 + 4.0*data_component[2] - data_component[3])/(dx*dx)
                 
                 diff_data[-1] = (-data_component[-4] + 4.0*data_component[-3] \
                                  - 5.0*data_component[-2] + 2.0*data_component[-1])/(dx*dx)
             
-            elif diff_data.ndim == 2:
+            elif dim == 2:
                 diff_data[0, :] = (2.0*data_component[0, :] - 5.0*data_component[1, :] \
                                    + 4.0*data_component[2, :] - data_component[3, :])/(dx*dx)
                 
@@ -188,7 +192,7 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
                                     - 5.0*data_component[-2, :] + 2.0*data_component[-1, :])/(dx*dx)
 
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[0, :, :] = (2.0*data_component[0, :, :] - 5.0*data_component[1, :, :] \
                                       + 4.0*data_component[2, :, :] - data_component[3, :, :])/(dx*dx)
                 
@@ -199,17 +203,17 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
                 raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 1:
-            if diff_data.ndim < 2:
+            if dim < 2:
                 raise RuntimeError('There is no second direction in data with less than two dimensions!')
             
-            elif diff_data.ndim == 2:
+            elif dim == 2:
                 diff_data[:, 0] = (2.0*data_component[:, 0] - 5.0*data_component[:, 1] \
                                    + 4.0*data_component[:, 2] - data_component[:, 3])/(dx*dx)
                 
                 diff_data[:, -1] = (-data_component[:, -4] + 4.0*data_component[:, -3] \
                                     - 5.0*data_component[:, -2] + 2.0*data_component[:, -1])/(dx*dx)
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[:, 0, :] = (2.0*data_component[:, 0, :] - 5.0*data_component[:, 1, :] \
                                    + 4.0*data_component[:, 2, :] - data_component[:, 3, :])/(dx*dx)
                 
@@ -220,10 +224,10 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
                 raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 2:
-            if diff_data.ndim < 3:
+            if dim < 3:
                 raise IOError('There is no third direction in data with less than three dimensions!')
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[:, :, 0] = (2.0*data_component[:, :, 0] - 5.0*data_component[:, :, 1] \
                                       + 4.0*data_component[:, :, 2] - data_component[:, :, 3])/(dx*dx)
                 
@@ -265,13 +269,17 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
         if component_idx >= data_shape[0] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
-        data_shape = data_shape[1:]
+        data_shape = numpy.array(data.shape[1:])
     
     else:
         if component_idx >= data_shape[-1] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
-        data_shape = data_shape[:-1]
+        data_shape = numpy.array(data.shape[:-1])
+    
+    # Get the dimension of data.
+    
+    dim = data_shape.shape[0]
     
     # Check whether data size is large enough for fourth order second derivative.
     
@@ -312,34 +320,34 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
     data_component = None
     
     if data_order == 'C':
-        if diff_data.ndim == 1:
+        if dim == 1:
             data_component = data[component_idx, :]
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             data_component = data[component_idx, :, :]
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             data_component = data[component_idx, :, :, :]
     else:
-        if diff_data.ndim == 1:
+        if dim == 1:
             data_component = data[:, component_idx]
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             data_component = data[:, :, component_idx]
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             data_component = data[:, :, :, component_idx]
     
     # Compute the derivatives in the interior of the domain.
     
     if direction == 0:
-        if diff_data.ndim == 1:
+        if dim == 1:
             diff_data[2:-2] = (-1.0/12.0*data_component[0:-4] + 4.0/3.0*data_component[1:-3] \
                                - 5.0/2.0*data_component[2:-2] + 4.0/3.0*data_component[3:-1] \
                                - 1.0/12.0*data_component[4:])/(dx*dx)
         
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             diff_data[2:-2, :] = (-1.0/12.0*data_component[0:-4, :] + 4.0/3.0*data_component[1:-3, :] \
                                   - 5.0/2.0*data_component[2:-2, :] + 4.0/3.0*data_component[3:-1, :] \
                                   - 1.0/12.0*data_component[4:, :])/(dx*dx)
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[2:-2, :, :] = (-1.0/12.0*data_component[0:-4, :, :] + 4.0/3.0*data_component[1:-3, :, :] \
                                      - 5.0/2.0*data_component[2:-2, :, :] + 4.0/3.0*data_component[3:-1, :, :] \
                                      - 1.0/12.0*data_component[4:, :, :])/(dx*dx)
@@ -348,15 +356,15 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
             raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 1:
-        if diff_data.ndim < 2:
+        if dim < 2:
             raise IOError('There is no second direction in data with less than two dimensions!')
         
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             diff_data[:, 2:-2] = (-1.0/12.0*data_component[:, 0:-4] + 4.0/3.0*data_component[:, 1:-3] \
                                   - 5.0/2.0*data_component[:, 2:-2] + 4.0/3.0*data_component[:, 3:-1] \
                                   - 1.0/12.0*data_component[:, 4:])/(dx*dx)
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[:, 2:-2, :] = (-1.0/12.0*data_component[:, 0:-4, :] + 4.0/3.0*data_component[:, 1:-3, :] \
                                      - 5.0/2.0*data_component[:, 2:-2, :] + 4.0/3.0*data_component[:, 3:-1, :] \
                                      - 1.0/12.0*data_component[:, 4:, :])/(dx*dx)
@@ -365,10 +373,10 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
             raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 2:
-        if diff_data.ndim < 3:
+        if dim < 3:
             raise IOError('There is no third direction in data with less than three dimensions!')
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[:, :, 2:-2] = (-1.0/12.0*data_component[:, :, 0:-4] + 4.0/3.0*data_component[:, :, 1:-3] \
                                      - 5.0/2.0*data_component[:, :, 2:-2] + 4.0/3.0*data_component[:, :, 3:-1] \
                                      - 1.0/12.0*data_component[:, :, 4:])/(dx*dx)
@@ -380,7 +388,7 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
     
     if uses_one_sided == True:
         if direction == 0:
-            if diff_data.ndim == 1:
+            if dim == 1:
                 diff_data[0] = (15.0/4.0*data_component[0] - 77.0/6.0*data_component[1] \
                                 + 107.0/6.0*data_component[2] - 13.0*data_component[3] \
                                 + 61.0/12.0*data_component[4] - 5.0/6.0*data_component[5])/(dx*dx)
@@ -397,7 +405,7 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
                                  - 13.0*data_component[-4] + 107.0/6.0*data_component[-3] \
                                  - 77.0/6.0*data_component[-2] + 15.0/4.0*data_component[-1])/(dx*dx)
             
-            elif diff_data.ndim == 2:
+            elif dim == 2:
                 diff_data[0, :] = (15.0/4.0*data_component[0, :] - 77.0/6.0*data_component[1, :] \
                                    + 107.0/6.0*data_component[2, :] - 13.0*data_component[3, :] \
                                    + 61.0/12.0*data_component[4, :] - 5.0/6.0*data_component[5, :])/(dx*dx)
@@ -414,7 +422,7 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
                                     - 13.0*data_component[-4, :] + 107.0/6.0*data_component[-3, :] \
                                     - 77.0/6.0*data_component[-2, :] + 15.0/4.0*data_component[-1, :])/(dx*dx)
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[0, :, :] = (15.0/4.0*data_component[0, :, :] - 77.0/6.0*data_component[1, :, :] \
                                       + 107.0/6.0*data_component[2, :, :] - 13.0*data_component[3, :, :] \
                                       + 61.0/12.0*data_component[4, :, :] - 5.0/6.0*data_component[5, :, :])/(dx*dx)
@@ -435,10 +443,10 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
                 raise RuntimeError('Data dimension > 3 not supported!')
         
         elif direction == 1:
-            if diff_data.ndim < 2:
+            if dim < 2:
                 raise RuntimeError('There is no second direction in data with less than two dimensions!')
             
-            elif diff_data.ndim == 2:
+            elif dim == 2:
                 diff_data[:, 0] = (15.0/4.0*data_component[:, 0] - 77.0/6.0*data_component[:, 1] \
                                    + 107.0/6.0*data_component[:, 2] - 13.0*data_component[:, 3] \
                                    + 61.0/12.0*data_component[:, 4] - 5.0/6.0*data_component[:, 5])/(dx*dx)
@@ -455,7 +463,7 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
                                     - 13.0*data_component[:, -4] + 107.0/6.0*data_component[:, -3] \
                                     - 77.0/6.0*data_component[:, -2] + 15.0/4.0*data_component[:, -1])/(dx*dx)
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[:, 0, :] = (15.0/4.0*data_component[:, 0, :] - 77.0/6.0*data_component[:, 1, :] \
                                       + 107.0/6.0*data_component[:, 2, :] - 13.0*data_component[:, 3, :] \
                                       + 61.0/12.0*data_component[:, 4, :] - 5.0/6.0*data_component[:, 5, :])/(dx*dx)
@@ -476,10 +484,10 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
                 raise RuntimeError('Data dimension > 3 not supported!')
         
         elif direction == 2:
-            if diff_data.ndim < 3:
+            if dim < 3:
                 raise IOError('There is no third direction in data with less than three dimensions!')
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[:, :, 0] = (15.0/4.0*data_component[:, :, 0] - 77.0/6.0*data_component[:, :, 1] \
                                       + 107.0/6.0*data_component[:, :, 2] - 13.0*data_component[:, :, 3] \
                                       + 61.0/12.0*data_component[:, :, 4] - 5.0/6.0*data_component[:, :, 5])/(dx*dx)
@@ -531,13 +539,17 @@ def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0
         if component_idx >= data_shape[0] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
-        data_shape = data_shape[1:]
+        data_shape = numpy.array(data.shape[1:])
     
     else:
         if component_idx >= data_shape[-1] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
-        data_shape = data_shape[:-1]
+        data_shape = numpy.array(data.shape[:-1])
+    
+    # Get the dimension of data.
+    
+    dim = data_shape.shape[0]
     
     # Check whether data size is large enough for sixth order second derivative.
     
@@ -578,36 +590,36 @@ def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0
     data_component = None
     
     if data_order == 'C':
-        if diff_data.ndim == 1:
+        if dim == 1:
             data_component = data[component_idx, :]
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             data_component = data[component_idx, :, :]
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             data_component = data[component_idx, :, :, :]
     else:
-        if diff_data.ndim == 1:
+        if dim == 1:
             data_component = data[:, component_idx]
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             data_component = data[:, :, component_idx]
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             data_component = data[:, :, :, component_idx]
     
     # Compute the derivatives in the interior of the domain.
     
     if direction == 0:
-        if diff_data.ndim == 1:
+        if dim == 1:
             diff_data[3:-3] = (1.0/90.0*data_component[0:-6] - 3.0/20.0*data_component[1:-5] \
                                + 3.0/2.0*data_component[2:-4] - 49.0/18.0*data_component[3:-3] \
                                + 3.0/2.0*data_component[4:-2] - 3.0/20.0*data_component[5:-1] \
                                + 1.0/90.0*data_component[6:])/(dx*dx)
         
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             diff_data[3:-3, :] = (1.0/90.0*data_component[0:-6, :] - 3.0/20.0*data_component[1:-5, :] \
                                   + 3.0/2.0*data_component[2:-4, :] - 49.0/18.0*data_component[3:-3, :] \
                                   + 3.0/2.0*data_component[4:-2, :] - 3.0/20.0*data_component[5:-1, :] \
                                   + 1.0/90.0*data_component[6:, :])/(dx*dx)
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[3:-3, :, :] = (1.0/90.0*data_component[0:-6, :, :] - 3.0/20.0*data_component[1:-5, :, :] \
                                      + 3.0/2.0*data_component[2:-4, :, :] - 49.0/18.0*data_component[3:-3, :, :] \
                                      + 3.0/2.0*data_component[4:-2, :, :] - 3.0/20.0*data_component[5:-1, :, :] \
@@ -617,16 +629,16 @@ def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0
             raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 1:
-        if diff_data.ndim < 2:
+        if dim < 2:
             raise IOError('There is no second direction in data with less than two dimensions!')
         
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             diff_data[:, 3:-3] = (1.0/90.0*data_component[:, 0:-6] - 3.0/20.0*data_component[:, 1:-5] \
                                   + 3.0/2.0*data_component[:, 2:-4] - 49.0/18.0*data_component[:, 3:-3] \
                                   + 3.0/2.0*data_component[:, 4:-2] - 3.0/20.0*data_component[:, 5:-1] \
                                   + 1.0/90.0*data_component[:, 6:])/(dx*dx)
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[:, 3:-3, :] = (1.0/90.0*data_component[:, 0:-6, :] - 3.0/20.0*data_component[:, 1:-5, :] \
                                      + 3.0/2.0*data_component[:, 2:-4, :] - 49.0/18.0*data_component[:, 3:-3, :] \
                                      + 3.0/2.0*data_component[:, 4:-2, :] - 3.0/20.0*data_component[:, 5:-1, :] \
@@ -636,10 +648,10 @@ def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0
             raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 2:
-        if diff_data.ndim < 3:
+        if dim < 3:
             raise IOError('There is no third direction in data with less than three dimensions!')
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[:, :, 3:-3] = (1.0/90.0*data_component[:, :, 0:-6] - 3.0/20.0*data_component[:, :, 1:-5] \
                                   + 3.0/2.0*data_component[:, :, 2:-4] - 49.0/18.0*data_component[:, :, 3:-3] \
                                   + 3.0/2.0*data_component[:, :, 4:-2] - 3.0/20.0*data_component[:, :, 5:-1] \
@@ -652,7 +664,7 @@ def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0
     
     if uses_one_sided == True:
         if direction == 0:
-            if diff_data.ndim == 1:
+            if dim == 1:
                 diff_data[0] = (469.0/90.0*data_component[0] - 223.0/10.0*data_component[1] \
                                 + 879.0/20.0*data_component[2] - 949.0/18.0*data_component[3] \
                                 + 41.0*data_component[4] - 201.0/10.0*data_component[5] \
@@ -683,7 +695,7 @@ def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0
                                  - 949.0/18.0*data_component[-4] + 879.0/20.0*data_component[-3] \
                                  - 223.0/10.0*data_component[-2] + 469.0/90.0*data_component[-1])/(dx*dx)
             
-            elif diff_data.ndim == 2:
+            elif dim == 2:
                 diff_data[0, :] = (469.0/90.0*data_component[0, :] - 223.0/10.0*data_component[1, :] \
                                    + 879.0/20.0*data_component[2, :] - 949.0/18.0*data_component[3, :] \
                                    + 41.0*data_component[4, :] - 201.0/10.0*data_component[5, :] \
@@ -714,7 +726,7 @@ def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0
                                     - 949.0/18.0*data_component[-4, :] + 879.0/20.0*data_component[-3, :] \
                                     - 223.0/10.0*data_component[-2, :] + 469.0/90.0*data_component[-1, :])/(dx*dx)
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[0, :, :] = (469.0/90.0*data_component[0, :, :] - 223.0/10.0*data_component[1, :, :] \
                                       + 879.0/20.0*data_component[2, :, :] - 949.0/18.0*data_component[3, :, :] \
                                       + 41.0*data_component[4, :, :] - 201.0/10.0*data_component[5, :, :] \
@@ -749,10 +761,10 @@ def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0
                 raise RuntimeError('Data dimension > 3 not supported!')
         
         elif direction == 1:
-            if diff_data.ndim < 2:
+            if dim < 2:
                 raise RuntimeError('There is no second direction in data with less than two dimensions!')
             
-            elif diff_data.ndim == 2:
+            elif dim == 2:
                 diff_data[:, 0] = (469.0/90.0*data_component[:, 0] - 223.0/10.0*data_component[:, 1] \
                                    + 879.0/20.0*data_component[:, 2] - 949.0/18.0*data_component[:, 3] \
                                    + 41.0*data_component[:, 4] - 201.0/10.0*data_component[:, 5] \
@@ -783,7 +795,7 @@ def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0
                                     - 949.0/18.0*data_component[:, -4] + 879.0/20.0*data_component[:, -3] \
                                     - 223.0/10.0*data_component[:, -2] + 469.0/90.0*data_component[:, -1])/(dx*dx)
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[:, 0, :] = (469.0/90.0*data_component[:, 0, :] - 223.0/10.0*data_component[:, 1, :] \
                                       + 879.0/20.0*data_component[:, 2, :] - 949.0/18.0*data_component[:, 3, :] \
                                       + 41.0*data_component[:, 4, :] - 201.0/10.0*data_component[:, 5, :] \
@@ -818,10 +830,10 @@ def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0
                 raise RuntimeError('Data dimension > 3 not supported!')
         
         elif direction == 2:
-            if diff_data.ndim < 3:
+            if dim < 3:
                 raise IOError('There is no third direction in data with less than three dimensions!')
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[:, :, 0] = (469.0/90.0*data_component[:, :, 0] - 223.0/10.0*data_component[:, :, 1] \
                                       + 879.0/20.0*data_component[:, :, 2] - 949.0/18.0*data_component[:, :, 3] \
                                       + 41.0*data_component[:, :, 4] - 201.0/10.0*data_component[:, :, 5] \

@@ -40,23 +40,42 @@ def upsample(data, refine_ratio, component_idx = 0, method = 'constant'):
 
 def upsampleConstant(data, refine_ratio, component_idx = 0):
     """
-    Upsampling the data using second order Lagrange interpolation.
+    Upsampling the data using constant interpolation.
     """
     
     r = refine_ratio
+    
+    # Get the order and shape of data.
     
     data_order = 'C'
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
+    # Check whether the direction is valid.
+    
+    if direction < 0 or direction > 2:
+        raise RuntimeError('Direction < 0 or > 2 is invalid!')
+    
+    # Check whether the dimension of data is valid.
+    
+    if data.ndim < 2:
+        raise RuntimeError('Shape of data is invalid!')
+    
+    # Check whether the component_idx is valid and get the shape of the component's data.
     
     if data_order == 'C':
-        data_shape = data_shape[1:]
-    else:
-        data_shape = data_shape[:-1]
+        if component_idx >= data_shape[0] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = numpy.array(data.shape[1:])
     
-    data_shape = numpy.array(data_shape)
+    else:
+        if component_idx >= data_shape[-1] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = numpy.array(data.shape[:-1])
+    
+    # Get the dimension of data.
     
     dim = data_shape.shape[0]
     
@@ -137,20 +156,53 @@ def upsampleSecondOrderLagrange(data, refine_ratio, component_idx = 0):
     stencil_size = 2
     half_stencil_size = stencil_size/2
     
+    # Get the order and shape of data.
+    
     data_order = 'C'
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
+    # Check whether the direction is valid.
+    
+    if direction < 0 or direction > 2:
+        raise RuntimeError('Direction < 0 or > 2 is invalid!')
+    
+    # Check whether the dimension of data is valid.
+    
+    if data.ndim < 2:
+        raise RuntimeError('Shape of data is invalid!')
+    
+    # Check whether the component_idx is valid and get the shape of the component's data.
     
     if data_order == 'C':
-        data_shape = data_shape[1:]
-    else:
-        data_shape = data_shape[:-1]
+        if component_idx >= data_shape[0] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = numpy.array(data.shape[1:])
     
-    data_shape = numpy.array(data_shape)
+    else:
+        if component_idx >= data_shape[-1] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = numpy.array(data.shape[:-1])
+    
+    # Get the dimension of data.
     
     dim = data_shape.shape[0]
+    
+    # Check whether data size is large enough for second order first derivative.
+    
+    if direction == 0:
+        if data_shape[0] < 3:
+            raise RuntimeError('First dimension of data is not large enough!')
+    
+    elif direction == 1:
+        if data_shape[1] < 3:
+            raise RuntimeError('Second dimension of data is not large enough!')
+        
+    elif direction == 2:
+        if data_shape[2] < 3:
+            raise RuntimeError('Third dimension of data is not large enough!')
     
     # Compute the coefficients for second order Lagrange interpolation.
     
@@ -410,21 +462,55 @@ def upsampleFourthOrderLagrange(data, refine_ratio, component_idx = 0):
     stencil_size = 4
     half_stencil_size = stencil_size/2
     
+    # Get the order and shape of data.
+    
     data_order = 'C'
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
+    # Check whether the direction is valid.
+    
+    if direction < 0 or direction > 2:
+        raise RuntimeError('Direction < 0 or > 2 is invalid!')
+    
+    # Check whether the dimension of data is valid.
+    
+    if data.ndim < 2:
+        raise RuntimeError('Shape of data is invalid!')
+    
+    # Check whether the component_idx is valid and get the shape of the component's data.
     
     if data_order == 'C':
-        data_shape = data_shape[1:]
-    else:
-        data_shape = data_shape[:-1]
+        if component_idx >= data_shape[0] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = numpy.array(data.shape[1:])
     
-    data_shape = numpy.array(data_shape)
+    else:
+        if component_idx >= data_shape[-1] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = numpy.array(data.shape[:-1])
+    
+    # Get the dimension of data.
     
     dim = data_shape.shape[0]
     
+    # Check whether data size is large enough for second order first derivative.
+    
+    if direction == 0:
+        if data_shape[0] < 5:
+            raise RuntimeError('First dimension of data is not large enough!')
+    
+    elif direction == 1:
+        if data_shape[1] < 5:
+            raise RuntimeError('Second dimension of data is not large enough!')
+        
+    elif direction == 2:
+        if data_shape[2] < 5:
+            raise RuntimeError('Third dimension of data is not large enough!')
+    
+    # Check whether data size is large enough for second order first derivative.
     # Compute the coefficients for fourth order Lagrange interpolation.
     
     c_0 = None
@@ -693,20 +779,53 @@ def upsampleSixthOrderLagrange(data, refine_ratio, component_idx = 0):
     stencil_size = 6
     half_stencil_size = stencil_size/2
     
+    # Get the order and shape of data.
+    
     data_order = 'C'
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
+    # Check whether the direction is valid.
+    
+    if direction < 0 or direction > 2:
+        raise RuntimeError('Direction < 0 or > 2 is invalid!')
+    
+    # Check whether the dimension of data is valid.
+    
+    if data.ndim < 2:
+        raise RuntimeError('Shape of data is invalid!')
+    
+    # Check whether the component_idx is valid and get the shape of the component's data.
     
     if data_order == 'C':
-        data_shape = data_shape[1:]
-    else:
-        data_shape = data_shape[:-1]
+        if component_idx >= data_shape[0] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = numpy.array(data.shape[1:])
     
-    data_shape = numpy.array(data_shape)
+    else:
+        if component_idx >= data_shape[-1] or component_idx < 0:
+            raise RuntimeError('Component index is invalid!')
+        
+        data_shape = numpy.array(data.shape[:-1])
+    
+    # Get the dimension of data.
     
     dim = data_shape.shape[0]
+    
+    # Check whether data size is large enough for second order first derivative.
+    
+    if direction == 0:
+        if data_shape[0] < 7:
+            raise RuntimeError('First dimension of data is not large enough!')
+    
+    elif direction == 1:
+        if data_shape[1] < 7:
+            raise RuntimeError('Second dimension of data is not large enough!')
+        
+    elif direction == 2:
+        if data_shape[2] < 7:
+            raise RuntimeError('Third dimension of data is not large enough!')
     
     # Compute the coefficients for sixth order Lagrange interpolation.
     

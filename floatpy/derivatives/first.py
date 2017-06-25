@@ -46,8 +46,6 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
-    
     # Check whether the direction is valid.
     
     if direction < 0 or direction > 2:
@@ -64,13 +62,17 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
         if component_idx >= data_shape[0] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
-        data_shape = data_shape[1:]
+        data_shape = numpy.array(data.shape[1:])
     
     else:
         if component_idx >= data_shape[-1] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
-        data_shape = data_shape[:-1]
+        data_shape = numpy.array(data.shape[:-1])
+    
+    # Get the dimension of data.
+    
+    dim = data_shape.shape[0]
     
     # Check whether data size is large enough for second order first derivative.
     
@@ -97,53 +99,53 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     data_component = None
     
     if data_order == 'C':
-        if diff_data.ndim == 1:
+        if dim == 1:
             data_component = data[component_idx, :]
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             data_component = data[component_idx, :, :]
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             data_component = data[component_idx, :, :, :]
     else:
-        if diff_data.ndim == 1:
+        if dim == 1:
             data_component = data[:, component_idx]
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             data_component = data[:, :, component_idx]
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             data_component = data[:, :, :, component_idx]
     
     # Compute the derivatives in the interior of the domain.
     
     if direction == 0:
-        if diff_data.ndim == 1:
+        if dim == 1:
             diff_data[1:-1] = (-1.0/2.0*data_component[0:-2] + 1.0/2.0*data_component[2:])/dx
         
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             diff_data[1:-1, :] = (-1.0/2.0*data_component[0:-2, :] + 1.0/2.0*data_component[2:, :])/dx
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[1:-1, :, :] = (-1.0/2.0*data_component[0:-2, :, :] + 1.0/2.0*data_component[2:, :, :])/dx
         
         else:
             raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 1:
-        if diff_data.ndim < 2:
+        if dim < 2:
             raise IOError('There is no second direction in data with less than two dimensions!')
         
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             diff_data[:, 1:-1] = (-1.0/2.0*data_component[:, 0:-2] + 1.0/2.0*data_component[:, 2:])/dx
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[:, 1:-1, :] = (-1.0/2.0*data_component[:, 0:-2, :] + 1.0/2.0*data_component[:, 2:, :])/dx
         
         else:
             raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 2:
-        if diff_data.ndim < 3:
+        if dim < 3:
             raise IOError('There is no third direction in data with less than three dimensions!')
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[:, :, 1:-1] = (-1.0/2.0*data_component[:, :, 0:-2] + 1.0/2.0*data_component[:, :, 2:])/dx
         
         else:
@@ -153,21 +155,21 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     
     if uses_one_sided == True:
         if direction == 0:
-            if diff_data.ndim == 1:
+            if dim == 1:
                 diff_data[0] = (-3.0/2.0*data_component[0] + 2.0*data_component[1] \
                                 - 1.0/2.0*data_component[2])/dx
                 
                 diff_data[-1] = (1.0/2.0*data_component[-3] - 2.0*data_component[-2] \
                                  + 3.0/2.0*data_component[-1])/dx
             
-            elif diff_data.ndim == 2:
+            elif dim == 2:
                 diff_data[0, :] = (-3.0/2.0*data_component[0, :] + 2.0*data_component[1, :] \
                                    - 1.0/2.0*data_component[2, :])/dx
                 
                 diff_data[-1, :] = (1.0/2.0*data_component[-3, :] - 2.0*data_component[-2, :] \
                                     + 3.0/2.0*data_component[-1, :])/dx
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[0, :, :] = (-3.0/2.0*data_component[0, :, :] + 2.0*data_component[1, :, :] \
                                       - 1.0/2.0*data_component[2, :, :])/dx
                 
@@ -178,17 +180,17 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
                 raise RuntimeError('Data dimension > 3 not supported!')
         
         elif direction == 1:
-            if diff_data.ndim < 2:
+            if dim < 2:
                 raise RuntimeError('There is no second direction in data with less than two dimensions!')
             
-            elif diff_data.ndim == 2:
+            elif dim == 2:
                 diff_data[:, 0] = (-3.0/2.0*data_component[:, 0] + 2.0*data_component[:, 1] \
                                    - 1.0/2.0*data_component[:, 2])/dx
                 
                 diff_data[:, -1] = (1.0/2.0*data_component[:, -3] - 2.0*data_component[:, -2] \
                                     + 3.0/2.0*data_component[:, -1])/dx
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[:, 0, :] = (-3.0/2.0*data_component[:, 0, :] + 2.0*data_component[:, 1, :] \
                                       - 1.0/2.0*data_component[:, 2, :])/dx
                 
@@ -199,10 +201,10 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
                 raise RuntimeError('Data dimension > 3 not supported!')
         
         elif direction == 2:
-            if diff_data.ndim < 3:
+            if dim < 3:
                 raise IOError('There is no third direction in data with less than three dimensions!')
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[:, :, 0] = (-3.0/2.0*data_component[:, :, 0] + 2.0*data_component[:, :, 1] \
                                       - 1.0/2.0*data_component[:, :, 2])/dx
                 
@@ -226,8 +228,6 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
-    
     # Check whether the direction is valid.
     
     if direction < 0 or direction > 2:
@@ -244,13 +244,17 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
         if component_idx >= data_shape[0] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
-        data_shape = data_shape[1:]
+        data_shape = numpy.array(data.shape[1:])
     
     else:
         if component_idx >= data_shape[-1] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
-        data_shape = data_shape[:-1]
+        data_shape = numpy.array(data.shape[:-1])
+    
+    # Get the dimension of data.
+    
+    dim = data_shape.shape[0]
     
     # Check whether data size is large enough for fourth order first derivative.
     
@@ -277,46 +281,46 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     data_component = None
     
     if data_order == 'C':
-        if diff_data.ndim == 1:
+        if dim == 1:
             data_component = data[component_idx, :]
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             data_component = data[component_idx, :, :]
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             data_component = data[component_idx, :, :, :]
     else:
-        if diff_data.ndim == 1:
+        if dim == 1:
             data_component = data[:, component_idx]
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             data_component = data[:, :, component_idx]
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             data_component = data[:, :, :, component_idx]
     
     # Compute the derivatives in the interior of the domain.
     
     if direction == 0:
-        if diff_data.ndim == 1:
+        if dim == 1:
             diff_data[2:-2] = (1.0/12.0*data_component[0:-4] - 2.0/3.0*data_component[1:-3] \
                                + 2.0/3.0*data_component[3:-1] - 1.0/12.0*data_component[4:])/dx
         
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             diff_data[2:-2, :] = (1.0/12.0*data_component[0:-4, :] - 2.0/3.0*data_component[1:-3, :] \
                                   + 2.0/3.0*data_component[3:-1, :] - 1.0/12.0*data_component[4:, :])/dx
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[2:-2, :, :] = (1.0/12.0*data_component[0:-4, :, :] - 2.0/3.0*data_component[1:-3, :, :] \
                                      + 2.0/3.0*data_component[3:-1, :, :] - 1.0/12.0*data_component[4:, :, :])/dx
         else:
             raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 1:
-        if diff_data.ndim < 2:
+        if dim < 2:
             raise IOError('There is no second direction in data with less than two dimensions!')
         
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             diff_data[:, 2:-2] = (1.0/12.0*data_component[:, 0:-4] - 2.0/3.0*data_component[:, 1:-3] \
                                   + 2.0/3.0*data_component[:, 3:-1] - 1.0/12.0*data_component[:, 4:])/dx
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[:, 2:-2, :] = (1.0/12.0*data_component[:, 0:-4, :] - 2.0/3.0*data_component[:, 1:-3, :] \
                                      + 2.0/3.0*data_component[:, 3:-1, :] - 1.0/12.0*data_component[:, 4:, :])/dx
         
@@ -324,10 +328,10 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
             raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 2:
-        if diff_data.ndim < 3:
+        if dim < 3:
             raise IOError('There is no third direction in data with less than three dimensions!')
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[:, :, 2:-2] = (1.0/12.0*data_component[:, :, 0:-4] - 2.0/3.0*data_component[:, :, 1:-3] \
                                      + 2.0/3.0*data_component[:, :, 3:-1] - 1.0/12.0*data_component[:, :, 4:])/dx
         
@@ -338,7 +342,7 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
     
     if uses_one_sided == True:
         if direction == 0:
-            if diff_data.ndim == 1:
+            if dim == 1:
                 diff_data[0] = (-25.0/12.0*data_component[0] + 4.0*data_component[1] \
                                 - 3.0*data_component[2] + 4.0/3.0*data_component[3] \
                                 - 1.0/4.0*data_component[4])/dx
@@ -355,7 +359,7 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
                                  + 3.0*data_component[-3] - 4.0*data_component[-2] \
                                  + 25.0/12.0*data_component[-1])/dx
             
-            elif diff_data.ndim == 2:
+            elif dim == 2:
                 diff_data[0, :] = (-25.0/12.0*data_component[0, :] + 4.0*data_component[1, :] \
                                    - 3.0*data_component[2, :] + 4.0/3.0*data_component[3, :] \
                                    - 1.0/4.0*data_component[4, :])/dx
@@ -372,7 +376,7 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
                                     + 3.0*data_component[-3, :] - 4.0*data_component[-2, :] \
                                     + 25.0/12.0*data_component[-1, :])/dx
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[0, :, :] = (-25.0/12.0*data_component[0, :, :] + 4.0*data_component[1, :, :] \
                                       - 3.0*data_component[2, :, :] + 4.0/3.0*data_component[3, :, :] \
                                       - 1.0/4.0*data_component[4, :, :])/dx
@@ -393,10 +397,10 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
                 raise RuntimeError('Data dimension > 3 not supported!')
         
         elif direction == 1:
-            if diff_data.ndim < 2:
+            if dim < 2:
                 raise RuntimeError('There is no second direction in data with less than two dimensions!')
             
-            elif diff_data.ndim == 2:
+            elif dim == 2:
                 diff_data[:, 0] = (-25.0/12.0*data_component[:, 0] + 4.0*data_component[:, 1] \
                                    - 3.0*data_component[:, 2] + 4.0/3.0*data_component[:, 3] \
                                    - 1.0/4.0*data_component[:, 4])/dx
@@ -413,7 +417,7 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
                                     + 3.0*data_component[:, -3] - 4.0*data_component[:, -2] \
                                     + 25.0/12.0*data_component[:, -1])/dx
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[:, 0, :] = (-25.0/12.0*data_component[:, 0, :] + 4.0*data_component[:, 1, :] \
                                       - 3.0*data_component[:, 2, :] + 4.0/3.0*data_component[:, 3, :] \
                                       - 1.0/4.0*data_component[:, 4, :])/dx
@@ -434,10 +438,10 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0
                 raise RuntimeError('Data dimension > 3 not supported!')
         
         elif direction == 2:
-            if diff_data.ndim < 3:
+            if dim < 3:
                 raise IOError('There is no third direction in data with less than three dimensions!')
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[:, :, 0] = (-25.0/12.0*data_component[:, :, 0] + 4.0*data_component[:, :, 1] \
                                       - 3.0*data_component[:, :, 2] + 4.0/3.0*data_component[:, :, 3] \
                                       - 1.0/4.0*data_component[:, :, 4])/dx
@@ -471,8 +475,6 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
-    
     # Check whether the direction is valid.
     
     if direction < 0 or direction > 2:
@@ -489,13 +491,17 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
         if component_idx >= data_shape[0] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
-        data_shape = data_shape[1:]
+        data_shape = numpy.array(data.shape[1:])
     
     else:
         if component_idx >= data_shape[-1] or component_idx < 0:
             raise RuntimeError('Component index is invalid!')
         
-        data_shape = data_shape[:-1]
+        data_shape = numpy.array(data.shape[:-1])
+    
+    # Get the dimension of data.
+    
+    dim = data_shape.shape[0]
     
     # Check whether data size is large enough for sixth order first derivative.
     
@@ -522,34 +528,34 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
     data_component = None
     
     if data_order == 'C':
-        if diff_data.ndim == 1:
+        if dim == 1:
             data_component = data[component_idx, :]
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             data_component = data[component_idx, :, :]
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             data_component = data[component_idx, :, :, :]
     else:
-        if diff_data.ndim == 1:
+        if dim == 1:
             data_component = data[:, component_idx]
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             data_component = data[:, :, component_idx]
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             data_component = data[:, :, :, component_idx]
     
     # Compute the derivatives in the interior of the domain.
     
     if direction == 0:
-        if diff_data.ndim == 1:
+        if dim == 1:
             diff_data[3:-3] = (-1.0/60.0*data_component[0:-6] + 3.0/20.0*data_component[1:-5] \
                                - 3.0/4.0*data_component[2:-4] + 3.0/4.0*data_component[4:-2] \
                                - 3.0/20.0*data_component[5:-1] + 1.0/60.0*data_component[6:])/dx
         
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             diff_data[3:-3, :] = (-1.0/60.0*data_component[0:-6, :] + 3.0/20.0*data_component[1:-5, :] \
                                   - 3.0/4.0*data_component[2:-4, :] + 3.0/4.0*data_component[4:-2, :] \
                                   - 3.0/20.0*data_component[5:-1, :] + 1.0/60.0*data_component[6:, :])/dx
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[3:-3, :, :] = (-1.0/60.0*data_component[0:-6, :, :] + 3.0/20.0*data_component[1:-5, :, :] \
                                      - 3.0/4.0*data_component[2:-4, :, :] + 3.0/4.0*data_component[4:-2, :, :] \
                                      - 3.0/20.0*data_component[5:-1, :, :] + 1.0/60.0*data_component[6:, :, :])/dx
@@ -558,15 +564,15 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
             raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 1:
-        if diff_data.ndim < 2:
+        if dim < 2:
             raise IOError('There is no second direction in data with less than two dimensions!')
         
-        elif diff_data.ndim == 2:
+        elif dim == 2:
             diff_data[:, 3:-3] = (-1.0/60.0*data_component[:, 0:-6] + 3.0/20.0*data_component[:, 1:-5] \
                                   - 3.0/4.0*data_component[:, 2:-4] + 3.0/4.0*data_component[:, 4:-2] \
                                   - 3.0/20.0*data_component[:, 5:-1] + 1.0/60.0*data_component[:, 6:])/dx
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[:, 3:-3, :] = (-1.0/60.0*data_component[:, 0:-6, :] + 3.0/20.0*data_component[:, 1:-5, :] \
                                      - 3.0/4.0*data_component[:, 2:-4, :] + 3.0/4.0*data_component[:, 4:-2, :] \
                                      - 3.0/20.0*data_component[:, 5:-1, :] + 1.0/60.0*data_component[:, 6:, :])/dx
@@ -575,10 +581,10 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
             raise RuntimeError('Data dimension > 3 not supported!')
     
     elif direction == 2:
-        if diff_data.ndim < 3:
+        if dim < 3:
             raise IOError('There is no third direction in data with less than three dimensions!')
         
-        elif diff_data.ndim == 3:
+        elif dim == 3:
             diff_data[:, :, 3:-3] = (-1.0/60.0*data_component[:, :, 0:-6] + 3.0/20.0*data_component[:, :, 1:-5] \
                                      - 3.0/4.0*data_component[:, :, 2:-4] + 3.0/4.0*data_component[:, :, 4:-2] \
                                      - 3.0/20.0*data_component[:, :, 5:-1] + 1.0/60.0*data_component[:, :, 6:])/dx
@@ -590,7 +596,7 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
     
     if uses_one_sided == True:
         if direction == 0:
-            if diff_data.ndim == 1:
+            if dim == 1:
                 diff_data[0] = (-49.0/20.0*data_component[0] + 6.0*data_component[1] \
                                 - 15.0/2.0*data_component[2] + 20.0/3.0*data_component[3] \
                                 - 15.0/4.0*data_component[4] + 6.0/5.0*data_component[5] \
@@ -621,7 +627,7 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
                                  + 15.0/2.0*data_component[-3] - 6.0*data_component[-2] \
                                  + 49.0/20.0*data_component[-1])/dx
             
-            elif diff_data.ndim == 2:
+            elif dim == 2:
                 diff_data[0, :] = (-49.0/20.0*data_component[0, :] + 6.0*data_component[1, :] \
                                    - 15.0/2.0*data_component[2, :] + 20.0/3.0*data_component[3, :] \
                                    - 15.0/4.0*data_component[4, :] + 6.0/5.0*data_component[5, :] \
@@ -652,7 +658,7 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
                                     + 15.0/2.0*data_component[-3, :] - 6.0*data_component[-2, :] \
                                     + 49.0/20.0*data_component[-1, :])/dx
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[0, :, :] = (-49.0/20.0*data_component[0, :, :] + 6.0*data_component[1, :, :] \
                                       - 15.0/2.0*data_component[2, :, :] + 20.0/3.0*data_component[3, :, :] \
                                       - 15.0/4.0*data_component[4, :, :] + 6.0/5.0*data_component[5, :, :] \
@@ -687,10 +693,10 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
                 raise RuntimeError('Data dimension > 3 not supported!')
         
         elif direction == 1:
-            if diff_data.ndim < 2:
+            if dim < 2:
                 raise RuntimeError('There is no second direction in data with less than two dimensions!')
             
-            elif diff_data.ndim == 2:
+            elif dim == 2:
                 diff_data[:, 0] = (-49.0/20.0*data_component[:, 0] + 6.0*data_component[:, 1] \
                                    - 15.0/2.0*data_component[:, 2] + 20.0/3.0*data_component[:, 3] \
                                    - 15.0/4.0*data_component[:, 4] + 6.0/5.0*data_component[:, 5] \
@@ -721,7 +727,7 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
                                     + 15.0/2.0*data_component[:, -3] - 6.0*data_component[:, -2] \
                                     + 49.0/20.0*data_component[:, -1])/dx
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[:, 0, :] = (-49.0/20.0*data_component[:, 0, :] + 6.0*data_component[:, 1, :] \
                                       - 15.0/2.0*data_component[:, 2, :] + 20.0/3.0*data_component[:, 3, :] \
                                       - 15.0/4.0*data_component[:, 4, :] + 6.0/5.0*data_component[:, 5, :] \
@@ -756,10 +762,10 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = 0,
                 raise RuntimeError('Data dimension > 3 not supported!')
         
         elif direction == 2:
-            if diff_data.ndim < 3:
+            if dim < 3:
                 raise IOError('There is no third direction in data with less than three dimensions!')
             
-            elif diff_data.ndim == 3:
+            elif dim == 3:
                 diff_data[:, :, 0] = (-49.0/20.0*data_component[:, :, 0] + 6.0*data_component[:, :, 1] \
                                       - 15.0/2.0*data_component[:, :, 2] + 20.0/3.0*data_component[:, :, 3] \
                                       - 15.0/4.0*data_component[:, :, 4] + 6.0/5.0*data_component[:, :, 5] \
