@@ -6,9 +6,7 @@ import copy
 import h5py
 import numpy
 
-import sys
-sys.path.append('../upsampling')
-import upsampling
+from floatpy.upsampling import upsampling
 
 class samraiDataReader:
     """
@@ -2188,7 +2186,7 @@ class samraiDataReader:
         # Combine data at all levels.
         
         for var_name in var_names:
-
+            
             data_shape = hi_subdomain_level[-1][0:dim] - lo_subdomain_level[-1][0:dim] \
                 + numpy.ones(dim, dtype = lo_subdomain_level.dtype)
             
@@ -2199,6 +2197,11 @@ class samraiDataReader:
             
             self.__data[var_name] = numpy.empty(data_shape, dtype = numpy.float64, order = self.__data_order)
             self.__data[var_name][:] = numpy.NAN
+            
+            if self.__data_order == 'C':
+                data_shape = numpy.array(data_shape[1:])
+            else:
+                data_shape = numpy.array(data_shape[:-1])
             
             if dim == 1:
                 lo_root_refined = numpy.empty(dim, dtype = lo_subdomain_level.dtype)
