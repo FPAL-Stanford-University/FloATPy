@@ -1097,8 +1097,8 @@ class samraiDataReader:
                             
                             # Get the lower and upper indices of the current patch.
                             
-                            lo_patch = patch_extents[global_patch_idx][0]
-                            hi_patch = patch_extents[global_patch_idx][1]
+                            lo_patch = self.__patch_extents[global_patch_idx][0]
+                            hi_patch = self.__patch_extents[global_patch_idx][1]
                             
                             for component_idx in range(0, var_num_components[var_name]):
                                 # Get the patch data.
@@ -1412,8 +1412,8 @@ class samraiDataReader:
                             
                             # Get the lower and upper indices of the current patch.
                             
-                            lo_patch = patch_extents[global_patch_idx][0]
-                            hi_patch = patch_extents[global_patch_idx][1]
+                            lo_patch = self.__patch_extents[global_patch_idx][0]
+                            hi_patch = self.__patch_extents[global_patch_idx][1]
                             
                             # Get the shape of the patch.
                             
@@ -2212,27 +2212,21 @@ class samraiDataReader:
                 x_end_idx = data_shape[0] + x_start_idx
                 
                 for component_idx in range(0, var_num_components[var_name]):
+                    root_data_component = upsampling.upsample(level_data[var_name][0], \
+                        ratios_to_finest_level[0], \
+                        component_idx, method = 'constant')
+                    
                     if self.__data_order == 'C':
-                        root_data_component = level_data[var_name][0][component_idx, :]
-                        
-                        root_data_component = numpy.repeat(root_data_component, ratios_to_finest_level[0][0], \
-                            axis = 0)
-                        
                         root_data_component = root_data_component[x_start_idx:x_end_idx]
                         is_finite_idx = numpy.isfinite(root_data_component)
                         self.__data[var_name][component_idx, :][is_finite_idx] = root_data_component[is_finite_idx]
                     
                     else:
-                        root_data_component = level_data[var_name][0][:, component_idx]
-        
-                        root_data_component = numpy.repeat(root_data_component, ratios_to_finest_level[0][0], \
-                            axis = 0)
-        
                         root_data_component = root_data_component[x_start_idx:x_end_idx]
                         is_finite_idx = numpy.isfinite(root_data_component)
                         self.__data[var_name][:, component_idx][is_finite_idx] = root_data_component[is_finite_idx]
                 
-                for level_num in range(1, num_levels):
+                for level_num in range(0, num_levels):
                     lo_level_refined = numpy.empty(dim, dtype = lo_subdomain_level.dtype)
                     
                     lo_level_refined[0] = lo_subdomain_level[level_num][0]*ratios_to_finest_level[level_num][0]
@@ -2241,22 +2235,16 @@ class samraiDataReader:
                     x_end_idx = data_shape[0] + x_start_idx
                     
                     for component_idx in range(0, var_num_components[var_name]):
+                        level_data_component = upsampling.upsample(level_data[var_name][level_num], \
+                            ratios_to_finest_level[level_num], \
+                            component_idx, method = upsampling_method)
+                        
                         if self.__data_order == 'C':
-                            level_data_component = level_data[var_name][level_num][component_idx, :]
-                            
-                            level_data_component = numpy.repeat(level_data_component, ratios_to_finest_level[level_num][0], \
-                                axis = 0)
-                            
                             level_data_component = level_data_component[x_start_idx:x_end_idx]
                             is_finite_idx = numpy.isfinite(level_data_component)
                             self.__data[var_name][component_idx, :][is_finite_idx] = level_data_component[is_finite_idx]
                         
                         else:
-                            level_data_component = level_data[var_name][level_num][:, component_idx]
-                            
-                            level_data_component = numpy.repeat(level_data_component, ratios_to_finest_level[level_num][0], \
-                                axis = 0)
-                            
                             level_data_component = level_data_component[x_start_idx:x_end_idx]
                             is_finite_idx = numpy.isfinite(level_data_component)
                             self.__data[var_name][:, component_idx][is_finite_idx] = level_data_component[is_finite_idx]
@@ -2274,41 +2262,21 @@ class samraiDataReader:
                 y_end_idx = data_shape[1] + y_start_idx
                 
                 for component_idx in range(0, var_num_components[var_name]):
+                    root_data_component = upsampling.upsample(level_data[var_name][0], \
+                        ratios_to_finest_level[0], \
+                        component_idx, method = 'constant')
+                    
                     if self.__data_order == 'C':
-                        root_data_component = level_data[var_name][0][component_idx, :, :]
-                        
-                        root_data_component = numpy.repeat(root_data_component, ratios_to_finest_level[0][0], \
-                            axis = 0)
-                        root_data_component = numpy.repeat(root_data_component, ratios_to_finest_level[0][1], \
-                            axis = 1)
-                        
                         root_data_component = root_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx]
                         is_finite_idx = numpy.isfinite(root_data_component)
                         self.__data[var_name][component_idx, :, :][is_finite_idx] = root_data_component[is_finite_idx]
                     
                     else:
-                        root_data_component = level_data[var_name][0][:, :, component_idx]
-                        
-                        root_data_component_shape = numpy.copy(root_data_component.shape)
-                        root_data_component = numpy.ravel(root_data_component, order = 'F')
-                        root_data_component = root_data_component.reshape(
-                            (root_data_component_shape[1], root_data_component_shape[0]), \
-                            order = 'C')
-                        
-                        root_data_component = numpy.repeat(root_data_component, ratios_to_finest_level[0][1], \
-                            axis = 0)
-                        root_data_component = numpy.repeat(root_data_component, ratios_to_finest_level[0][0], \
-                            axis = 1)
-                        
-                        root_data_component = numpy.ravel(root_data_component, order = 'C')
-                        root_data_component = root_data_component.reshape(
-                            root_data_component_shape*ratios_to_finest_level[0][0:dim], order = 'F')
-                        
                         root_data_component = root_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx]
                         is_finite_idx = numpy.isfinite(root_data_component)
                         self.__data[var_name][:, :, component_idx][is_finite_idx] = root_data_component[is_finite_idx]
                 
-                for level_num in range(1, num_levels):
+                for level_num in range(0, num_levels):
                     lo_level_refined = numpy.empty(dim, dtype = lo_subdomain_level.dtype)
                     
                     lo_level_refined[0] = lo_subdomain_level[level_num][0]*ratios_to_finest_level[level_num][0]
@@ -2321,36 +2289,16 @@ class samraiDataReader:
                     y_end_idx = data_shape[1] + y_start_idx
                     
                     for component_idx in range(0, var_num_components[var_name]):
+                        level_data_component = upsampling.upsample(level_data[var_name][level_num], \
+                            ratios_to_finest_level[level_num], \
+                            component_idx, method = upsampling_method)
+                        
                         if self.__data_order == 'C':
-                            level_data_component = level_data[var_name][level_num][component_idx, :, :]
-                            
-                            level_data_component = numpy.repeat(level_data_component, ratios_to_finest_level[level_num][0], \
-                                axis = 0)
-                            level_data_component = numpy.repeat(level_data_component, ratios_to_finest_level[level_num][1], \
-                                axis = 1)
-                            
                             level_data_component = level_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx]
                             is_finite_idx = numpy.isfinite(level_data_component)
                             self.__data[var_name][component_idx, :, :][is_finite_idx] = level_data_component[is_finite_idx]
                             
                         else:
-                            level_data_component = level_data[var_name][level_num][:, :, component_idx]
-                            
-                            level_data_component_shape = numpy.copy(level_data_component.shape)
-                            level_data_component = numpy.ravel(level_data_component, order = 'F')
-                            level_data_component = level_data_component.reshape(
-                                (level_data_component_shape[1], level_data_component_shape[0]), \
-                                order = 'C')
-                            
-                            level_data_component = numpy.repeat(level_data_component, ratios_to_finest_level[level_num][1], \
-                                axis = 0)
-                            level_data_component = numpy.repeat(level_data_component, ratios_to_finest_level[level_num][0], \
-                                axis = 1)
-                            
-                            level_data_component = numpy.ravel(level_data_component, order = 'C')
-                            level_data_component = level_data_component.reshape(
-                                level_data_component_shape*ratios_to_finest_level[level_num][0:dim], order = 'F')
-                            
                             level_data_component = level_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx]
                             is_finite_idx = numpy.isfinite(level_data_component)
                             self.__data[var_name][:, :, component_idx][is_finite_idx] = level_data_component[is_finite_idx]
@@ -2372,7 +2320,8 @@ class samraiDataReader:
                 z_end_idx = data_shape[2] + z_start_idx
                 
                 for component_idx in range(0, var_num_components[var_name]):
-                    root_data_component = upsample(level_data[var_name][0], ratios_to_finest_level[0], \
+                    root_data_component = upsampling.upsample(level_data[var_name][0], \
+                        ratios_to_finest_level[0], \
                         component_idx, method = 'constant')
                     
                     if self.__data_order == 'C':
@@ -2404,7 +2353,8 @@ class samraiDataReader:
                     z_end_idx = data_shape[2] + z_start_idx
                     
                     for component_idx in range(0, var_num_components[var_name]):
-                        level_data_component = upsample(level_data[var_name][level_num], ratios_to_finest_level[level_num], \
+                        level_data_component = upsampling.upsample(level_data[var_name][level_num], \
+                            ratios_to_finest_level[level_num], \
                             component_idx, method = upsampling_method)
                         
                         if self.__data_order == 'C':
@@ -2417,7 +2367,7 @@ class samraiDataReader:
                             level_data_component = \
                                 level_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx]
                             is_finite_idx = numpy.isfinite(level_data_component)
-                            self.__data[var_name][:, :, component_idx][is_finite_idx] = level_data_component[is_finite_idx]
+                            self.__data[var_name][:, :, :, component_idx][is_finite_idx] = level_data_component[is_finite_idx]
         
         self.__data_loaded = True
     
@@ -2551,7 +2501,7 @@ class samraiDataReader:
             z_patch_start_idx = z_global_start_idx - lo_patch[2]
             z_patch_start_idx = max(0, z_patch_start_idx)
             
-            z_patch_end_idx = patch_data.shape[2] - ((hi_patch[2] + 1) - y_global_end_idx)
+            z_patch_end_idx = patch_data.shape[2] - ((hi_patch[2] + 1) - z_global_end_idx)
             z_patch_end_idx = min(patch_data.shape[2], z_patch_end_idx)
             
             if (x_local_start_idx < x_local_end_idx) and \
