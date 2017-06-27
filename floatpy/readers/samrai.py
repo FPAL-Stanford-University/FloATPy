@@ -2235,9 +2235,15 @@ class samraiDataReader:
                     x_end_idx = data_shape[0] + x_start_idx
                     
                     for component_idx in range(0, var_num_components[var_name]):
-                        level_data_component = upsampling.upsample(level_data[var_name][level_num], \
-                            ratios_to_finest_level[level_num], \
-                            component_idx, method = upsampling_method)
+                        if level_num != num_levels - 1:
+                            level_data_component = upsampling.upsample(level_data[var_name][level_num], \
+                                ratios_to_finest_level[level_num], \
+                                component_idx, method = upsampling_method)
+                        else:
+                            if self.__data_order == 'C':
+                                level_data_component = level_data[var_name][level_num][component_idx, :]
+                            else:
+                                level_data_component = level_data[var_name][level_num][:, component_idx]
                         
                         if self.__data_order == 'C':
                             level_data_component = level_data_component[x_start_idx:x_end_idx]
@@ -2289,9 +2295,15 @@ class samraiDataReader:
                     y_end_idx = data_shape[1] + y_start_idx
                     
                     for component_idx in range(0, var_num_components[var_name]):
-                        level_data_component = upsampling.upsample(level_data[var_name][level_num], \
-                            ratios_to_finest_level[level_num], \
-                            component_idx, method = upsampling_method)
+                        if level_num != num_levels - 1:
+                            level_data_component = upsampling.upsample(level_data[var_name][level_num], \
+                                ratios_to_finest_level[level_num], \
+                                component_idx, method = upsampling_method)
+                        else:
+                            if self.__data_order == 'C':
+                                level_data_component = level_data[var_name][level_num][component_idx, :, :]
+                            else:
+                                level_data_component = level_data[var_name][level_num][:, :, component_idx]
                         
                         if self.__data_order == 'C':
                             level_data_component = level_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx]
@@ -2353,9 +2365,15 @@ class samraiDataReader:
                     z_end_idx = data_shape[2] + z_start_idx
                     
                     for component_idx in range(0, var_num_components[var_name]):
-                        level_data_component = upsampling.upsample(level_data[var_name][level_num], \
-                            ratios_to_finest_level[level_num], \
-                            component_idx, method = upsampling_method)
+                        if level_num != num_levels - 1:
+                            level_data_component = upsampling.upsample(level_data[var_name][level_num], \
+                                ratios_to_finest_level[level_num], \
+                                component_idx, method = upsampling_method)
+                        else:
+                            if self.__data_order == 'C':
+                                level_data_component = level_data[var_name][level_num][component_idx, :, :, :]
+                            else:
+                                level_data_component = level_data[var_name][level_num][:, :, :, component_idx]
                         
                         if self.__data_order == 'C':
                             level_data_component = \
