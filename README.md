@@ -14,7 +14,7 @@ If you don't have root access, you can do:
 
 ### Contribution guidelines ###
 
-Pleas put all tests in the `floatpy/tests` directory. Tests are preferably to be written in Jupyter Notebook. Please see the [coding style](https://github.com/mlwong/FloATPy/wiki/Coding-Style) for adding new modules to the toolbox.
+Pleas put all tests in the `floatpy/tests` directory. Tests are required for every module in the package. Please see the [coding style](https://github.com/mlwong/FloATPy/wiki/Coding-Style) for adding new modules to the toolbox and [testing directives](https://github.com/mlwong/FloATPy/wiki/Testing-Directives) to add the corresponding tests.
 
 ### Who do I talk to? ###
 
