@@ -76,7 +76,7 @@ class WchrAsciiReader(BaseReader):
         self.inds = {'rho' : 0, 'u' : 1, 'v' : 2, 'w' : 3, 'p' : 4}
 
 
-    def readSummary(self, step):
+    def updateSummary(self, step):
         pass
 
     def setSubDomain(self, lo, hi):
