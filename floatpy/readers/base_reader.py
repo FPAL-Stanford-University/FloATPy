@@ -39,7 +39,7 @@ class BaseReader(object):
     
     
     @abc.abstractproperty
-    def domain_size(self):
+    def getDomainSize(self):
         """
         Return a tuple containing the full domain size of this dataset.
         """
@@ -47,7 +47,7 @@ class BaseReader(object):
     
     
     @abc.abstractproperty
-    def sub_domain(self):
+    def getSubDomain(self):
         """
         Return two tuples containing the sub-domain used in this reader
         as a lower bound (lo) and upper bound (hi).
@@ -56,14 +56,14 @@ class BaseReader(object):
     
     
     @abc.abstractproperty
-    def periodic_dimensions(self):
+    def getPeriodicDimensions(self):
         """
         Return a tuple indicating if data is periodic in each dimension.
         """
         return
 
     @abc.abstractproperty
-    def time(self):
+    def getTime(self):
         """
         Return the current simulation time.
         """
