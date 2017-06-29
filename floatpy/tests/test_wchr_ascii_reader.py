@@ -10,50 +10,50 @@ class TestWchrAsciiReader(unittest.TestCase):
         self.filename_prefix = os.path.join(os.path.dirname(__file__), 'test_wchr_ascii_reader_data/WCHR_')
         self.reader = war.WchrAsciiReader(self.filename_prefix)
 
-        # Read in the full domain coordinates
-        self.reader.readXCoord()
-        self.reader.readYCoord()
-        self.reader.readZCoord()
+        self.lo = (2 , 4, 1)
+        self.hi = (5 , 8, 7)
+        self.reader.setSubDomain(self.lo, self.hi)
 
 
     def test_readCoordinates_chunk(self):
 
-        # Define a chunk
-        chunk = ((2,5),(4,8),(1,7))
+        # Read full coordinates
+        self.reader.setSubDomain((0,0,0), self.reader.domain_size)
+        x, y, z = self.reader.readCoordinates()
 
         # Read chunked coordinates
-        x, y, z = self.reader.readCoordinates(chunk)
+        self.reader.setSubDomain(self.lo, self.hi)
+        x_c, y_c, z_c = self.reader.readCoordinates()
 
         # Check that the chunked coordinates are equal to the corresponding full coords
-        xerr = numpy.absolute(self.reader.x_c[ chunk[0][0]:chunk[0][1], chunk[1][0]:chunk[1][1], chunk[2][0]:chunk[2][1] ] - x).max()
-        yerr = numpy.absolute(self.reader.y_c[ chunk[0][0]:chunk[0][1], chunk[1][0]:chunk[1][1], chunk[2][0]:chunk[2][1] ] - y).max()
-        zerr = numpy.absolute(self.reader.z_c[ chunk[0][0]:chunk[0][1], chunk[1][0]:chunk[1][1], chunk[2][0]:chunk[2][1] ] - z).max()
+        xerr = numpy.absolute(x[ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - x_c).max()
+        yerr = numpy.absolute(y[ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - y_c).max()
+        zerr = numpy.absolute(z[ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - z_c).max()
 
         self.assertEqual(xerr, 0., "Incorrect chunked coordinate data reader in X")
         self.assertEqual(yerr, 0., "Incorrect chunked coordinate data reader in Y")
         self.assertEqual(zerr, 0., "Incorrect chunked coordinate data reader in Z")
 
 
-    def test_readVariables_chunk(self):
-
-        # Define a chunk
-        chunk = ((2,5),(4,8),(1,7))
+    def test_readData_chunk(self):
 
         # Read full data
-        rho,    = self.reader.readVariables('rho', 0, chunk=None)
-        u, v, w = self.reader.readVariables(('u','v','w'), 0, chunk=None)
-        p,      = self.reader.readVariables('p', 0, chunk=None)
+        self.reader.setSubDomain((0,0,0), self.reader.domain_size)
+        rho,    = self.reader.readData('rho', 0)
+        u, v, w = self.reader.readData(('u','v','w'), 0)
+        p,      = self.reader.readData('p', 0)
 
         # Read in chunked data
-        rho_c,        = self.reader.readVariables('rho', 0, chunk=chunk)
-        u_c, v_c, w_c = self.reader.readVariables(('u','v','w'), 0, chunk=chunk)
-        p_c,          = self.reader.readVariables('p', 0, chunk=chunk)
+        self.reader.setSubDomain(self.lo, self.hi)
+        rho_c,        = self.reader.readData('rho', 0)
+        u_c, v_c, w_c = self.reader.readData(('u','v','w'), 0)
+        p_c,          = self.reader.readData('p', 0)
 
-        rerr = numpy.absolute(rho[ chunk[0][0]:chunk[0][1], chunk[1][0]:chunk[1][1], chunk[2][0]:chunk[2][1] ] - rho_c).max()
-        uerr = numpy.absolute(u  [ chunk[0][0]:chunk[0][1], chunk[1][0]:chunk[1][1], chunk[2][0]:chunk[2][1] ] - u_c  ).max()
-        verr = numpy.absolute(v  [ chunk[0][0]:chunk[0][1], chunk[1][0]:chunk[1][1], chunk[2][0]:chunk[2][1] ] - v_c  ).max()
-        werr = numpy.absolute(w  [ chunk[0][0]:chunk[0][1], chunk[1][0]:chunk[1][1], chunk[2][0]:chunk[2][1] ] - w_c  ).max()
-        perr = numpy.absolute(p  [ chunk[0][0]:chunk[0][1], chunk[1][0]:chunk[1][1], chunk[2][0]:chunk[2][1] ] - p_c  ).max()
+        rerr = numpy.absolute(rho[ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - rho_c).max()
+        uerr = numpy.absolute(u  [ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - u_c  ).max()
+        verr = numpy.absolute(v  [ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - v_c  ).max()
+        werr = numpy.absolute(w  [ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - w_c  ).max()
+        perr = numpy.absolute(p  [ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - p_c  ).max()
 
         self.assertEqual(rerr, 0., "Incorrect chunked variable data reader for rho")
         self.assertEqual(uerr, 0., "Incorrect chunked variable data reader for u  ")

@@ -19,13 +19,6 @@ class BaseReader(object):
 
     __metaclass__ = abc.ABCMeta
     
-    # def __init__(self, data_directory_path):
-    #     """
-    #     Set the absolute path of the data directory.
-    #     Return error when data is already loaded.
-    #     Should clear data first before re-setting the path.
-    #     """
-    #     
     
     @abc.abstractmethod
     def readSummary(self, step):
@@ -49,23 +42,31 @@ class BaseReader(object):
         
     
     @abc.abstractproperty
-    def domainSize(self):
+    def domain_size(self):
         """
-        Return the full domain size of this dataset.
-        """
-        return
-
-    @abc.abstractproperty
-    def getSubDomain(self):
-        """
-        Return the sub-domain used in this reader.
+        Return a tuple containing the full domain size of this dataset.
         """
         return
 
     @abc.abstractproperty
-    def getPeriodicDimensions(self):
+    def sub_domain(self):
         """
-        Return an array indicating if data is periodic in each dimension.
+        Return two tuples containing the sub-domain used in this reader
+        as a lower bound (lo) and upper bound (hi).
+        """
+        return
+
+    @abc.abstractproperty
+    def periodic_dimensions(self):
+        """
+        Return a tuple indicating if data is periodic in each dimension.
+        """
+        return
+
+    @abc.abstractproperty
+    def time(self):
+        """
+        Return the current simulation time.
         """
         return
 
@@ -73,7 +74,7 @@ class BaseReader(object):
     def readCoordinates(self):
         """
         Get the coordinates of the stored sub-domain.
-        Return error when the sub-domain is not set.
+        Default to the full domain when the sub-domain is not set.
         """
         return
         
@@ -82,14 +83,8 @@ class BaseReader(object):
     def readData(self, var_names, step):
         """
         Read the data of several variables in the stored sub-domain.
-        Return error when the sub-domain is not set.
+        Default to the full domain when the sub-domain is not set.
         """
         return
         
     
-    
-    # def __del__(self):
-    #     """
-    #     Clear all data in the class.
-    #     """
-    #     
