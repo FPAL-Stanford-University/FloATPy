@@ -75,9 +75,12 @@ class WchrAsciiReader(BaseReader):
         # Indices for each variable
         self.inds = {'rho' : 0, 'u' : 1, 'v' : 2, 'w' : 3, 'p' : 4}
 
+        # Step is set to 0 by default
+        self.step = 0
 
     def updateSummary(self, step):
-        pass
+        assert(step in self.steps, "Step to read in is not available in the dataset.")
+        self.step = step
 
     def setSubDomain(self, lo, hi):
         # Check if lo and hi are within the domain bounds first
@@ -230,7 +233,7 @@ class WchrAsciiReader(BaseReader):
         return x_c, y_c, z_c
 
 
-    def readData(self, var_names, step):
+    def readData(self, var_names):
         """
         Method to read in the a chunk of the data for variables at vizdump step
         """
@@ -244,8 +247,6 @@ class WchrAsciiReader(BaseReader):
 
         ny = self.domain_size_[1]
 
-        assert(step in self.steps, "Step to read in is not available in the dataset.")
-
         for i in range(len(var_names)):
             var = var_names[i]
             v   = data[i]
@@ -254,7 +255,7 @@ class WchrAsciiReader(BaseReader):
 
             for row in range(self.prow):
                 for col in range(self.pcol):
-                    filename = self.filename_prefix + ('%04d_px%04d_pz%04d.dat' % (step, row, col))
+                    filename = self.filename_prefix + ('%04d_px%04d_pz%04d.dat' % (self.step, row, col))
                     lo = self.pencil_lo[row,col]
                     hi = self.pencil_hi[row,col]
 

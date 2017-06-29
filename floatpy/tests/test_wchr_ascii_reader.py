@@ -13,6 +13,7 @@ class TestWchrAsciiReader(unittest.TestCase):
         self.lo = (2 , 4, 1)
         self.hi = (5 , 8, 7)
         self.reader.setSubDomain(self.lo, self.hi)
+        self.reader.updateSummary(0)
 
 
     def test_readCoordinates_chunk(self):
@@ -39,15 +40,15 @@ class TestWchrAsciiReader(unittest.TestCase):
 
         # Read full data
         self.reader.setSubDomain((0,0,0), self.reader.domain_size)
-        rho,    = self.reader.readData('rho', 0)
-        u, v, w = self.reader.readData(('u','v','w'), 0)
-        p,      = self.reader.readData('p', 0)
+        rho,    = self.reader.readData('rho')
+        u, v, w = self.reader.readData(('u','v','w'))
+        p,      = self.reader.readData('p')
 
         # Read in chunked data
         self.reader.setSubDomain(self.lo, self.hi)
-        rho_c,        = self.reader.readData('rho', 0)
-        u_c, v_c, w_c = self.reader.readData(('u','v','w'), 0)
-        p_c,          = self.reader.readData('p', 0)
+        rho_c,        = self.reader.readData('rho')
+        u_c, v_c, w_c = self.reader.readData(('u','v','w'))
+        p_c,          = self.reader.readData('p')
 
         rerr = numpy.absolute(rho[ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - rho_c).max()
         uerr = numpy.absolute(u  [ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - u_c  ).max()
