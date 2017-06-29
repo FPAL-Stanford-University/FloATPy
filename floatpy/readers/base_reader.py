@@ -2,10 +2,10 @@ import abc
 
 class BaseReader(object):
     """
-    Abstract class to read data.
+    Abstract base class to read data.
     
     Steps in using the data reader to post-process data in many time steps:
-    1. Use the constructor BaseReader(data_directory_path) to create the object and initialize it
+    1. Use the constructor BaseReader(data_directory_path) to create the object and initialize it.
     4. Call setSubDomain(lo,hi) to set the sub domain to read in (may only call once depending on the usage)
     2. Call readSummary(step) for each timestep
     5. Call readCoordinates() (may only call once depending on the usage)
@@ -32,7 +32,6 @@ class BaseReader(object):
         """
         Get the meta data from the summary file in the data directory.
         Return error when data directory is not set.
-        Return error when data is already loaded.
         """
         return
         
@@ -52,21 +51,21 @@ class BaseReader(object):
     @abc.abstractproperty
     def domainSize(self):
         """
-        Return the full domain size of this dataset
+        Return the full domain size of this dataset.
         """
         return
 
     @abc.abstractproperty
-    def subDomain(self):
+    def getSubDomain(self):
         """
-        Return the sub domain used in this reader
+        Return the sub-domain used in this reader.
         """
         return
 
     @abc.abstractproperty
-    def periodicDimensions(self):
+    def getPeriodicDimensions(self):
         """
-        Return an array indicating if data is periodic in each dimension
+        Return an array indicating if data is periodic in each dimension.
         """
         return
 
@@ -84,7 +83,6 @@ class BaseReader(object):
         """
         Read the data of several variables in the stored sub-domain.
         Return error when the sub-domain is not set.
-        Return error when data is already loaded.
         """
         return
         
