@@ -7,7 +7,7 @@ class BaseReader(object):
     Steps in using the data reader to post-process data in many time steps:
     1. Use the constructor BaseReader(data_directory_path) to create the object and initialize it.
     2. Call getDomainSize() to get the full domain size.
-    3. Call setSubDomain(lo,hi) to set the sub domain to read in. (may only call once depending on the usage)
+    3. Call setSubDomain(lo, hi) to set the sub-domain to read in.
     4. Call readCoordinates() to get coordinates of the sub-domain.
     For each time step:
         a. Call updateSummary(step) for each timestep.
