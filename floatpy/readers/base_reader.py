@@ -86,7 +86,7 @@ class BaseReader(object):
     
     
     @abc.abstractmethod
-    def readData(self, var_names, step):
+    def readData(self, var_names):
         """
         Read the data of several variables in the stored sub-domain.
         Return error when the sub-domain is not set.
