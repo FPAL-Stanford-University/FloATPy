@@ -1,65 +1,43 @@
-class BaseReader:
+import abc
+
+class BaseReader(object):
     """
     Abstract class to read data.
     
     Steps in using the data reader to post-process data in many time steps:
-    1. Call setDataDirectoryPath()
-    2. Call readSummary() (may only call once depending on the data format)
-    3. Call getFullDomainSize() (may only call once depending on the usage)
-    4. Call setSubDomain() (may only call once depending on the usage)
-    5. Call getCoordinates() (may only call once depending on the usage)
+    1. Use the constructor BaseReader(data_directory_path) to create the object and initialize it
+    4. Call setSubDomain(lo,hi) to set the sub domain to read in (may only call once depending on the usage)
+    2. Call readSummary(step) for each timestep
+    5. Call readCoordinates() (may only call once depending on the usage)
     5. Call readData()
-    6. Call getData()
-    8. Do some post-processing...
-    7. Call clearData()/clear() (call clear if user wants to read summary from another directory)
+    8. Do your post-processing...
+
+    To write a concrete class (called MyReaderImplementation, say) that derives from this, implement the following
+    abstract methods and in the end of the file add the following code to register the concrete class
+    BaseReader.register(MyReaderImplementation)
     """
+
+    __metaclass__ = abc.ABCMeta
     
-    def setDataDirectoryPath(self, data_directory_path):
-        """
-        Set the absolute path of the data directory.
-        Return error when data is already loaded.
-        Should clear data first before re-setting the path.
-        """
-        
-        raise RuntimeError("Not yet implemented")
+    # def __init__(self, data_directory_path):
+    #     """
+    #     Set the absolute path of the data directory.
+    #     Return error when data is already loaded.
+    #     Should clear data first before re-setting the path.
+    #     """
+    #     
     
-    
-    def getDataDirectoryPath(self):
-        """
-        Get the stored absolute path of the data directory.
-        """
-        
-        raise RuntimeError("Not yet implemented")
-    
-    
-    def readSummary(self):
+    @abc.abstractmethod
+    def readSummary(self, step):
         """
         Get the meta data from the summary file in the data directory.
         Return error when data directory is not set.
         Return error when data is already loaded.
         """
+        return
         
-        raise RuntimeError("Not yet implemented")
     
-    
-    def readSummary(self, summary_file_path):
-        """
-        Get the meta data from the summary file in the given path.
-        Return error when data is already loaded.
-        """
-        
-        raise RuntimeError("Not yet implemented")
-    
-    
-    def getFullDomainSize(self):
-        """
-        Get the full domain size.
-        Return error when summary is not read.
-        """
-        
-        raise RuntimeError("Not yet implemented")
-    
-    
+    @abc.abstractmethod
     def setSubDomain(self, lo, hi):
         """
         Set the sub-domain for reading coordinates and data.
@@ -68,49 +46,52 @@ class BaseReader:
         Return error when data is already loaded.
         Should clear data first before re-setting the sub-domain.
         """
+        return
         
-        raise RuntimeError("Not yet implemented")
     
-    
-    def getCoordinates(self):
+    @abc.abstractproperty
+    def domainSize(self):
+        """
+        Return the full domain size of this dataset
+        """
+        return
+
+    @abc.abstractproperty
+    def subDomain(self):
+        """
+        Return the sub domain used in this reader
+        """
+        return
+
+    @abc.abstractproperty
+    def periodicDimensions(self):
+        """
+        Return an array indicating if data is periodic in each dimension
+        """
+        return
+
+    @abc.abstractmethod
+    def readCoordinates(self):
         """
         Get the coordinates of the stored sub-domain.
         Return error when the sub-domain is not set.
         """
+        return
         
-        raise RuntimeError("Not yet implemented")
     
-    
-    def readData(self, var_names, periodic_dimension):
+    @abc.abstractmethod
+    def readData(self, var_names, step):
         """
         Read the data of several variables in the stored sub-domain.
         Return error when the sub-domain is not set.
         Return error when data is already loaded.
         """
+        return
         
-        raise RuntimeError("Not yet implemented")
     
     
-    def getData(self, var_name):
-        """
-        Get the loaded data of a variable.
-        Return error when data is not loaded yet.
-        """
-        
-        raise RuntimeError("Not yet implemented")
-    
-    
-    def clearData(self):
-        """
-        Clear any loaded data.
-        """
-        
-        raise RuntimeError("Not yet implemented")
-    
-    
-    def clear(self):
-        """
-        Clear all data in the class.
-        """
-        
-        raise RuntimeError("Not yet implemented")
+    # def __del__(self):
+    #     """
+    #     Clear all data in the class.
+    #     """
+    #     
