@@ -36,6 +36,14 @@ class BaseReader(object):
         return
     
     
+    @abc.abstractproperty
+    def getTime(self):
+        """
+        Get the time of the metadata.
+        """
+        return
+    
+    
     @abc.abstractmethod
     def setSubDomain(self, lo, hi):
         """
@@ -47,14 +55,14 @@ class BaseReader(object):
     @abc.abstractproperty
     def getDomainSize(self):
         """
-        Return the full domain size of this dataset.
+        Get the full domain size of this dataset.
         """
         return
 
     @abc.abstractproperty
     def getSubDomain(self):
         """
-        Return the sub-domain(lo, hi) used in this reader.
+        Get the sub-domain(lo, hi) used in this reader.
         """
         return
     
