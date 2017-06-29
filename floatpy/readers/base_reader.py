@@ -6,17 +6,17 @@ class BaseReader(object):
     
     Steps in using the data reader to post-process data in many time steps:
     1. Use the constructor BaseReader(data_directory_path) to create the object and initialize it.
-    2. Get the full domain size.
-    3. Call setSubDomain(lo,hi) to set the sub domain to read in (may only call once depending on the usage)
-    4. Call readCoordinates() to get coordinates of the sub-domain
+    2. Call getDomainSize() to get the full domain size.
+    3. Call setSubDomain(lo,hi) to set the sub domain to read in. (may only call once depending on the usage)
+    4. Call readCoordinates() to get coordinates of the sub-domain.
     For each time step:
-        a. Call readSummary(step) for each timestep.
-        b. Call readData()
+        a. Call updateSummary(step) for each timestep.
+        b. Call readData().
         c. Do your post-processing...
     
     To write a concrete class (called MyReaderImplementation, say) that derives from this, implement the following
     abstract methods and in the end of the file add the following code to register the concrete class
-    BaseReader.register(MyReaderImplementation)
+    BaseReader.register(MyReaderImplementation).
     """
     
     __metaclass__ = abc.ABCMeta
@@ -24,31 +24,25 @@ class BaseReader(object):
     # def __init__(self, data_directory_path):
     #     """
     #     Set the absolute path of the data directory.
-    #     Return error when data is already loaded.
-    #     Should clear data first before re-setting the path.
+    #     Read the metadata from the summary at the first time step.
     #     """
     #     
     
     @abc.abstractmethod
     def updateSummary(self, step):
         """
-        Get the meta data from the summary file in the data directory.
-        Return error when data directory is not set.
+        Update the meta data from the summary file in the data directory at new time step.
         """
         return
-        
+    
     
     @abc.abstractmethod
     def setSubDomain(self, lo, hi):
         """
         Set the sub-domain for reading coordinates and data.
-        Return error when summary is not read because need to check whether the subdomain is
-        in the full domain.
-        Return error when data is already loaded.
-        Should clear data first before re-setting the sub-domain.
         """
         return
-        
+    
     
     @abc.abstractproperty
     def getDomainSize(self):
@@ -63,14 +57,16 @@ class BaseReader(object):
         Return the sub-domain(lo, hi) used in this reader.
         """
         return
-
+    
+    
     @abc.abstractproperty
     def getPeriodicDimensions(self):
         """
         Return an array indicating if data is periodic in each dimension.
         """
         return
-
+    
+    
     @abc.abstractmethod
     def readCoordinates(self):
         """
@@ -78,7 +74,7 @@ class BaseReader(object):
         Return error when the sub-domain is not set.
         """
         return
-        
+    
     
     @abc.abstractmethod
     def readData(self, var_names, step):
@@ -91,6 +87,6 @@ class BaseReader(object):
     
     # def __del__(self):
     #     """
-    #     Clear all data in the class.
+    #     Clear all data attributes in the class.
     #     """
     #     
