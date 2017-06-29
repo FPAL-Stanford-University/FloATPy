@@ -58,7 +58,8 @@ class BaseReader(object):
         Get the full domain size of this dataset.
         """
         return
-
+    
+    
     @abc.abstractproperty
     def getSubDomain(self):
         """
