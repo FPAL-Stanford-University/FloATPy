@@ -31,7 +31,7 @@ class BaseReader(object):
     @abc.abstractmethod
     def updateSummary(self, step):
         """
-        Update the meta data from the summary file in the data directory at new time step.
+        Update the metadata from the summary file in the data directory at new time step.
         """
         return
     
