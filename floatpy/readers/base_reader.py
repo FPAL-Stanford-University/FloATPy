@@ -1,6 +1,6 @@
 class BaseReader:
     """
-    Abstract class to reader data.
+    Abstract class to read data.
     
     Steps in using the data reader to post-process data in many time steps:
     1. Call setDataDirectoryPath()
