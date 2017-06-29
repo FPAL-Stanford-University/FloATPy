@@ -6,17 +6,19 @@ class BaseReader(object):
     
     Steps in using the data reader to post-process data in many time steps:
     1. Use the constructor BaseReader(data_directory_path) to create the object and initialize it.
-    4. Call setSubDomain(lo,hi) to set the sub domain to read in (may only call once depending on the usage)
-    2. Call readSummary(step) for each timestep
-    5. Call readCoordinates() (may only call once depending on the usage)
-    5. Call readData()
-    8. Do your post-processing...
-
+    2. Get the full domain size.
+    3. Call setSubDomain(lo,hi) to set the sub domain to read in (may only call once depending on the usage)
+    4. Call readCoordinates() to get coordinates of the sub-domain
+    For each time step:
+        a. Call readSummary(step) for each timestep.
+        b. Call readData()
+        c. Do your post-processing...
+    
     To write a concrete class (called MyReaderImplementation, say) that derives from this, implement the following
     abstract methods and in the end of the file add the following code to register the concrete class
     BaseReader.register(MyReaderImplementation)
     """
-
+    
     __metaclass__ = abc.ABCMeta
     
     # def __init__(self, data_directory_path):
@@ -28,7 +30,7 @@ class BaseReader(object):
     #     
     
     @abc.abstractmethod
-    def readSummary(self, step):
+    def updateSummary(self, step):
         """
         Get the meta data from the summary file in the data directory.
         Return error when data directory is not set.
@@ -49,7 +51,7 @@ class BaseReader(object):
         
     
     @abc.abstractproperty
-    def domainSize(self):
+    def getDomainSize(self):
         """
         Return the full domain size of this dataset.
         """
@@ -58,7 +60,7 @@ class BaseReader(object):
     @abc.abstractproperty
     def getSubDomain(self):
         """
-        Return the sub-domain used in this reader.
+        Return the sub-domain(lo, hi) used in this reader.
         """
         return
 
@@ -72,7 +74,7 @@ class BaseReader(object):
     @abc.abstractmethod
     def readCoordinates(self):
         """
-        Get the coordinates of the stored sub-domain.
+        Read the coordinates of the stored sub-domain.
         Return error when the sub-domain is not set.
         """
         return
@@ -85,7 +87,6 @@ class BaseReader(object):
         Return error when the sub-domain is not set.
         """
         return
-        
     
     
     # def __del__(self):
