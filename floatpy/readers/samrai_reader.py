@@ -65,7 +65,6 @@ class SamraiDataReader:
         elif dim == 2:
             if len(periodic_dimensions) < 2:
                 raise RuntimeError('Dimension of periodic_dimensions is not correct!')
-                raise RuntimeError('Dimension of periodic_dimensions is not correct!')
             
             self.__periodic_dimensions = (periodic_dimensions[0], periodic_dimensions[1])
         
@@ -645,6 +644,22 @@ class SamraiDataReader:
         num_patches = self.__basic_info['num_patches']
         num_patches_root_level = num_patches[0]
         
+        # Check the length of num_ghosts is correct.
+        
+        if dim == 1:
+            if len(num_ghosts) < 1:
+                raise RuntimeError('Dimension of num_ghosts is not correct!')
+        
+        elif dim == 2:
+            if len(num_ghosts) < 2:
+                raise RuntimeError('Dimension of num_ghosts is not correct!')
+        
+        elif dim == 3:
+            if len(num_ghosts) < 3:
+                raise RuntimeError('Dimension of num_ghosts is not correct!')
+        
+        num_ghosts = numpy.asarray(num_ghosts[0:dim])
+        
         # Get the refinement ratios from different levels to finest level.
         
         ratios_to_coarser_levels = self.__basic_info['ratios_to_coarser_levels']
@@ -764,6 +779,22 @@ class SamraiDataReader:
         num_levels = self.__basic_info['num_levels']
         num_patches = self.__basic_info['num_patches']
         num_patches_root_level = num_patches[0]
+        
+        # Check the length of num_ghosts is correct.
+        
+        if dim == 1:
+            if len(num_ghosts) < 1:
+                raise RuntimeError('Dimension of num_ghosts is not correct!')
+        
+        elif dim == 2:
+            if len(num_ghosts) < 2:
+                raise RuntimeError('Dimension of num_ghosts is not correct!')
+        
+        elif dim == 3:
+            if len(num_ghosts) < 3:
+                raise RuntimeError('Dimension of num_ghosts is not correct!')
+        
+        num_ghosts = numpy.asarray(num_ghosts[0:dim])
         
         # Get the variable names.
         
