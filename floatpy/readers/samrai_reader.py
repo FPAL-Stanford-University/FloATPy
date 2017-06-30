@@ -21,40 +21,40 @@ class SamraiDataReader:
         The current time step of the class is set to the first time step in dump file.
         """
         
-        self.__data_directory_path = data_directory_path
+        self._data_directory_path = data_directory_path
         
         # Get the full paths to data at different time steps.
         
         full_dumps_path = data_directory_path + '/' + 'dumps.visit'
         dumps_f = open(full_dumps_path)
         
-        self.__full_viz_folder_paths = []
+        self._full_viz_folder_paths = []
         for line in dumps_f.readlines():
             sub_folder = line
             sub_folder = re.sub('/summary.samrai\n', '', sub_folder)
-            self.__full_viz_folder_paths.append(data_directory_path + '/' + sub_folder + '/')
+            self._full_viz_folder_paths.append(data_directory_path + '/' + sub_folder + '/')
         
         # Set the data order.
         
         if data_order == 'C':
-            self.__data_order = 'C'
+            self._data_order = 'C'
         elif data_order == 'F':
-            self.__data_order = 'F'
+            self._data_order = 'F'
         else:
             raise RuntimeError("Unknown data order '" + data_order + "'!")
         
         # Step current time step to be the first time step in dump file and read the summary file
         # at that time step.
         
-        self.__step = 0
-        self.__num_steps = len(self.__full_viz_folder_paths)
+        self._step = 0
+        self._num_steps = len(self._full_viz_folder_paths)
         
-        self.__basic_info = {}
-        self.__readSummary(self.__step)
+        self._basic_info = {}
+        self._readSummary(self._step)
         
         # Set the periodic dimensions.
         
-        dim = self.__basic_info['dim']
+        dim = self._basic_info['dim']
         
         if dim == 1:
             if len(periodic_dimensions) < 1:
@@ -66,41 +66,41 @@ class SamraiDataReader:
             if len(periodic_dimensions) < 2:
                 raise RuntimeError('Dimension of periodic_dimensions is not correct!')
             
-            self.__periodic_dimensions = (periodic_dimensions[0], periodic_dimensions[1])
+            self._periodic_dimensions = (periodic_dimensions[0], periodic_dimensions[1])
         
         elif dim == 3:
             if len(periodic_dimensions) < 3:
                 raise RuntimeError('Dimension of periodic_dimensions is not correct!')
             
-            self.__periodic_dimensions = (periodic_dimensions[0], periodic_dimensions[1], periodic_dimensions[2])
+            self._periodic_dimensions = (periodic_dimensions[0], periodic_dimensions[1], periodic_dimensions[2])
         
         # Set the upsampling method.
         
-        self.__upsampling_method = upsampling_method
+        self._upsampling_method = upsampling_method
         
         # Initialize subdomain.
         
         domain_shape = self.getRefinedDomainSize()
         
-        self.__lo_subdomain = ()
-        self.__hi_subdomain = ()
+        self._lo_subdomain = ()
+        self._hi_subdomain = ()
         
         if dim == 1:
-            self.__lo_subdomain = (0,)
-            self.__hi_subdomain = (domain_shape[0] - 1)
+            self._lo_subdomain = (0,)
+            self._hi_subdomain = (domain_shape[0] - 1)
         
         elif dim == 2:
-            self.__lo_subdomain = (0, 0)
-            self.__hi_subdomain = (domain_shape[0] - 1, domain_shape[1] - 1)
+            self._lo_subdomain = (0, 0)
+            self._hi_subdomain = (domain_shape[0] - 1, domain_shape[1] - 1)
         
         elif dim == 3:
-            self.__lo_subdomain = (0, 0, 0)
-            self.__hi_subdomain = (domain_shape[0] - 1, domain_shape[1] - 1, domain_shape[2] - 1)
+            self._lo_subdomain = (0, 0, 0)
+            self._hi_subdomain = (domain_shape[0] - 1, domain_shape[1] - 1, domain_shape[2] - 1)
         
         # Initialize other containers.
         
-        self.__data_loaded = False
-        self.__data = {}
+        self._data_loaded = False
+        self._data = {}
     
     
     def getDataDirectoryPath(self):
@@ -108,7 +108,7 @@ class SamraiDataReader:
         Get the stored absolute path of the data directory.
         """
         
-        return self.__data_directory_path
+        return self._data_directory_path
     
     
     def updateSummary(self, step):
@@ -119,82 +119,82 @@ class SamraiDataReader:
         
         if step < 0:
             raise RuntimeError("Negativ time step is given!")
-        if step >= self.__num_steps:
+        if step >= self._num_steps:
             raise RuntimeError("Time step is larger than the largest allowable one!")
         
-        self.__step = step
-        self.__readSummary(step)
+        self._step = step
+        self._readSummary(step)
     
     
-    def __readSummary(self, step):
+    def _readSummary(self, step):
         """
         Get the basic information, patch extents and path map from the summary file.
         """
         
         # Open the summary file.
         
-        summary_file_path = self.__full_viz_folder_paths[step] + '/' + 'summary.samrai'
+        summary_file_path = self._full_viz_folder_paths[step] + '/' + 'summary.samrai'
         f_summary = h5py.File(summary_file_path, 'r')
         
-        # Clear metadata in __basic_info.
+        # Clear metadata in self._basic_info.
         
-        self.__basic_info = {}
+        self._basic_info = {}
         
         # Get the basic information.
         
         basic_info = f_summary['BASIC_INFO']
         
         # Get the number of file clusters.
-        self.__basic_info['num_file_clusters'] = basic_info['number_file_clusters'].value[0]
+        self._basic_info['num_file_clusters'] = basic_info['number_file_clusters'].value[0]
         
         # Get the time and dimension of the data.
         
-        self.__basic_info['t'] = basic_info['time'].value[0]
-        self.__basic_info['t_dump'] = basic_info['time_of_dump'].value[0]
-        self.__basic_info['n'] = basic_info['time_step_number'].value[0]
-        self.__basic_info['dim'] = basic_info['number_dimensions_of_problem'].value[0]
+        self._basic_info['t'] = basic_info['time'].value[0]
+        self._basic_info['t_dump'] = basic_info['time_of_dump'].value[0]
+        self._basic_info['n'] = basic_info['time_step_number'].value[0]
+        self._basic_info['dim'] = basic_info['number_dimensions_of_problem'].value[0]
         
         # Get and check the grid type.
         
-        self.__basic_info['grid_type'] = basic_info['grid_type'].value[0]
+        self._basic_info['grid_type'] = basic_info['grid_type'].value[0]
         
-        if numpy.char.strip(self.__basic_info['grid_type']) != 'CARTESIAN':
+        if numpy.char.strip(self._basic_info['grid_type']) != 'CARTESIAN':
             raise RuntimeError("Grid type other than 'CARTESIAN' not supported!")
         
         # Get the number of levels and number of patches at different levels.
         
-        self.__basic_info['num_levels'] = basic_info['number_levels'].value[0]
-        self.__basic_info['num_patches'] = basic_info['number_patches_at_level'].value
-        self.__basic_info['num_global_patches'] = basic_info['number_global_patches'].value[0]
+        self._basic_info['num_levels'] = basic_info['number_levels'].value[0]
+        self._basic_info['num_patches'] = basic_info['number_patches_at_level'].value
+        self._basic_info['num_global_patches'] = basic_info['number_global_patches'].value[0]
         
         # Get the ratios to coarser levels at different levels.
         
-        self.__basic_info['ratios_to_coarser_levels'] = basic_info['ratios_to_coarser_levels'].value
+        self._basic_info['ratios_to_coarser_levels'] = basic_info['ratios_to_coarser_levels'].value
         
         # Get the variable names, number of variables and number of components in each variable.
         
-        self.__basic_info['var_names'] = basic_info['var_names'].value
-        self.__basic_info['num_variables'] = basic_info['number_visit_variables'].value[0]
-        self.__basic_info['num_var_components'] = basic_info['var_number_components'].value
+        self._basic_info['var_names'] = basic_info['var_names'].value
+        self._basic_info['num_variables'] = basic_info['number_visit_variables'].value[0]
+        self._basic_info['num_var_components'] = basic_info['var_number_components'].value
         
         # Get the geometry and check the dimension.
         
-        self.__basic_info['x_lo'] = basic_info['XLO'].value
-        self.__basic_info['dx'] = basic_info['dx'].value
+        self._basic_info['x_lo'] = basic_info['XLO'].value
+        self._basic_info['dx'] = basic_info['dx'].value
         
         extents = f_summary['extents']
         
         # Get the patch extents.
         
-        self.__patch_extents = extents['patch_extents'].value
+        self._patch_extents = extents['patch_extents'].value
         
         # Geth the patch map.
         
-        self.__patch_map =  extents['patch_map'].value
+        self._patch_map =  extents['patch_map'].value
         
         # Set the flag for loading summary file to be true.
         
-        self.__summary_loaded = True
+        self._summary_loaded = True
         
         # Close the summary file.
         
@@ -206,10 +206,10 @@ class SamraiDataReader:
         Return the loaded basic information.
         """
         
-        if not self.__summary_loaded:
+        if not self._summary_loaded:
             raise RuntimeError('The summary file is not read yet!')
         
-        return self.__basic_info
+        return self._basic_info
     
     
     def getPatchExtents(self):
@@ -217,10 +217,10 @@ class SamraiDataReader:
         Return the loaded patch extents.
         """
         
-        if not self.__summary_loaded:
+        if not self._summary_loaded:
             raise RuntimeError('The summary file is not read yet!')
         
-        return self.__patch_extents
+        return self._patch_extents
     
     
     def getPatchMap(self):
@@ -228,10 +228,10 @@ class SamraiDataReader:
         Return the loaded patch map.
         """
         
-        if not self.__summary_loaded:
+        if not self._summary_loaded:
             raise RuntimeError('The summary file is not read yet!')
         
-        return self.__patch_map
+        return self._patch_map
     
     
     def getData(self, var_name):
@@ -239,10 +239,10 @@ class SamraiDataReader:
         Return the loaded data.
         """
         
-        if not self.__data_loaded:
+        if not self._data_loaded:
             raise RuntimeError('No data is read yet!')
         
-        return self.__data[var_name]
+        return self._data[var_name]
     
     
     def clearData(self):
@@ -250,8 +250,8 @@ class SamraiDataReader:
         Clear any loaded data.
         """
         
-        self.__data.clear()
-        self.__data_loaded = False
+        self._data.clear()
+        self._data_loaded = False
     
     
     def getDomainSizeAtOneLevel(self, \
@@ -262,12 +262,12 @@ class SamraiDataReader:
         
         # Read the summary file if it is not yet read.
         
-        if not self.__summary_loaded:
+        if not self._summary_loaded:
             self.readSummary()
         
-        dim = self.__basic_info['dim']
-        num_levels = self.__basic_info['num_levels']
-        num_patches = self.__basic_info['num_patches']
+        dim = self._basic_info['dim']
+        num_levels = self._basic_info['num_levels']
+        num_patches = self._basic_info['num_patches']
         
         # Check whether the required level is valid.
         
@@ -284,12 +284,12 @@ class SamraiDataReader:
         for level_idx in range(0, level_num):
             patch_level_start_idx = patch_level_start_idx + num_patches[level_idx]
         
-        lo_level = self.__patch_extents[patch_level_start_idx][0]
-        hi_level = self.__patch_extents[patch_level_start_idx][1]
+        lo_level = self._patch_extents[patch_level_start_idx][0]
+        hi_level = self._patch_extents[patch_level_start_idx][1]
         
         for global_patch_idx in range(patch_level_start_idx + 1, patch_level_start_idx + num_patches_level):
-            lo_level = numpy.minimum(lo_level, self.__patch_extents[global_patch_idx][0])
-            hi_level = numpy.maximum(hi_level, self.__patch_extents[global_patch_idx][1])
+            lo_level = numpy.minimum(lo_level, self._patch_extents[global_patch_idx][0])
+            hi_level = numpy.maximum(hi_level, self._patch_extents[global_patch_idx][1])
         
         domain_shape = hi_level[0:dim] - lo_level[0:dim] + numpy.ones(dim, dtype = numpy.int)
         
@@ -303,16 +303,16 @@ class SamraiDataReader:
         
         # Read the summary file if it is not yet read.
         
-        if not self.__summary_loaded:
+        if not self._summary_loaded:
             self.readSummary()
         
-        dim = self.__basic_info['dim']
-        num_levels = self.__basic_info['num_levels']
-        num_patches = self.__basic_info['num_patches']
+        dim = self._basic_info['dim']
+        num_levels = self._basic_info['num_levels']
+        num_patches = self._basic_info['num_patches']
         
         # Get the ratio from the coarest level to the finest level.
         ratio_of_coarest_to_finest = 1
-        ratios_to_coarser_levels = self.__basic_info['ratios_to_coarser_levels']
+        ratios_to_coarser_levels = self._basic_info['ratios_to_coarser_levels']
         
         for level_idx in range(1, num_levels):
             ratio_of_coarest_to_finest = numpy.multiply(ratios_to_coarser_levels[level_idx], ratio_of_coarest_to_finest)
@@ -321,12 +321,12 @@ class SamraiDataReader:
         
         num_patches_root_level = num_patches[0]
         
-        lo_root_level = self.__patch_extents[0][0]
-        hi_root_level = self.__patch_extents[0][1]
+        lo_root_level = self._patch_extents[0][0]
+        hi_root_level = self._patch_extents[0][1]
         
         for patch_idx in range(1, num_patches_root_level):
-            lo_root_level = numpy.minimum(lo_root_level, self.__patch_extents[patch_idx][0])
-            hi_root_level = numpy.maximum(hi_root_level, self.__patch_extents[patch_idx][1])
+            lo_root_level = numpy.minimum(lo_root_level, self._patch_extents[patch_idx][0])
+            hi_root_level = numpy.maximum(hi_root_level, self._patch_extents[patch_idx][1])
         
         domain_shape = hi_root_level[0:dim] - lo_root_level[0:dim] + numpy.ones(dim, dtype = numpy.int)
         domain_shape = numpy.multiply(domain_shape, ratio_of_coarest_to_finest[0:dim])
@@ -339,10 +339,10 @@ class SamraiDataReader:
         Set the sub-domain for reading coordinates and data in a subdomain.
         """
         
-        if self.__data_loaded == True:
+        if self._data_loaded == True:
             self.clearData()
         
-        dim = self.__basic_info['dim']
+        dim = self._basic_info['dim']
         
         if dim == 1:
             if len(lo) < 1 or len(hi) < 1:
@@ -351,8 +351,8 @@ class SamraiDataReader:
             if lo[0] > hi[0]:
                 raise RuntimeError('lo is greater than hi!')
             
-            self.__lo_subdomain = (lo[0],)
-            self.__up_subdomain = (hi[0],)
+            self._lo_subdomain = (lo[0],)
+            self._up_subdomain = (hi[0],)
         
         elif dim == 2:
             if len(lo) < 2 or len(hi) < 2:
@@ -361,8 +361,8 @@ class SamraiDataReader:
             if lo[0] > hi[0] or lo[1] > hi[1]:
                 raise RuntimeError('lo is greater than hi!')
             
-            self.__lo_subdomain = (lo[0], lo[1])
-            self.__up_subdomain = (hi[0], hi[1])
+            self._lo_subdomain = (lo[0], lo[1])
+            self._up_subdomain = (hi[0], hi[1])
         
         elif dim == 3:
             if len(lo) < 3 or len(hi) < 3:
@@ -371,8 +371,8 @@ class SamraiDataReader:
             if lo[0] > hi[0] or lo[1] > hi[1] or lo[2] > hi[2]:
                 raise RuntimeError('lo is greater than hi!')
             
-            self.__lo_subdomain = (lo[0], lo[1], lo[2])
-            self.__up_subdomain = (hi[0], hi[1], lo[2])
+            self._lo_subdomain = (lo[0], lo[1], lo[2])
+            self._up_subdomain = (hi[0], hi[1], lo[2])
     
     
     def getCoordinatesAtOneLevel(self, level_num):
@@ -382,9 +382,9 @@ class SamraiDataReader:
         
         # Get the dimension of the problem, number of levels and number of patches.
         
-        dim = self.__basic_info['dim']
-        num_levels = self.__basic_info['num_levels']
-        num_patches = self.__basic_info['num_patches']
+        dim = self._basic_info['dim']
+        num_levels = self._basic_info['num_levels']
+        num_patches = self._basic_info['num_patches']
         
         # Get the domain shape.
         
@@ -393,7 +393,7 @@ class SamraiDataReader:
         # Get the number of patches at this level and grid spacings at different levels.
         
         num_patches_level = num_patches[level_num]
-        dx = self.__basic_info['dx']
+        dx = self._basic_info['dx']
         
         # Get the coordinates of the corners at this level.
         
@@ -401,12 +401,12 @@ class SamraiDataReader:
         for level_idx in range(0, level_num):
             patch_level_start_idx = patch_level_start_idx + num_patches[level_idx]
         
-        x_lo_level = self.__patch_extents[patch_level_start_idx][2]
-        x_hi_level = self.__patch_extents[patch_level_start_idx][3]
+        x_lo_level = self._patch_extents[patch_level_start_idx][2]
+        x_hi_level = self._patch_extents[patch_level_start_idx][3]
         
         for global_patch_idx in range(patch_level_start_idx + 1, patch_level_start_idx + num_patches_level):
-            x_lo_level = numpy.minimum(x_lo_level, self.__patch_extents[global_patch_idx][2])
-            x_hi_level = numpy.maximum(x_hi_level, self.__patch_extents[global_patch_idx][3])
+            x_lo_level = numpy.minimum(x_lo_level, self._patch_extents[global_patch_idx][2])
+            x_hi_level = numpy.maximum(x_hi_level, self._patch_extents[global_patch_idx][3])
         
         # Compute the coordinates at this level.
         
@@ -450,13 +450,13 @@ class SamraiDataReader:
         
         # Get the number of file clusters.
         
-        num_file_clusters = self.__basic_info['num_file_clusters']
+        num_file_clusters = self._basic_info['num_file_clusters']
         
         # Get the dimension of the problem, number of levels and number of patches.
         
-        dim = self.__basic_info['dim']
-        num_levels = self.__basic_info['num_levels']
-        num_patches = self.__basic_info['num_patches']
+        dim = self._basic_info['dim']
+        num_levels = self._basic_info['num_levels']
+        num_patches = self._basic_info['num_patches']
         
         # Check whether the required level is valid.
         
@@ -471,8 +471,8 @@ class SamraiDataReader:
         var_component_names = {}
         
         for var_name in var_names:
-            var_idx = numpy.where(self.__basic_info['var_names'] == var_name)[0][0]
-            var_num_components[var_name] = self.__basic_info['num_var_components'][var_idx]
+            var_idx = numpy.where(self._basic_info['var_names'] == var_name)[0][0]
+            var_num_components[var_name] = self._basic_info['num_var_components'][var_idx]
             
             var_component_names[var_name] = [None]*var_num_components[var_name]
             if var_num_components[var_name] == 1:
@@ -493,28 +493,28 @@ class SamraiDataReader:
         for level_idx in range(0, level_num):
             patch_level_start_idx = patch_level_start_idx + num_patches[level_idx]
         
-        lo_level = self.__patch_extents[patch_level_start_idx][0]
+        lo_level = self._patch_extents[patch_level_start_idx][0]
         
         for global_patch_idx in range(patch_level_start_idx + 1, patch_level_start_idx + num_patches_level):
-            lo_level = numpy.minimum(lo_level, self.__patch_extents[global_patch_idx][0])
+            lo_level = numpy.minimum(lo_level, self._patch_extents[global_patch_idx][0])
         
         # Initialize container to store the data. The elements in the container are initialized as NAN values.
         
         for var_name in var_names:
-            if self.__data_order == 'C':
+            if self._data_order == 'C':
                 data_shape = numpy.insert(domain_shape, 0, var_num_components[var_name])
             else:
                 data_shape = numpy.append(domain_shape, var_num_components[var_name])
             
-            self.__data[var_name] = numpy.empty(data_shape, dtype = numpy.float64, order = self.__data_order)
-            self.__data[var_name][:] = numpy.NAN
+            self._data[var_name] = numpy.empty(data_shape, dtype = numpy.float64, order = self._data_order)
+            self._data[var_name][:] = numpy.NAN
         
         # Get the data from all patches at the specified level.
         
         if dim == 1:
             for process_idx in range(0, num_file_clusters):
                 file_name = 'processor_cluster.' + str(process_idx).zfill(5) + '.samrai'
-                full_path = self.__full_viz_folder_paths[self.__step] + '/' + file_name
+                full_path = self._full_viz_folder_paths[self._step] + '/' + file_name
                 f_input = h5py.File(full_path, 'r')
                 
                 file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
@@ -534,11 +534,11 @@ class SamraiDataReader:
                         x_end_idx = hi_patch[0] + 1
                         
                         for component_idx in range(0, var_num_components[var_name]):
-                            if self.__data_order == 'C':
-                                self.__data[var_name][component_idx, x_start_idx:x_end_idx] = \
+                            if self._data_order == 'C':
+                                self._data[var_name][component_idx, x_start_idx:x_end_idx] = \
                                     file_cluster_patch[var_component_names[var_name][component_idx]].value
                             else:
-                                self.__data[var_name][x_start_idx:x_end_idx, component_idx] = \
+                                self._data[var_name][x_start_idx:x_end_idx, component_idx] = \
                                     file_cluster_patch[var_component_names[var_name][component_idx]].value
                 
                 f_input.close()
@@ -546,7 +546,7 @@ class SamraiDataReader:
         elif dim == 2:
             for process_idx in range(0, num_file_clusters):
                 file_name = 'processor_cluster.' + str(process_idx).zfill(5) + '.samrai'
-                full_path = self.__full_viz_folder_paths[self.__step] + '/' + file_name
+                full_path = self._full_viz_folder_paths[self._step] + '/' + file_name
                 f_input = h5py.File(full_path, 'r')
                 
                 file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
@@ -558,8 +558,8 @@ class SamraiDataReader:
                         global_patch_idx = patch_level_start_idx + patch_idx
                         file_cluster_patch = file_cluster_level[patch_key]
                         
-                        lo_patch = self.__patch_extents[global_patch_idx][0] - lo_level
-                        hi_patch = self.__patch_extents[global_patch_idx][1] - lo_level
+                        lo_patch = self._patch_extents[global_patch_idx][0] - lo_level
+                        hi_patch = self._patch_extents[global_patch_idx][1] - lo_level
                         patch_shape = hi_patch[0:2] - lo_patch[0:2] + numpy.ones(2, dtype = numpy.int)
                         
                         x_start_idx = lo_patch[0]
@@ -569,12 +569,12 @@ class SamraiDataReader:
                         y_end_idx = hi_patch[1] + 1
                         
                         for component_idx in range(0, var_num_components[var_name]):
-                            if self.__data_order == 'C':
-                                self.__data[var_name][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx] = \
+                            if self._data_order == 'C':
+                                self._data[var_name][component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx] = \
                                     file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
                                         patch_shape, order = 'F')
                             else:
-                                self.__data[var_name][x_start_idx:x_end_idx, y_start_idx:y_end_idx, component_idx] = \
+                                self._data[var_name][x_start_idx:x_end_idx, y_start_idx:y_end_idx, component_idx] = \
                                     file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
                                         patch_shape, order = 'F')
                 
@@ -583,7 +583,7 @@ class SamraiDataReader:
         elif dim == 3:
             for process_idx in range(0, num_file_clusters):
                 file_name = 'processor_cluster.' + str(process_idx).zfill(5) + '.samrai'
-                full_path = self.__full_viz_folder_paths[self.__step] + '/' + file_name
+                full_path = self._full_viz_folder_paths[self._step] + '/' + file_name
                 f_input = h5py.File(full_path, 'r')
                 
                 file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
@@ -595,8 +595,8 @@ class SamraiDataReader:
                         global_patch_idx = patch_level_start_idx + patch_idx
                         file_cluster_patch = file_cluster_level[patch_key]
                         
-                        lo_patch = self.__patch_extents[global_patch_idx][0] - lo_level
-                        hi_patch = self.__patch_extents[global_patch_idx][1] - lo_level
+                        lo_patch = self._patch_extents[global_patch_idx][0] - lo_level
+                        hi_patch = self._patch_extents[global_patch_idx][1] - lo_level
                         patch_shape = hi_patch[0:3] - lo_patch[0:3] + numpy.ones(3, dtype = numpy.int)
                         
                         x_start_idx = lo_patch[0]
@@ -609,13 +609,13 @@ class SamraiDataReader:
                         z_end_idx = hi_patch[2] + 1
                         
                         for component_idx in range(0, var_num_components[var_name]):
-                            if self.__data_order == 'C':
-                                self.__data[var_name] \
+                            if self._data_order == 'C':
+                                self._data[var_name] \
                                     [component_idx, x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx] = \
                                         file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
                                             patch_shape, order = 'F')
                             else:
-                                self.__data[var_name] \
+                                self._data[var_name] \
                                     [x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx, component_idx] = \
                                         file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
                                             patch_shape, order = 'F')
@@ -625,7 +625,7 @@ class SamraiDataReader:
         else:
             raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
         
-        self.__data_loaded = True
+        self._data_loaded = True
     
     
     def getCombinedCoordinatesInSubdomainFromAllLevels(self, num_ghosts):
@@ -634,14 +634,14 @@ class SamraiDataReader:
         and combine the coordinates from different levels.
         """
         
-        lo_subdomain = numpy.asarray(self.__lo_subdomain)
-        hi_subdomain = numpy.asarray(self.__hi_subdomain)
+        lo_subdomain = numpy.asarray(self._lo_subdomain)
+        hi_subdomain = numpy.asarray(self._hi_subdomain)
         
         # Get the dimension of the problem, number of levels and number of patches.
         
-        dim = self.__basic_info['dim']
-        num_levels = self.__basic_info['num_levels']
-        num_patches = self.__basic_info['num_patches']
+        dim = self._basic_info['dim']
+        num_levels = self._basic_info['num_levels']
+        num_patches = self._basic_info['num_patches']
         num_patches_root_level = num_patches[0]
         
         # Check the length of num_ghosts is correct.
@@ -662,7 +662,7 @@ class SamraiDataReader:
         
         # Get the refinement ratios from different levels to finest level.
         
-        ratios_to_coarser_levels = self.__basic_info['ratios_to_coarser_levels']
+        ratios_to_coarser_levels = self._basic_info['ratios_to_coarser_levels']
         ratios_to_finest_level = numpy.empty(ratios_to_coarser_levels.shape, dtype = ratios_to_coarser_levels.dtype)
         ratios_to_finest_level[num_levels - 1] = -ratios_to_coarser_levels[0]
         for level_idx in range(num_levels - 2, -1, -1):
@@ -671,12 +671,12 @@ class SamraiDataReader:
         
         # Get the lower and upper indices of the domain.
         
-        lo_root_level = self.__patch_extents[0][0]
-        hi_root_level = self.__patch_extents[0][1]
+        lo_root_level = self._patch_extents[0][0]
+        hi_root_level = self._patch_extents[0][1]
         
         for patch_idx in range(1, num_patches_root_level):
-            lo_root_level = numpy.minimum(lo_root_level, self.__patch_extents[patch_idx][0])
-            hi_root_level = numpy.maximum(hi_root_level, self.__patch_extents[patch_idx][1])
+            lo_root_level = numpy.minimum(lo_root_level, self._patch_extents[patch_idx][0])
+            hi_root_level = numpy.maximum(hi_root_level, self._patch_extents[patch_idx][1])
         
         # Refine the the lower and upper indices of the domain to the highest level.
         
@@ -696,16 +696,16 @@ class SamraiDataReader:
         
         # Get the grid spacings at different levels.
         
-        dx = self.__basic_info['dx']
+        dx = self._basic_info['dx']
         
         # Get the coordinates of the corners at this level.
         
-        x_lo_root_level = self.__patch_extents[0][2]
-        x_hi_root_level = self.__patch_extents[0][3]
+        x_lo_root_level = self._patch_extents[0][2]
+        x_hi_root_level = self._patch_extents[0][3]
         
         for patch_idx in range(1, num_patches_root_level):
-            x_lo_root_level = numpy.minimum(x_lo_root_level, self.__patch_extents[patch_idx][2])
-            x_hi_root_level = numpy.maximum(x_hi_root_level, self.__patch_extents[patch_idx][3])
+            x_lo_root_level = numpy.minimum(x_lo_root_level, self._patch_extents[patch_idx][2])
+            x_hi_root_level = numpy.maximum(x_hi_root_level, self._patch_extents[patch_idx][3])
         
         # Compute the coordinates of the full domain refined to the finest level.
         
@@ -762,22 +762,22 @@ class SamraiDataReader:
         and combine the data from different levels.
         """
         
-        lo_subdomain = numpy.asarray(self.__lo_subdomain)
-        hi_subdomain = numpy.asarray(self.__hi_subdomain)
+        lo_subdomain = numpy.asarray(self._lo_subdomain)
+        hi_subdomain = numpy.asarray(self._hi_subdomain)
         
-        periodic_dimensions = self.__periodic_dimensions
+        periodic_dimensions = self._periodic_dimensions
         
-        upsampling_method = self.__upsampling_method
+        upsampling_method = self._upsampling_method
         
         # Get the number of file clusters.
         
-        num_file_clusters = self.__basic_info['num_file_clusters']
+        num_file_clusters = self._basic_info['num_file_clusters']
         
         # Get the dimension of the problem, number of levels and number of patches.
         
-        dim = self.__basic_info['dim']
-        num_levels = self.__basic_info['num_levels']
-        num_patches = self.__basic_info['num_patches']
+        dim = self._basic_info['dim']
+        num_levels = self._basic_info['num_levels']
+        num_patches = self._basic_info['num_patches']
         num_patches_root_level = num_patches[0]
         
         # Check the length of num_ghosts is correct.
@@ -802,8 +802,8 @@ class SamraiDataReader:
         var_component_names = {}
         
         for var_name in var_names:
-            var_idx = numpy.where(self.__basic_info['var_names'] == var_name)[0][0]
-            var_num_components[var_name] = self.__basic_info['num_var_components'][var_idx]
+            var_idx = numpy.where(self._basic_info['var_names'] == var_name)[0][0]
+            var_num_components[var_name] = self._basic_info['num_var_components'][var_idx]
             
             var_component_names[var_name] = [None]*var_num_components[var_name]
             if var_num_components[var_name] == 1:
@@ -814,7 +814,7 @@ class SamraiDataReader:
         
         # Get the refinement ratios from different levels to finest level.
         
-        ratios_to_coarser_levels = self.__basic_info['ratios_to_coarser_levels']
+        ratios_to_coarser_levels = self._basic_info['ratios_to_coarser_levels']
         ratios_to_finest_level = numpy.empty(ratios_to_coarser_levels.shape, dtype = ratios_to_coarser_levels.dtype)
         ratios_to_finest_level[num_levels - 1] = -ratios_to_coarser_levels[0]
         for level_idx in range(num_levels - 2, -1, -1):
@@ -823,12 +823,12 @@ class SamraiDataReader:
         
         # Get the lower and upper indices of the domain.
         
-        lo_root_level = self.__patch_extents[0][0]
-        hi_root_level = self.__patch_extents[0][1]
+        lo_root_level = self._patch_extents[0][0]
+        hi_root_level = self._patch_extents[0][1]
         
         for patch_idx in range(1, num_patches_root_level):
-            lo_root_level = numpy.minimum(lo_root_level, self.__patch_extents[patch_idx][0])
-            hi_root_level = numpy.maximum(hi_root_level, self.__patch_extents[patch_idx][1])
+            lo_root_level = numpy.minimum(lo_root_level, self._patch_extents[patch_idx][0])
+            hi_root_level = numpy.maximum(hi_root_level, self._patch_extents[patch_idx][1])
         
         # Refine the the lower and upper indices of the domain to the highest level.
         
@@ -902,10 +902,10 @@ class SamraiDataReader:
             
             for patch_idx in range(num_patches[level_num]):
                 global_patch_idx = patch_level_start_idx + patch_idx
-                lo_patch = self.__patch_extents[global_patch_idx][0]
-                hi_patch = self.__patch_extents[global_patch_idx][1]
+                lo_patch = self._patch_extents[global_patch_idx][0]
+                hi_patch = self._patch_extents[global_patch_idx][1]
                 
-                file_cluster_num = self.__patch_map[global_patch_idx][1]
+                file_cluster_num = self._patch_map[global_patch_idx][1]
                 
                 # Determine whether the sub-domain overlaps with the patches.
                 
@@ -1247,12 +1247,12 @@ class SamraiDataReader:
                 data_shape = hi_subdomain_level[level_num][0:dim] - lo_subdomain_level[level_num][0:dim] \
                     + numpy.ones(dim, dtype = lo_subdomain_level.dtype)
                 
-                if self.__data_order == 'C':
+                if self._data_order == 'C':
                     data_shape = numpy.insert(data_shape, 0, var_num_components[var_name])
                 else:
                     data_shape = numpy.append(data_shape, var_num_components[var_name])
                 
-                data = numpy.empty(data_shape, dtype = numpy.float64, order = self.__data_order)
+                data = numpy.empty(data_shape, dtype = numpy.float64, order = self._data_order)
                 data[:] = numpy.NAN
                 
                 level_data[var_name].append(data)
@@ -1260,7 +1260,7 @@ class SamraiDataReader:
         if dim == 1:
             for process_idx in file_clusters_to_load:
                 file_name = 'processor_cluster.' + str(process_idx).zfill(5) + '.samrai'
-                full_path = self.__full_viz_folder_paths[self.__step] + '/' + file_name
+                full_path = self._full_viz_folder_paths[self._step] + '/' + file_name
                 f_input = h5py.File(full_path, 'r')
                 
                 for level_num in range(num_levels):
@@ -1279,20 +1279,20 @@ class SamraiDataReader:
                             
                             # Get the lower and upper indices of the current patch.
                             
-                            lo_patch = self.__patch_extents[global_patch_idx][0]
-                            hi_patch = self.__patch_extents[global_patch_idx][1]
+                            lo_patch = self._patch_extents[global_patch_idx][0]
+                            hi_patch = self._patch_extents[global_patch_idx][1]
                             
                             for component_idx in range(0, var_num_components[var_name]):
                                 # Get the patch data.
                                 patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value
                                 
-                                if self.__data_order == 'C':
-                                    self.__loadDataFromPatchToSubdomain( \
+                                if self._data_order == 'C':
+                                    self._loadDataFromPatchToSubdomain( \
                                         lo_subdomain_level[level_num], hi_subdomain_level[level_num], \
                                         lo_patch, hi_patch, \
                                         level_data[var_name][level_num][component_idx, :], patch_data)
                                 else:
-                                    self.__loadDataFromPatchToSubdomain( \
+                                    self._loadDataFromPatchToSubdomain( \
                                         lo_subdomain_level[level_num], hi_subdomain_level[level_num], \
                                         lo_patch, hi_patch, \
                                         level_data[var_name][level_num][:, component_idx], patch_data)
@@ -1310,12 +1310,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[0] = hi_subdomain_level[level_num][0] \
                                             + domain_shape_level[level_num][0]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, component_idx], patch_data)
                                     
@@ -1326,12 +1326,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[0] = hi_subdomain_level[level_num][0] \
                                             - domain_shape_level[level_num][0]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, component_idx], patch_data)
                 
@@ -1340,7 +1340,7 @@ class SamraiDataReader:
         elif dim == 2:
             for process_idx in range(0, num_file_clusters):
                 file_name = 'processor_cluster.' + str(process_idx).zfill(5) + '.samrai'
-                full_path = self.__full_viz_folder_paths[self.__step] + '/' + file_name
+                full_path = self._full_viz_folder_paths[self._step] + '/' + file_name
                 f_input = h5py.File(full_path, 'r')
                 
                 for level_num in range(num_levels):
@@ -1359,8 +1359,8 @@ class SamraiDataReader:
                             
                             # Get the lower and upper indices of the current patch.
                             
-                            lo_patch = self.__patch_extents[global_patch_idx][0]
-                            hi_patch = self.__patch_extents[global_patch_idx][1]
+                            lo_patch = self._patch_extents[global_patch_idx][0]
+                            hi_patch = self._patch_extents[global_patch_idx][1]
                             
                             # Get the shape of the patch.
                             
@@ -1372,15 +1372,15 @@ class SamraiDataReader:
                                 patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
                                     patch_shape, order = 'F')
                                 
-                                if self.__data_order == 'C':
+                                if self._data_order == 'C':
                                     patch_data  = patch_data.copy(order = 'C')
                                     
-                                    self.__loadDataFromPatchToSubdomain( \
+                                    self._loadDataFromPatchToSubdomain( \
                                         lo_subdomain_level[level_num], hi_subdomain_level[level_num], \
                                         lo_patch, hi_patch, \
                                         level_data[var_name][level_num][component_idx, :, :], patch_data)
                                 else:
-                                    self.__loadDataFromPatchToSubdomain( \
+                                    self._loadDataFromPatchToSubdomain( \
                                         lo_subdomain_level[level_num], hi_subdomain_level[level_num], \
                                         lo_patch, hi_patch, \
                                         level_data[var_name][level_num][:, :, component_idx], patch_data)
@@ -1404,13 +1404,13 @@ class SamraiDataReader:
                                             lo_subdomain_shifted[1] = lo_subdomain_level[level_num][1]
                                             hi_subdomain_shifted[1] = hi_subdomain_level[level_num][1]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, component_idx], patch_data)
@@ -1428,13 +1428,13 @@ class SamraiDataReader:
                                             lo_subdomain_shifted[1] = lo_subdomain_level[level_num][1]
                                             hi_subdomain_shifted[1] = hi_subdomain_level[level_num][1]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, component_idx], patch_data)
@@ -1453,13 +1453,13 @@ class SamraiDataReader:
                                             hi_subdomain_shifted[1] = hi_subdomain_level[level_num][1] \
                                                 + domain_shape_level[level_num][1]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, component_idx], patch_data)
@@ -1477,13 +1477,13 @@ class SamraiDataReader:
                                             hi_subdomain_shifted[1] = hi_subdomain_level[level_num][1] \
                                                 - domain_shape_level[level_num][1]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, component_idx], patch_data)
@@ -1504,12 +1504,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[1] = hi_subdomain_level[level_num][1] \
                                             + domain_shape_level[level_num][1]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, :, component_idx], patch_data)
                                     
@@ -1528,12 +1528,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[1] = hi_subdomain_level[level_num][1] \
                                             - domain_shape_level[level_num][1]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, :, component_idx], patch_data)
                                     
@@ -1552,12 +1552,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[1] = hi_subdomain_level[level_num][1] \
                                             + domain_shape_level[level_num][1]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, :, component_idx], patch_data)
                                     
@@ -1577,12 +1577,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[1] = hi_subdomain_level[level_num][1] \
                                             - domain_shape_level[level_num][1]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, :, component_idx], patch_data)
                 
@@ -1591,7 +1591,7 @@ class SamraiDataReader:
         elif dim == 3:
             for process_idx in range(0, num_file_clusters):
                 file_name = 'processor_cluster.' + str(process_idx).zfill(5) + '.samrai'
-                full_path = self.__full_viz_folder_paths[self.__step] + '/' + file_name
+                full_path = self._full_viz_folder_paths[self._step] + '/' + file_name
                 f_input = h5py.File(full_path, 'r')
                 
                 for level_num in range(num_levels):
@@ -1610,8 +1610,8 @@ class SamraiDataReader:
                             
                             # Get the lower and upper indices of the current patch.
                             
-                            lo_patch = self.__patch_extents[global_patch_idx][0]
-                            hi_patch = self.__patch_extents[global_patch_idx][1]
+                            lo_patch = self._patch_extents[global_patch_idx][0]
+                            hi_patch = self._patch_extents[global_patch_idx][1]
                             
                             # Get the shape of the patch.
                             
@@ -1623,15 +1623,15 @@ class SamraiDataReader:
                                 patch_data = file_cluster_patch[var_component_names[var_name][component_idx]].value.reshape( \
                                     patch_shape, order = 'F')
                                 
-                                if self.__data_order == 'C':
+                                if self._data_order == 'C':
                                     patch_data  = patch_data.copy(order = 'C')
                                     
-                                    self.__loadDataFromPatchToSubdomain( \
+                                    self._loadDataFromPatchToSubdomain( \
                                         lo_subdomain_level[level_num], hi_subdomain_level[level_num], \
                                         lo_patch, hi_patch, \
                                         level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                 else:
-                                    self.__loadDataFromPatchToSubdomain( \
+                                    self._loadDataFromPatchToSubdomain( \
                                         lo_subdomain_level[level_num], hi_subdomain_level[level_num], \
                                         lo_patch, hi_patch, \
                                         level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -1660,13 +1660,13 @@ class SamraiDataReader:
                                             lo_subdomain_shifted[2] = lo_subdomain_level[level_num][2]
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -1689,13 +1689,13 @@ class SamraiDataReader:
                                             lo_subdomain_shifted[2] = lo_subdomain_level[level_num][2]
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -1719,13 +1719,13 @@ class SamraiDataReader:
                                             lo_subdomain_shifted[2] = lo_subdomain_level[level_num][2]
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -1748,13 +1748,13 @@ class SamraiDataReader:
                                             lo_subdomain_shifted[2] = lo_subdomain_level[level_num][2]
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -1778,13 +1778,13 @@ class SamraiDataReader:
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                                 + domain_shape_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -1807,13 +1807,13 @@ class SamraiDataReader:
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                                 - domain_shape_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -1839,13 +1839,13 @@ class SamraiDataReader:
                                             lo_subdomain_shifted[2] = lo_subdomain_level[level_num][2]
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -1870,13 +1870,13 @@ class SamraiDataReader:
                                             lo_subdomain_shifted[2] = lo_subdomain_level[level_num][2]
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -1901,13 +1901,13 @@ class SamraiDataReader:
                                             lo_subdomain_shifted[2] = lo_subdomain_level[level_num][2]
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -1932,13 +1932,13 @@ class SamraiDataReader:
                                             lo_subdomain_shifted[2] = lo_subdomain_level[level_num][2]
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -1964,13 +1964,13 @@ class SamraiDataReader:
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                                 + domain_shape_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -1995,13 +1995,13 @@ class SamraiDataReader:
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                                 - domain_shape_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -2026,13 +2026,13 @@ class SamraiDataReader:
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                                 + domain_shape_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -2057,13 +2057,13 @@ class SamraiDataReader:
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                                 - domain_shape_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -2089,13 +2089,13 @@ class SamraiDataReader:
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                                 + domain_shape_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -2120,13 +2120,13 @@ class SamraiDataReader:
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                                 - domain_shape_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -2151,13 +2151,13 @@ class SamraiDataReader:
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                                 + domain_shape_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -2182,13 +2182,13 @@ class SamraiDataReader:
                                             hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                                 - domain_shape_level[level_num][2]
                                             
-                                            if self.__data_order == 'C':
-                                                self.__loadDataFromPatchToSubdomain( \
+                                            if self._data_order == 'C':
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                             else:
-                                                self.__loadDataFromPatchToSubdomain( \
+                                                self._loadDataFromPatchToSubdomain( \
                                                     lo_subdomain_shifted, hi_subdomain_shifted, \
                                                     lo_patch, hi_patch, \
                                                     level_data[var_name][level_num][:, :, :, component_idx], patch_data)
@@ -2218,12 +2218,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                             + domain_shape_level[level_num][2]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, :, :, component_idx], patch_data)
                                     
@@ -2249,12 +2249,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                             + domain_shape_level[level_num][2]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, :, :, component_idx], patch_data)
                                     
@@ -2280,12 +2280,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                             + domain_shape_level[level_num][2]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, :, :, component_idx], patch_data)
                                         
@@ -2311,12 +2311,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                             + domain_shape_level[level_num][2]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, :, :, component_idx], patch_data)
                                     
@@ -2342,12 +2342,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                             - domain_shape_level[level_num][2]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, :, :, component_idx], patch_data)
                                     
@@ -2373,12 +2373,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                             - domain_shape_level[level_num][2]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, :, :, component_idx], patch_data)
                                     
@@ -2404,12 +2404,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                             - domain_shape_level[level_num][2]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, :, :, component_idx], patch_data)
                                     
@@ -2435,12 +2435,12 @@ class SamraiDataReader:
                                         hi_subdomain_shifted[2] = hi_subdomain_level[level_num][2] \
                                             - domain_shape_level[level_num][2]
                                         
-                                        if self.__data_order == 'C':
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                        if self._data_order == 'C':
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][component_idx, :, :, :], patch_data)
                                         else:
-                                            self.__loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
+                                            self._loadDataFromPatchToSubdomain(lo_subdomain_shifted, hi_subdomain_shifted, \
                                                 lo_patch, hi_patch, \
                                                 level_data[var_name][level_num][:, :, :, component_idx], patch_data)
                 
@@ -2456,15 +2456,15 @@ class SamraiDataReader:
             data_shape = hi_subdomain_level[-1][0:dim] - lo_subdomain_level[-1][0:dim] \
                 + numpy.ones(dim, dtype = lo_subdomain_level.dtype)
             
-            if self.__data_order == 'C':
+            if self._data_order == 'C':
                 data_shape = numpy.insert(data_shape, 0, var_num_components[var_name])
             else:
                 data_shape = numpy.append(data_shape, var_num_components[var_name])
             
-            self.__data[var_name] = numpy.empty(data_shape, dtype = numpy.float64, order = self.__data_order)
-            self.__data[var_name][:] = numpy.NAN
+            self._data[var_name] = numpy.empty(data_shape, dtype = numpy.float64, order = self._data_order)
+            self._data[var_name][:] = numpy.NAN
             
-            if self.__data_order == 'C':
+            if self._data_order == 'C':
                 data_shape = numpy.array(data_shape[1:])
             else:
                 data_shape = numpy.array(data_shape[:-1])
@@ -2482,15 +2482,15 @@ class SamraiDataReader:
                         ratios_to_finest_level[0], \
                         component_idx, method = 'constant')
                     
-                    if self.__data_order == 'C':
+                    if self._data_order == 'C':
                         root_data_component = root_data_component[x_start_idx:x_end_idx]
                         is_finite_idx = numpy.isfinite(root_data_component)
-                        self.__data[var_name][component_idx, :][is_finite_idx] = root_data_component[is_finite_idx]
+                        self._data[var_name][component_idx, :][is_finite_idx] = root_data_component[is_finite_idx]
                     
                     else:
                         root_data_component = root_data_component[x_start_idx:x_end_idx]
                         is_finite_idx = numpy.isfinite(root_data_component)
-                        self.__data[var_name][:, component_idx][is_finite_idx] = root_data_component[is_finite_idx]
+                        self._data[var_name][:, component_idx][is_finite_idx] = root_data_component[is_finite_idx]
                 
                 for level_num in range(0, num_levels):
                     lo_level_refined = numpy.empty(dim, dtype = lo_subdomain_level.dtype)
@@ -2506,20 +2506,20 @@ class SamraiDataReader:
                                 ratios_to_finest_level[level_num], \
                                 component_idx, method = upsampling_method)
                         else:
-                            if self.__data_order == 'C':
+                            if self._data_order == 'C':
                                 level_data_component = level_data[var_name][level_num][component_idx, :]
                             else:
                                 level_data_component = level_data[var_name][level_num][:, component_idx]
                         
-                        if self.__data_order == 'C':
+                        if self._data_order == 'C':
                             level_data_component = level_data_component[x_start_idx:x_end_idx]
                             is_finite_idx = numpy.isfinite(level_data_component)
-                            self.__data[var_name][component_idx, :][is_finite_idx] = level_data_component[is_finite_idx]
+                            self._data[var_name][component_idx, :][is_finite_idx] = level_data_component[is_finite_idx]
                         
                         else:
                             level_data_component = level_data_component[x_start_idx:x_end_idx]
                             is_finite_idx = numpy.isfinite(level_data_component)
-                            self.__data[var_name][:, component_idx][is_finite_idx] = level_data_component[is_finite_idx]
+                            self._data[var_name][:, component_idx][is_finite_idx] = level_data_component[is_finite_idx]
             
             elif dim == 2:
                 lo_root_refined = numpy.empty(dim, dtype = lo_subdomain_level.dtype)
@@ -2538,15 +2538,15 @@ class SamraiDataReader:
                         ratios_to_finest_level[0], \
                         component_idx, method = 'constant')
                     
-                    if self.__data_order == 'C':
+                    if self._data_order == 'C':
                         root_data_component = root_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx]
                         is_finite_idx = numpy.isfinite(root_data_component)
-                        self.__data[var_name][component_idx, :, :][is_finite_idx] = root_data_component[is_finite_idx]
+                        self._data[var_name][component_idx, :, :][is_finite_idx] = root_data_component[is_finite_idx]
                     
                     else:
                         root_data_component = root_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx]
                         is_finite_idx = numpy.isfinite(root_data_component)
-                        self.__data[var_name][:, :, component_idx][is_finite_idx] = root_data_component[is_finite_idx]
+                        self._data[var_name][:, :, component_idx][is_finite_idx] = root_data_component[is_finite_idx]
                 
                 for level_num in range(0, num_levels):
                     lo_level_refined = numpy.empty(dim, dtype = lo_subdomain_level.dtype)
@@ -2566,20 +2566,20 @@ class SamraiDataReader:
                                 ratios_to_finest_level[level_num], \
                                 component_idx, method = upsampling_method)
                         else:
-                            if self.__data_order == 'C':
+                            if self._data_order == 'C':
                                 level_data_component = level_data[var_name][level_num][component_idx, :, :]
                             else:
                                 level_data_component = level_data[var_name][level_num][:, :, component_idx]
                         
-                        if self.__data_order == 'C':
+                        if self._data_order == 'C':
                             level_data_component = level_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx]
                             is_finite_idx = numpy.isfinite(level_data_component)
-                            self.__data[var_name][component_idx, :, :][is_finite_idx] = level_data_component[is_finite_idx]
+                            self._data[var_name][component_idx, :, :][is_finite_idx] = level_data_component[is_finite_idx]
                             
                         else:
                             level_data_component = level_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx]
                             is_finite_idx = numpy.isfinite(level_data_component)
-                            self.__data[var_name][:, :, component_idx][is_finite_idx] = level_data_component[is_finite_idx]
+                            self._data[var_name][:, :, component_idx][is_finite_idx] = level_data_component[is_finite_idx]
             
             elif dim == 3:
                 lo_root_refined = numpy.empty(dim, dtype = lo_subdomain_level.dtype)
@@ -2602,17 +2602,17 @@ class SamraiDataReader:
                         ratios_to_finest_level[0], \
                         component_idx, method = 'constant')
                     
-                    if self.__data_order == 'C':
+                    if self._data_order == 'C':
                         root_data_component = \
                             root_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx]
                         is_finite_idx = numpy.isfinite(root_data_component)
-                        self.__data[var_name][component_idx, :, :, :][is_finite_idx] = root_data_component[is_finite_idx]
+                        self._data[var_name][component_idx, :, :, :][is_finite_idx] = root_data_component[is_finite_idx]
                     
                     else:
                         root_data_component = \
                             root_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx]
                         is_finite_idx = numpy.isfinite(root_data_component)
-                        self.__data[var_name][:, :, :, component_idx][is_finite_idx] = root_data_component[is_finite_idx]
+                        self._data[var_name][:, :, :, component_idx][is_finite_idx] = root_data_component[is_finite_idx]
                 
                 for level_num in range(0, num_levels):
                     lo_level_refined = numpy.empty(dim, dtype = lo_subdomain_level.dtype)
@@ -2636,27 +2636,27 @@ class SamraiDataReader:
                                 ratios_to_finest_level[level_num], \
                                 component_idx, method = upsampling_method)
                         else:
-                            if self.__data_order == 'C':
+                            if self._data_order == 'C':
                                 level_data_component = level_data[var_name][level_num][component_idx, :, :, :]
                             else:
                                 level_data_component = level_data[var_name][level_num][:, :, :, component_idx]
                         
-                        if self.__data_order == 'C':
+                        if self._data_order == 'C':
                             level_data_component = \
                                 level_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx]
                             is_finite_idx = numpy.isfinite(level_data_component)
-                            self.__data[var_name][component_idx, :, :, :][is_finite_idx] = level_data_component[is_finite_idx]
+                            self._data[var_name][component_idx, :, :, :][is_finite_idx] = level_data_component[is_finite_idx]
                         
                         else:
                             level_data_component = \
                                 level_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx, z_start_idx:z_end_idx]
                             is_finite_idx = numpy.isfinite(level_data_component)
-                            self.__data[var_name][:, :, :, component_idx][is_finite_idx] = level_data_component[is_finite_idx]
+                            self._data[var_name][:, :, :, component_idx][is_finite_idx] = level_data_component[is_finite_idx]
         
-        self.__data_loaded = True
+        self._data_loaded = True
     
     
-    def __loadDataFromPatchToSubdomain(self, \
+    def _loadDataFromPatchToSubdomain(self, \
             lo_subdomain, \
             hi_subdomain, \
             lo_patch, \
