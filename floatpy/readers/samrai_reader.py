@@ -352,7 +352,7 @@ class SamraiDataReader:
                 raise RuntimeError('lo is greater than hi!')
             
             self._lo_subdomain = (lo[0],)
-            self._up_subdomain = (hi[0],)
+            self._hi_subdomain = (hi[0],)
         
         elif dim == 2:
             if len(lo) < 2 or len(hi) < 2:
@@ -362,7 +362,7 @@ class SamraiDataReader:
                 raise RuntimeError('lo is greater than hi!')
             
             self._lo_subdomain = (lo[0], lo[1])
-            self._up_subdomain = (hi[0], hi[1])
+            self._hi_subdomain = (hi[0], hi[1])
         
         elif dim == 3:
             if len(lo) < 3 or len(hi) < 3:
@@ -372,7 +372,7 @@ class SamraiDataReader:
                 raise RuntimeError('lo is greater than hi!')
             
             self._lo_subdomain = (lo[0], lo[1], lo[2])
-            self._up_subdomain = (hi[0], hi[1], lo[2])
+            self._hi_subdomain = (hi[0], hi[1], hi[2])
     
     
     def getCoordinatesAtOneLevel(self, level_num):
