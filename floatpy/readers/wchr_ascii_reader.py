@@ -97,7 +97,11 @@ class WchrAsciiReader(BaseReader):
     
     
     def setSubDomain(self, lo_and_hi):
-        # Check if lo and hi are within the domain bounds first.
+        """
+        Set the sub-domain for reading coordinates and data.
+        """
+        
+        # Check if lo and hi are within the domain bounds first!!!
         
         try:
             lo, hi = lo_and_hi
@@ -114,13 +118,14 @@ class WchrAsciiReader(BaseReader):
 
         # Now set the chunk to be used later.
         self.chunk = ((lo[0],hi[0]),(lo[1],hi[1]),(lo[2],hi[2]))
-
+    
     
     def getSubDomain(self):
         lo = (self.chunk[0][0], self.chunk[1][0], self.chunk[2][0])
         hi = (self.chunk[0][1], self.chunk[1][1], self.chunk[2][1])
         return lo, hi
-
+    
+    
     sub_domain = property(getSubDomain, setSubDomain)
     
     
