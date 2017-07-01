@@ -28,15 +28,16 @@ class BaseReader(object):
         Update the metadata from the summary file in the data directory at a new time step.
         """
         return
-
-
+    
+    
     @abc.abstractmethod
     def getStep(self):
         """
         Return the time step that is currently set.
         """
         return
-
+    
+    
     step = abc.abstractproperty(getStep, setStep)
     
     
@@ -63,6 +64,7 @@ class BaseReader(object):
         as a lower bound (lo) and upper bound (hi).
         """
         return
+    
     
     sub_domain = abc.abstractproperty(getSubDomain, setSubDomain)
     
@@ -107,4 +109,3 @@ class BaseReader(object):
         Default to the full domain when the sub-domain is not set.
         """
         return
-
