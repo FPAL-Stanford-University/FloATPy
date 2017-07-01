@@ -6,11 +6,11 @@ class BaseReader(object):
     
     Steps in using the data reader to post-process data in many time steps:
     1. Use the constructor BaseReader(data_directory_path) to create the object and initialize it.
-    2. Call getDomainSize() to get the full domain size.
+    2. Get the full domain size.
     3. Call setSubDomain(lo, hi) to set the sub-domain to read in.
     4. Call readCoordinates() to get coordinates of the sub-domain.
     For each time step:
-        a. Call updateSummary(step) for each timestep.
+        a. Call setStep(step) for each timestep.
         b. Call readData().
         c. Do your post-processing...
     
@@ -25,7 +25,7 @@ class BaseReader(object):
     @abc.abstractmethod
     def setStep(self, step):
         """
-        Update the metadata from the summary file in the data directory at new time step.
+        Update the metadata from the summary file in the data directory at a new time step.
         """
         return
 
@@ -33,7 +33,7 @@ class BaseReader(object):
     @abc.abstractmethod
     def getStep(self):
         """
-        Return the vizdump that's currently set.
+        Return the time step that is currently set.
         """
         return
 
@@ -49,7 +49,7 @@ class BaseReader(object):
     
     
     @abc.abstractmethod
-    def setSubDomain(self, (lo, hi)):
+    def setSubDomain(self, lo, hi):
         """
         Set the sub-domain for reading coordinates and data.
         """
@@ -66,18 +66,27 @@ class BaseReader(object):
     
     sub_domain = abc.abstractproperty(getSubDomain, setSubDomain)
     
-
+    
     @abc.abstractproperty
     def periodic_dimensions(self):
         """
         Return a tuple indicating if data is periodic in each dimension.
         """
         return
-
+    
+    
     @abc.abstractproperty
     def time(self):
         """
-        Return the current simulation time.
+        Return the simulation time at current time step.
+        """
+        return
+    
+    
+    @abc.abstractproperty
+    def max_step(self):
+        """
+        Return the maximum allowable step.
         """
         return
     
