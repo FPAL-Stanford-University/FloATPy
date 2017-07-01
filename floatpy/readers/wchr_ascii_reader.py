@@ -96,7 +96,7 @@ class WchrAsciiReader(BaseReader):
     step = property(getStep, setStep)
     
     
-    def setSubDomain(self, (lo, hi)):
+    def setSubDomain(self, lo, hi):
         # Check if lo and hi are within the domain bounds first.
         
         for i in range(3):
