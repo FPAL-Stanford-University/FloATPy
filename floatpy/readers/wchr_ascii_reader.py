@@ -134,6 +134,11 @@ class WchrAsciiReader(BaseReader):
         return 0.
     
     
+    @property
+    def max_step(self):
+        return 0
+    
+    
     def readCoordinatesInX(self):
         """
         Method to read in the full domain's coordinates in x direction.
