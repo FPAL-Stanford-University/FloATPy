@@ -50,7 +50,7 @@ class BaseReader(object):
     
     
     @abc.abstractmethod
-    def setSubDomain(self, lo, hi):
+    def setSubDomain(self, (lo, hi)):
         """
         Set the sub-domain for reading coordinates and data.
         """
