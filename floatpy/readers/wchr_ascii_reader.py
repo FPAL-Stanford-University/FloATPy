@@ -96,8 +96,13 @@ class WchrAsciiReader(BaseReader):
     step = property(getStep, setStep)
     
     
-    def setSubDomain(self, (lo, hi)):
+    def setSubDomain(self, lo_and_hi):
         # Check if lo and hi are within the domain bounds first.
+        
+        try:
+            lo, hi = lo_and_hi
+        except ValueError:
+            raise ValueError("Pass an iterable with two iterms!")
         
         for i in range(3):
             if lo[i] < 0 or lo[i] > self._domain_size[i]:

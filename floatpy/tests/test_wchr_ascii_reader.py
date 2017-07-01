@@ -12,7 +12,7 @@ class TestWchrAsciiReader(unittest.TestCase):
 
         self.lo = (2 , 4, 1)
         self.hi = (5 , 8, 7)
-        self.reader.sub_domain = self.lo, self.hi
+        self.reader.sub_domain = (self.lo, self.hi)
         self.reader.step = 0
 
 

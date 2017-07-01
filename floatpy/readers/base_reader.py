@@ -7,7 +7,7 @@ class BaseReader(object):
     Steps in using the data reader to post-process data in many time steps:
     1. Use the constructor BaseReader(data_directory_path) to create the object and initialize it.
     2. Get the full domain size.
-    3. Call setSubDomain(lo, hi) to set the sub-domain to read in.
+    3. Call setSubDomain((lo, hi)) to set the sub-domain to read in.
     4. Call readCoordinates() to get coordinates of the sub-domain.
     For each time step:
         a. Call setStep(step) for each timestep.
@@ -50,7 +50,7 @@ class BaseReader(object):
     
     
     @abc.abstractmethod
-    def setSubDomain(self, (lo, hi)):
+    def setSubDomain(self, lo_and_hi):
         """
         Set the sub-domain for reading coordinates and data.
         """
