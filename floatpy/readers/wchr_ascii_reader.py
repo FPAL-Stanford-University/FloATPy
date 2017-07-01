@@ -46,7 +46,7 @@ class WchrAsciiReader(BaseReader):
 
         self.pencil_lo    = numpy.zeros((self.prow,self.pcol,2), dtype=int)  # Lowest global index of proc in x and z respectively
         self.pencil_hi    = numpy.zeros((self.prow,self.pcol,2), dtype=int)  # Highest global index of proc in x and z respectively
-        self.domain_size_  = numpy.zeros(3, dtype=int)                        # Domain size in x, y and z respectively
+        self._domain_size = numpy.zeros(3, dtype=int)                        # Domain size in x, y and z respectively
 
         for row in range(self.prow):
             for col in range(self.pcol):
@@ -62,32 +62,39 @@ class WchrAsciiReader(BaseReader):
                 self.pencil_hi[row,col,0] = int(line[0]) + 1
                 self.pencil_hi[row,col,1] = int(line[2]) + 1
 
-                if self.domain_size_[1] == 0:
-                    self.domain_size_[1] = int(line[1]) + 1
+                if self._domain_size[1] == 0:
+                    self._domain_size[1] = int(line[1]) + 1
 
-                assert(self.domain_size_[1] == (int(line[1]) + 1), "Data is invalid. Unequal domain sized in the y direction for different pencils!")
+                assert(self._domain_size[1] == (int(line[1]) + 1), "Data is invalid. Unequal domain sized in the y direction for different pencils!")
 
                 f.close()
 
-        self.domain_size_[0] = self.pencil_hi[-1,-1,0]
-        self.domain_size_[2] = self.pencil_hi[-1,-1,1]
+        self._domain_size[0] = self.pencil_hi[-1,-1,0]
+        self._domain_size[2] = self.pencil_hi[-1,-1,1]
 
         # Indices for each variable
         self.inds = {'rho' : 0, 'u' : 1, 'v' : 2, 'w' : 3, 'p' : 4}
 
         # Step is set to 0 by default
-        self.step = 0
+        self._step = 0
 
-    def updateSummary(self, step):
+
+    def setStep(self, step):
         assert(step in self.steps, "Step to read in is not available in the dataset.")
-        self.step = step
+        self._step = step
 
-    def setSubDomain(self, lo, hi):
+
+    def getStep(self):
+        return self._step
+
+    step = property(getStep, setStep)
+
+    def setSubDomain(self, (lo, hi)):
         # Check if lo and hi are within the domain bounds first
         for i in range(3):
-            if lo[i] < 0 or lo[i] > self.domain_size_[i]:
+            if lo[i] < 0 or lo[i] > self._domain_size[i]:
                 raise ValueError('Invalid indices in chunk. Cannot be < 0 or > domain size')
-            if hi[i] < 0 or hi[i] > self.domain_size_[i]:
+            if hi[i] < 0 or hi[i] > self._domain_size[i]:
                 raise ValueError('Invalid indices in chunk. Cannot be < 0 or > domain size')
             if hi[i] < lo[i]:
                 raise ValueError('Invalid indices in chunk. Upper bound cannot be smaller than lower bound')
@@ -95,15 +102,18 @@ class WchrAsciiReader(BaseReader):
         # Now set the chunk to be used later
         self.chunk = ((lo[0],hi[0]),(lo[1],hi[1]),(lo[2],hi[2]))
 
-    @property
-    def domain_size(self):
-        return tuple(self.domain_size_)
 
-    @property
-    def sub_domain(self):
+    def getSubDomain(self):
         lo = (self.chunk[0][0], self.chunk[1][0], self.chunk[2][0])
         hi = (self.chunk[0][1], self.chunk[1][1], self.chunk[2][1])
         return lo, hi
+
+    sub_domain = property(getSubDomain, setSubDomain)
+
+    @property
+    def domain_size(self):
+        return tuple(self._domain_size)
+
 
     @property
     def periodic_dimensions(self):
@@ -113,11 +123,12 @@ class WchrAsciiReader(BaseReader):
     def time(self):
         return 0.
 
+
     def readXCoord(self):
         """
         Method to read in the full domain's X coordinates
         """
-        self.x_c = numpy.zeros((self.domain_size_[0], self.domain_size_[1], self.domain_size_[2] ))
+        self.x_c = numpy.zeros((self._domain_size[0], self._domain_size[1], self._domain_size[2] ))
 
         for row in range(self.prow):
             for col in range(self.pcol):
@@ -127,9 +138,9 @@ class WchrAsciiReader(BaseReader):
 
                 lo = self.pencil_lo[row,col]
                 hi = self.pencil_hi[row,col]
-                self.x_c[lo[0]:hi[0], :, lo[1]:hi[1]] = this_x.reshape((hi[0]-lo[0], self.domain_size_[1], hi[1]-lo[1]), order='F')
+                self.x_c[lo[0]:hi[0], :, lo[1]:hi[1]] = this_x.reshape((hi[0]-lo[0], self._domain_size[1], hi[1]-lo[1]), order='F')
 
-        if self.domain_size_[0] > 1:
+        if self._domain_size[0] > 1:
             self.dx = self.x_c[1,0,0] - self.x_c[0,0,0]
         else:
             self.dx = 1.
@@ -139,7 +150,7 @@ class WchrAsciiReader(BaseReader):
         """
         Method to read in the full domain's Y coordinates
         """
-        self.y_c = numpy.zeros((self.domain_size_[0], self.domain_size_[1], self.domain_size_[2] ))
+        self.y_c = numpy.zeros((self._domain_size[0], self._domain_size[1], self._domain_size[2] ))
 
         for row in range(self.prow):
             for col in range(self.pcol):
@@ -149,9 +160,9 @@ class WchrAsciiReader(BaseReader):
 
                 lo = self.pencil_lo[row,col]
                 hi = self.pencil_hi[row,col]
-                self.y_c[lo[0]:hi[0], :, lo[1]:hi[1]] = this_y.reshape((hi[0]-lo[0], self.domain_size_[1], hi[1]-lo[1]), order='F')
+                self.y_c[lo[0]:hi[0], :, lo[1]:hi[1]] = this_y.reshape((hi[0]-lo[0], self._domain_size[1], hi[1]-lo[1]), order='F')
 
-        if self.domain_size_[1] > 1:
+        if self._domain_size[1] > 1:
             self.dy = self.y_c[0,1,0] - self.y_c[0,0,0]
         else:
             self.dy = 1.
@@ -161,7 +172,7 @@ class WchrAsciiReader(BaseReader):
         """
         Method to read in the full domain's Z coordinates
         """
-        self.z_c = numpy.zeros((self.domain_size_[0], self.domain_size_[1], self.domain_size_[2] ))
+        self.z_c = numpy.zeros((self._domain_size[0], self._domain_size[1], self._domain_size[2] ))
 
         for row in range(self.prow):
             for col in range(self.pcol):
@@ -171,12 +182,13 @@ class WchrAsciiReader(BaseReader):
 
                 lo = self.pencil_lo[row,col]
                 hi = self.pencil_hi[row,col]
-                self.z_c[lo[0]:hi[0], :, lo[1]:hi[1]] = this_z.reshape((hi[0]-lo[0], self.domain_size_[1], hi[1]-lo[1]), order='F')
+                self.z_c[lo[0]:hi[0], :, lo[1]:hi[1]] = this_z.reshape((hi[0]-lo[0], self._domain_size[1], hi[1]-lo[1]), order='F')
 
-        if self.domain_size_[2] > 1:
+        if self._domain_size[2] > 1:
             self.dz = self.z_c[0,0,1] - self.z_c[0,0,0]
         else:
             self.dz = 1.
+
 
     def readCoordinates(self):
         """
@@ -188,7 +200,7 @@ class WchrAsciiReader(BaseReader):
         y_c = numpy.zeros( chunk_size )
         z_c = numpy.zeros( chunk_size )
 
-        ny = self.domain_size_[1]
+        ny = self._domain_size[1]
 
         for row in range(self.prow):
             for col in range(self.pcol):
@@ -245,7 +257,7 @@ class WchrAsciiReader(BaseReader):
         chunk_size = (self.chunk[0][1]-self.chunk[0][0], self.chunk[1][1]-self.chunk[1][0], self.chunk[2][1]-self.chunk[2][0])
         data = [ numpy.zeros( chunk_size ) for i in range(len(var_names)) ]
 
-        ny = self.domain_size_[1]
+        ny = self._domain_size[1]
 
         for i in range(len(var_names)):
             var = var_names[i]
@@ -255,7 +267,7 @@ class WchrAsciiReader(BaseReader):
 
             for row in range(self.prow):
                 for col in range(self.pcol):
-                    filename = self.filename_prefix + ('%04d_px%04d_pz%04d.dat' % (self.step, row, col))
+                    filename = self.filename_prefix + ('%04d_px%04d_pz%04d.dat' % (self._step, row, col))
                     lo = self.pencil_lo[row,col]
                     hi = self.pencil_hi[row,col]
 

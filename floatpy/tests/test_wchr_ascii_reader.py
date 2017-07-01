@@ -12,18 +12,18 @@ class TestWchrAsciiReader(unittest.TestCase):
 
         self.lo = (2 , 4, 1)
         self.hi = (5 , 8, 7)
-        self.reader.setSubDomain(self.lo, self.hi)
-        self.reader.updateSummary(0)
+        self.reader.sub_domain = self.lo, self.hi
+        self.reader.step = 0
 
 
     def test_readCoordinates_chunk(self):
 
         # Read full coordinates
-        self.reader.setSubDomain((0,0,0), self.reader.domain_size)
+        self.reader.sub_domain = (0,0,0), self.reader.domain_size
         x, y, z = self.reader.readCoordinates()
 
         # Read chunked coordinates
-        self.reader.setSubDomain(self.lo, self.hi)
+        self.reader.sub_domain = self.lo, self.hi
         x_c, y_c, z_c = self.reader.readCoordinates()
 
         # Check that the chunked coordinates are equal to the corresponding full coords
@@ -39,13 +39,13 @@ class TestWchrAsciiReader(unittest.TestCase):
     def test_readData_chunk(self):
 
         # Read full data
-        self.reader.setSubDomain((0,0,0), self.reader.domain_size)
+        self.reader.sub_domain = (0,0,0), self.reader.domain_size
         rho,    = self.reader.readData('rho')
         u, v, w = self.reader.readData(('u','v','w'))
         p,      = self.reader.readData('p')
 
         # Read in chunked data
-        self.reader.setSubDomain(self.lo, self.hi)
+        self.reader.sub_domain = self.lo, self.hi
         rho_c,        = self.reader.readData('rho')
         u_c, v_c, w_c = self.reader.readData(('u','v','w'))
         p_c,          = self.reader.readData('p')

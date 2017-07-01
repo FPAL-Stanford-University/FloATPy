@@ -23,19 +23,21 @@ class BaseReader(object):
     
     
     @abc.abstractmethod
-    def updateSummary(self, step):
+    def setStep(self, step):
         """
         Update the metadata from the summary file in the data directory at new time step.
         """
         return
-    
-    
+
+
     @abc.abstractmethod
-    def setSubDomain(self, lo, hi):
+    def getStep(self):
         """
-        Set the sub-domain for reading coordinates and data.
+        Return the vizdump that's currently set.
         """
         return
+
+    step = abc.abstractproperty(getStep, setStep)
     
     
     @abc.abstractproperty
@@ -46,15 +48,25 @@ class BaseReader(object):
         return
     
     
-    @abc.abstractproperty
-    def sub_domain(self):
+    @abc.abstractmethod
+    def setSubDomain(self, (lo, hi)):
+        """
+        Set the sub-domain for reading coordinates and data.
+        """
+        return
+    
+    
+    @abc.abstractmethod
+    def getSubDomain(self):
         """
         Return two tuples containing the sub-domain used in this reader
         as a lower bound (lo) and upper bound (hi).
         """
         return
     
+    sub_domain = abc.abstractproperty(getSubDomain, setSubDomain)
     
+
     @abc.abstractproperty
     def periodic_dimensions(self):
         """
