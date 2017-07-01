@@ -102,7 +102,7 @@ class WchrAsciiReader(BaseReader):
         try:
             lo, hi = lo_and_hi
         except ValueError:
-            raise ValueError("Pass an iterable with two iterms!")
+            raise ValueError("Pass an iterable with two items!")
         
         for i in range(3):
             if lo[i] < 0 or lo[i] > self._domain_size[i]:
