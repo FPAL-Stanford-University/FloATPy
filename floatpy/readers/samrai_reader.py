@@ -9,13 +9,15 @@ import re
 
 from floatpy.upsampling import upsampling
 
-class SamraiDataReader:
+from base_reader import BaseReader
+
+class SamraiDataReader(BaseReader):
     """
     Class to read samrai data.
     """
     
-    def __init__(self, data_directory_path, periodic_dimensions = (False, False, False), upsampling_method = 'constant', \
-                 data_order = 'F'):
+    def __init__(self, data_directory_path, periodic_dimensions = (False, False, False), \
+                 upsampling_method = 'constant', data_order = 'F'):
         """
         Constructor of the class.
         The current time step of the class is set to the first time step in dump file.
@@ -80,27 +82,54 @@ class SamraiDataReader:
         
         # Initialize subdomain.
         
-        domain_shape = self.getRefinedDomainSize()
+        self._domain_size = self.getRefinedDomainSize()
         
         self._lo_subdomain = ()
         self._hi_subdomain = ()
         
         if dim == 1:
             self._lo_subdomain = (0,)
-            self._hi_subdomain = (domain_shape[0] - 1)
+            self._hi_subdomain = (self._domain_size[0] - 1)
         
         elif dim == 2:
             self._lo_subdomain = (0, 0)
-            self._hi_subdomain = (domain_shape[0] - 1, domain_shape[1] - 1)
+            self._hi_subdomain = (self._domain_size[0] - 1, self._domain_size[1] - 1)
         
         elif dim == 3:
             self._lo_subdomain = (0, 0, 0)
-            self._hi_subdomain = (domain_shape[0] - 1, domain_shape[1] - 1, domain_shape[2] - 1)
+            self._hi_subdomain = (self._domain_size[0] - 1, self._domain_size[1] - 1, self._domain_size[2] - 1)
         
         # Initialize other containers.
         
         self._data_loaded = False
         self._data = {}
+    
+    
+    @property
+    def periodic_dimensions(self):
+        """
+        Return a tuple indicating if data is periodic in each dimension.
+        """
+        
+        return self._periodic_dimensions
+    
+    
+    @property
+    def time(self):
+        """
+        Return the simulation time at current time step.
+        """
+        
+        return self._basic_info['t']
+    
+    
+    @property
+    def max_step(self):
+        """
+        Return the maximum allowable step.
+        """
+        
+        return len(self._full_viz_folder_paths)
     
     
     def getDataDirectoryPath(self):
@@ -111,7 +140,7 @@ class SamraiDataReader:
         return self._data_directory_path
     
     
-    def updateSummary(self, step):
+    def setStep(self, step):
         """
         Update the metadata from the summary file in the data directory at new time step and
         change the current time step to the new time step.
@@ -124,6 +153,17 @@ class SamraiDataReader:
         
         self._step = step
         self._readSummary(step)
+    
+    
+    def getStep(self):
+        """
+        Return the time step that is currently set.
+        """
+        
+        return self._step
+    
+    
+    step = property(getStep, setStep)
     
     
     def _readSummary(self, step):
@@ -334,15 +374,37 @@ class SamraiDataReader:
         return tuple(domain_shape)
     
     
-    def setSubDomain(self, lo, hi):
+    @property
+    def domain_size(self):
+        """
+        Return a tuple containing the full domain size of this dataset.
+        """
+        
+        return self._domain_size
+    
+    
+    def setSubDomain(self, lo_and_hi):
         """
         Set the sub-domain for reading coordinates and data in a subdomain.
         """
         
-        if self._data_loaded == True:
-            self.clearData()
+        try:
+            lo, hi = lo_and_hi
+        except ValueError:
+            raise ValueError("Pass an iterable with two items!")
         
         dim = self._basic_info['dim']
+        
+        for i in range(dim):
+            if lo[i] < 0 or lo[i] > self._domain_size[i]:
+                raise ValueError('Invalid indices in sub-domain. Cannot be < 0 or > domain size!')
+            if hi[i] < 0 or hi[i] > self._domain_size[i]:
+                raise ValueError('Invalid indices in sub-domain. Cannot be < 0 or > domain size!')
+            if hi[i] < lo[i]:
+                raise ValueError('Invalid indices in sub-domain. Upper bound cannot be smaller than lower bound!')
+        
+        if self._data_loaded == True:
+            self.clearData()
         
         if dim == 1:
             if len(lo) < 1 or len(hi) < 1:
@@ -373,6 +435,18 @@ class SamraiDataReader:
             
             self._lo_subdomain = (lo[0], lo[1], lo[2])
             self._hi_subdomain = (hi[0], hi[1], hi[2])
+    
+    
+    def getSubDomain(self):
+        """
+        Return two tuples containing the sub-domain used in this reader
+        as a lower bound (lo) and upper bound (hi).
+        """
+        
+        return self._lo_subdomain, self._hi_subdomain
+    
+    
+    sub_domain = property(getSubDomain, setSubDomain)
     
     
     def getCoordinatesAtOneLevel(self, level_num):
@@ -628,7 +702,7 @@ class SamraiDataReader:
         self._data_loaded = True
     
     
-    def getCombinedCoordinatesInSubdomainFromAllLevels(self, num_ghosts):
+    def getCombinedCoordinatesInSubdomainFromAllLevels(self, num_ghosts = None):
         """
         Get coordinates in a sub-domain from all levels, refine the coordinates to the finest level
         and combine the coordinates from different levels.
@@ -658,7 +732,18 @@ class SamraiDataReader:
             if len(num_ghosts) < 3:
                 raise RuntimeError('Dimension of num_ghosts is not correct!')
         
-        num_ghosts = numpy.asarray(num_ghosts[0:dim])
+        if num_ghosts is None:
+            if dim == 1:
+                num_ghosts = (0,)
+            
+            elif dim == 2:
+                num_ghosts = (0, 0)
+            
+            elif dim == 3:
+                num_ghosts = (0, 0, 0)
+        
+        else:
+            num_ghosts = numpy.asarray(num_ghosts[0:dim])
         
         # Get the refinement ratios from different levels to finest level.
         
@@ -756,7 +841,7 @@ class SamraiDataReader:
     
     def readCombinedDataInSubdomainFromAllLevels(self, \
             var_names, \
-            num_ghosts):
+            num_ghosts = None):
         """
         Read data in a sub-domain from all levels, refine the data to the finest level
         and combine the data from different levels.
@@ -794,7 +879,18 @@ class SamraiDataReader:
             if len(num_ghosts) < 3:
                 raise RuntimeError('Dimension of num_ghosts is not correct!')
         
-        num_ghosts = numpy.asarray(num_ghosts[0:dim])
+        if num_ghosts is None:
+            if dim == 1:
+                num_ghosts = (0,)
+            
+            elif dim == 2:
+                num_ghosts = (0, 0)
+            
+            elif dim == 3:
+                num_ghosts = (0, 0, 0)
+        
+        else:
+            num_ghosts = numpy.asarray(num_ghosts[0:dim])
         
         # Get the variable names.
         
@@ -2800,3 +2896,37 @@ class SamraiDataReader:
         
         else:
             raise RuntimeError('Problem dimension < 1 or > 3 not supported!')
+    
+    
+    def readCoordinates(self):
+        """
+        Get the coordinates of the stored sub-domain.
+        Default to the full domain when the sub-domain is not set.
+        """
+        
+        return getCombinedCoordinatesInSubdomainFromAllLevels()
+    
+    
+    def readData(self, var_names):
+        """
+        Read the data of several variables in the stored sub-domain.
+        Default to the full domain when the sub-domain is not set.
+        """
+        
+        if self._load == True:
+            clearData()
+        
+        readCombinedDataInSubdomainFromAllLevels(var_names)
+        
+        data = [ numpy.zeros( chunk_size ) for i in range(len(var_names)) ]
+        
+        for i in range(len(var_names)):
+            data[i] = numpy.squeeze(self._data[var_names[i]])
+        
+        return tuple(data)
+
+
+BaseReader.register(SamraiDataReader)
+
+if __name__ == '__main__':
+    print 'Subclass:', issubclass(SamraiDataReader, BaseReader)

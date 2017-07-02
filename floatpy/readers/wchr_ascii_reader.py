@@ -85,6 +85,10 @@ class WchrAsciiReader(BaseReader):
     
     
     def setStep(self, step):
+        """
+        Update the metadata from the summary file in the data directory at a new time step.
+        """
+        
         assert(step in self.steps, "Step to read in is not available in the dataset.")
         self._step = step
     
@@ -110,19 +114,25 @@ class WchrAsciiReader(BaseReader):
         
         for i in range(3):
             if lo[i] < 0 or lo[i] > self._domain_size[i]:
-                raise ValueError('Invalid indices in chunk. Cannot be < 0 or > domain size')
+                raise ValueError('Invalid indices in chunk. Cannot be < 0 or > domain size!')
             if hi[i] < 0 or hi[i] > self._domain_size[i]:
-                raise ValueError('Invalid indices in chunk. Cannot be < 0 or > domain size')
+                raise ValueError('Invalid indices in chunk. Cannot be < 0 or > domain size!')
             if hi[i] < lo[i]:
-                raise ValueError('Invalid indices in chunk. Upper bound cannot be smaller than lower bound')
+                raise ValueError('Invalid indices in chunk. Upper bound cannot be smaller than lower bound!')
 
         # Now set the chunk to be used later.
         self.chunk = ((lo[0],hi[0]),(lo[1],hi[1]),(lo[2],hi[2]))
     
     
     def getSubDomain(self):
+        """
+        Return two tuples containing the sub-domain used in this reader
+        as a lower bound (lo) and upper bound (hi).
+        """
+        
         lo = (self.chunk[0][0], self.chunk[1][0], self.chunk[2][0])
         hi = (self.chunk[0][1], self.chunk[1][1], self.chunk[2][1])
+        
         return lo, hi
     
     
@@ -131,21 +141,37 @@ class WchrAsciiReader(BaseReader):
     
     @property
     def domain_size(self):
+        """
+        Return a tuple containing the full domain size of this dataset.
+        """
+        
         return tuple(self._domain_size)
     
     
     @property
     def periodic_dimensions(self):
+        """
+        Return a tuple indicating if data is periodic in each dimension.
+        """
+        
         return (True, True, True)
     
     
     @property
     def time(self):
+        """
+        Return the simulation time at current time step.
+        """
+        
         return 0.
     
     
     @property
     def max_step(self):
+        """
+        Return the maximum allowable step.
+        """
+        
         return 0
     
     
@@ -164,7 +190,8 @@ class WchrAsciiReader(BaseReader):
                 
                 lo = self.pencil_lo[row,col]
                 hi = self.pencil_hi[row,col]
-                self.x_c[lo[0]:hi[0], :, lo[1]:hi[1]] = this_x.reshape((hi[0]-lo[0], self._domain_size[1], hi[1]-lo[1]), order='F')
+                self.x_c[lo[0]:hi[0], :, lo[1]:hi[1]] = this_x.reshape((hi[0]-lo[0], self._domain_size[1], hi[1]-lo[1]), \
+                                                                       order='F')
         
         if self._domain_size[0] > 1:
             self.dx = self.x_c[1,0,0] - self.x_c[0,0,0]
@@ -187,7 +214,8 @@ class WchrAsciiReader(BaseReader):
                 
                 lo = self.pencil_lo[row,col]
                 hi = self.pencil_hi[row,col]
-                self.y_c[lo[0]:hi[0], :, lo[1]:hi[1]] = this_y.reshape((hi[0]-lo[0], self._domain_size[1], hi[1]-lo[1]), order='F')
+                self.y_c[lo[0]:hi[0], :, lo[1]:hi[1]] = this_y.reshape((hi[0]-lo[0], self._domain_size[1], hi[1]-lo[1]), \
+                                                                       order='F')
         
         if self._domain_size[1] > 1:
             self.dy = self.y_c[0,1,0] - self.y_c[0,0,0]
@@ -210,7 +238,8 @@ class WchrAsciiReader(BaseReader):
 
                 lo = self.pencil_lo[row,col]
                 hi = self.pencil_hi[row,col]
-                self.z_c[lo[0]:hi[0], :, lo[1]:hi[1]] = this_z.reshape((hi[0]-lo[0], self._domain_size[1], hi[1]-lo[1]), order='F')
+                self.z_c[lo[0]:hi[0], :, lo[1]:hi[1]] = this_z.reshape((hi[0]-lo[0], self._domain_size[1], hi[1]-lo[1]), \
+                                                                       order='F')
         
         if self._domain_size[2] > 1:
             self.dz = self.z_c[0,0,1] - self.z_c[0,0,0]
@@ -342,12 +371,12 @@ class WchrAsciiReader(BaseReader):
         fig = plt.figure()
         ax = fig.gca(projection='3d')
 
-        surf_x = ax.plot_surface(self.x_c[xind,:,:], self.y_c[xind,:,:], self.z_c[xind,:,:], facecolors=cmap.to_rgba(var[xind,:,:]), \
-                                 linewidth=0)
-        surf_y = ax.plot_surface(self.x_c[:,yind,:], self.y_c[:,yind,:], self.z_c[:,yind,:], facecolors=cmap.to_rgba(var[:,yind,:]), \
-                                 linewidth=0)
-        surf_z = ax.plot_surface(self.x_c[:,:,zind], self.y_c[:,:,zind], self.z_c[:,:,zind], facecolors=cmap.to_rgba(var[:,:,zind]), \
-                                 linewidth=0)
+        surf_x = ax.plot_surface(self.x_c[xind,:,:], self.y_c[xind,:,:], self.z_c[xind,:,:], \
+                                 facecolors=cmap.to_rgba(var[xind,:,:]), linewidth=0)
+        surf_y = ax.plot_surface(self.x_c[:,yind,:], self.y_c[:,yind,:], self.z_c[:,yind,:], \
+                                 facecolors=cmap.to_rgba(var[:,yind,:]), linewidth=0)
+        surf_z = ax.plot_surface(self.x_c[:,:,zind], self.y_c[:,:,zind], self.z_c[:,:,zind], \
+                                 facecolors=cmap.to_rgba(var[:,:,zind]), linewidth=0)
 
         fig.colorbar(cmap)
         plt.show()
