@@ -21,7 +21,7 @@ def getNumberOfGhostCellsUpsampling(method = 'constant'):
         raise RuntimeError("Unknown method '" + method + "' for number of ghost cells!")
 
 
-def upsample(data, refine_ratio, component_idx = 0, method = 'constant'):
+def upsample(data, refine_ratio, component_idx = None, method = 'constant'):
     """
     Upsampling the data.
     """
@@ -38,7 +38,7 @@ def upsample(data, refine_ratio, component_idx = 0, method = 'constant'):
         raise RuntimeError("Unknown method '" + method + "' for upsampling!")
 
 
-def upsampleConstant(data, refine_ratio, component_idx = 0):
+def upsampleConstant(data, refine_ratio, component_idx = None):
     """
     Upsampling the data using constant interpolation.
     """
@@ -51,24 +51,31 @@ def upsampleConstant(data, refine_ratio, component_idx = 0):
     if numpy.isfortran(data):
         data_order = 'F'
     
-    # Check whether the dimension of data is valid.
+    data_shape = data.shape
     
-    if data.ndim < 2 or data.ndim > 4:
-        raise RuntimeError('Shape of data is invalid!')
+    # Check whether the shape of data is valid.
     
-    # Check whether the component_idx is valid and get the shape of the component's data.
-    
-    if data_order == 'C':
-        if component_idx >= data.shape[0] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
-        
-        data_shape = numpy.array(data.shape[1:])
+    if component_idx is None:
+        if data.ndim < 1 or data.ndim > 3:
+            raise RuntimeError('Shape of data is invalid!')
     
     else:
-        if component_idx >= data.shape[-1] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
+        if data.ndim < 2 or data.ndim > 4:
+            raise RuntimeError('Shape of data is invalid!')
         
-        data_shape = numpy.array(data.shape[:-1])
+        # Check whether the component_idx is valid and get the shape of the component's data.
+        
+        if data_order == 'C':
+            if component_idx >= data.shape[0] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[1:])
+        
+        else:
+            if component_idx >= data.shape[-1] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[:-1])
     
     # Get the dimension of data.
     
@@ -82,20 +89,23 @@ def upsampleConstant(data, refine_ratio, component_idx = 0):
     
     data_component = None
     
-    if data_order == 'C':
-        if dim == 1:
-            data_component = data[component_idx, :]
-        elif dim == 2:
-            data_component = data[component_idx, :, :]
-        elif dim == 3:
-            data_component = data[component_idx, :, :, :]
+    if component_idx is None:
+        data_component = data
     else:
-        if dim == 1:
-            data_component = data[:, component_idx]
-        elif dim == 2:
-            data_component = data[:, :, component_idx]
-        elif dim == 3:
-            data_component = data[:, :, :, component_idx]
+        if data_order == 'C':
+            if dim == 1:
+                data_component = data[component_idx, :]
+            elif dim == 2:
+                data_component = data[component_idx, :, :]
+            elif dim == 3:
+                data_component = data[component_idx, :, :, :]
+        else:
+            if dim == 1:
+                data_component = data[:, component_idx]
+            elif dim == 2:
+                data_component = data[:, :, component_idx]
+            elif dim == 3:
+                data_component = data[:, :, :, component_idx]
     
     # Upsample the data with constant interpolation.
     
@@ -141,7 +151,7 @@ def upsampleConstant(data, refine_ratio, component_idx = 0):
     return upsampled_data
 
 
-def upsampleSecondOrderLagrange(data, refine_ratio, component_idx = 0):
+def upsampleSecondOrderLagrange(data, refine_ratio, component_idx = None):
     """
     Upsampling the data using second order Lagrange interpolation.
     """
@@ -157,24 +167,31 @@ def upsampleSecondOrderLagrange(data, refine_ratio, component_idx = 0):
     if numpy.isfortran(data):
         data_order = 'F'
     
-    # Check whether the dimension of data is valid.
+    data_shape = data.shape
     
-    if data.ndim < 2 or data.ndim > 4:
-        raise RuntimeError('Shape of data is invalid!')
+    # Check whether the shape of data is valid.
     
-    # Check whether the component_idx is valid and get the shape of the component's data.
-    
-    if data_order == 'C':
-        if component_idx >= data.shape[0] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
-        
-        data_shape = numpy.array(data.shape[1:])
+    if component_idx is None:
+        if data.ndim < 1 or data.ndim > 3:
+            raise RuntimeError('Shape of data is invalid!')
     
     else:
-        if component_idx >= data.shape[-1] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
+        if data.ndim < 2 or data.ndim > 4:
+            raise RuntimeError('Shape of data is invalid!')
         
-        data_shape = numpy.array(data.shape[:-1])
+        # Check whether the component_idx is valid and get the shape of the component's data.
+        
+        if data_order == 'C':
+            if component_idx >= data.shape[0] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[1:])
+        
+        else:
+            if component_idx >= data.shape[-1] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[:-1])
     
     # Get the dimension of data.
     
@@ -310,20 +327,23 @@ def upsampleSecondOrderLagrange(data, refine_ratio, component_idx = 0):
     
     data_component = None
     
-    if data_order == 'C':
-        if dim == 1:
-            data_component = data[component_idx, :]
-        elif dim == 2:
-            data_component = data[component_idx, :, :]
-        elif dim == 3:
-            data_component = data[component_idx, :, :, :]
+    if component_idx is None:
+        data_component = data
     else:
-        if dim == 1:
-            data_component = data[:, component_idx]
-        elif dim == 2:
-            data_component = data[:, :, component_idx]
-        elif dim == 3:
-            data_component = data[:, :, :, component_idx]
+        if data_order == 'C':
+            if dim == 1:
+                data_component = data[component_idx, :]
+            elif dim == 2:
+                data_component = data[component_idx, :, :]
+            elif dim == 3:
+                data_component = data[component_idx, :, :, :]
+        else:
+            if dim == 1:
+                data_component = data[:, component_idx]
+            elif dim == 2:
+                data_component = data[:, :, component_idx]
+            elif dim == 3:
+                data_component = data[:, :, :, component_idx]
     
     # Upsample the data with second order Lagrange interpolation.
     
@@ -457,7 +477,7 @@ def upsampleSecondOrderLagrange(data, refine_ratio, component_idx = 0):
     return upsampled_data
 
 
-def upsampleFourthOrderLagrange(data, refine_ratio, component_idx = 0):
+def upsampleFourthOrderLagrange(data, refine_ratio, component_idx = None):
     """
     Upsampling the data using fourth order Lagrange interpolation.
     """
@@ -473,24 +493,31 @@ def upsampleFourthOrderLagrange(data, refine_ratio, component_idx = 0):
     if numpy.isfortran(data):
         data_order = 'F'
     
-    # Check whether the dimension of data is valid.
+    data_shape = data.shape
     
-    if data.ndim < 2 or data.ndim > 4:
-        raise RuntimeError('Shape of data is invalid!')
+    # Check whether the shape of data is valid.
     
-    # Check whether the component_idx is valid and get the shape of the component's data.
-    
-    if data_order == 'C':
-        if component_idx >= data.shape[0] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
-        
-        data_shape = numpy.array(data.shape[1:])
+    if component_idx is None:
+        if data.ndim < 1 or data.ndim > 3:
+            raise RuntimeError('Shape of data is invalid!')
     
     else:
-        if component_idx >= data.shape[-1] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
+        if data.ndim < 2 or data.ndim > 4:
+            raise RuntimeError('Shape of data is invalid!')
         
-        data_shape = numpy.array(data.shape[:-1])
+        # Check whether the component_idx is valid and get the shape of the component's data.
+        
+        if data_order == 'C':
+            if component_idx >= data.shape[0] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[1:])
+        
+        else:
+            if component_idx >= data.shape[-1] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[:-1])
     
     # Get the dimension of data.
     
@@ -626,20 +653,23 @@ def upsampleFourthOrderLagrange(data, refine_ratio, component_idx = 0):
     
     data_component = None
     
-    if data_order == 'C':
-        if dim == 1:
-            data_component = data[component_idx, :]
-        elif dim == 2:
-            data_component = data[component_idx, :, :]
-        elif dim == 3:
-            data_component = data[component_idx, :, :, :]
+    if component_idx is None:
+        data_component = data
     else:
-        if dim == 1:
-            data_component = data[:, component_idx]
-        elif dim == 2:
-            data_component = data[:, :, component_idx]
-        elif dim == 3:
-            data_component = data[:, :, :, component_idx]
+        if data_order == 'C':
+            if dim == 1:
+                data_component = data[component_idx, :]
+            elif dim == 2:
+                data_component = data[component_idx, :, :]
+            elif dim == 3:
+                data_component = data[component_idx, :, :, :]
+        else:
+            if dim == 1:
+                data_component = data[:, component_idx]
+            elif dim == 2:
+                data_component = data[:, :, component_idx]
+            elif dim == 3:
+                data_component = data[:, :, :, component_idx]
     
     # Upsample the data with fourth order Lagrange interpolation.
     
@@ -797,7 +827,7 @@ def upsampleFourthOrderLagrange(data, refine_ratio, component_idx = 0):
     return upsampled_data
 
 
-def upsampleSixthOrderLagrange(data, refine_ratio, component_idx = 0):
+def upsampleSixthOrderLagrange(data, refine_ratio, component_idx = None):
     """
     Upsampling the data using sixth order Lagrange interpolation.
     """
@@ -813,24 +843,31 @@ def upsampleSixthOrderLagrange(data, refine_ratio, component_idx = 0):
     if numpy.isfortran(data):
         data_order = 'F'
     
-    # Check whether the dimension of data is valid.
+    data_shape = data.shape
     
-    if data.ndim < 2 or data.ndim > 4:
-        raise RuntimeError('Shape of data is invalid!')
+    # Check whether the shape of data is valid.
     
-    # Check whether the component_idx is valid and get the shape of the component's data.
-    
-    if data_order == 'C':
-        if component_idx >= data.shape[0] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
-        
-        data_shape = numpy.array(data.shape[1:])
+    if component_idx is None:
+        if data.ndim < 1 or data.ndim > 3:
+            raise RuntimeError('Shape of data is invalid!')
     
     else:
-        if component_idx >= data.shape[-1] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
+        if data.ndim < 2 or data.ndim > 4:
+            raise RuntimeError('Shape of data is invalid!')
         
-        data_shape = numpy.array(data.shape[:-1])
+        # Check whether the component_idx is valid and get the shape of the component's data.
+        
+        if data_order == 'C':
+            if component_idx >= data.shape[0] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[1:])
+        
+        else:
+            if component_idx >= data.shape[-1] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[:-1])
     
     # Get the dimension of data.
     
@@ -966,20 +1003,23 @@ def upsampleSixthOrderLagrange(data, refine_ratio, component_idx = 0):
     
     data_component = None
     
-    if data_order == 'C':
-        if dim == 1:
-            data_component = data[component_idx, :]
-        elif dim == 2:
-            data_component = data[component_idx, :, :]
-        elif dim == 3:
-            data_component = data[component_idx, :, :, :]
+    if component_idx is None:
+        data_component = data
     else:
-        if dim == 1:
-            data_component = data[:, component_idx]
-        elif dim == 2:
-            data_component = data[:, :, component_idx]
-        elif dim == 3:
-            data_component = data[:, :, :, component_idx]
+        if data_order == 'C':
+            if dim == 1:
+                data_component = data[component_idx, :]
+            elif dim == 2:
+                data_component = data[component_idx, :, :]
+            elif dim == 3:
+                data_component = data[component_idx, :, :, :]
+        else:
+            if dim == 1:
+                data_component = data[:, component_idx]
+            elif dim == 2:
+                data_component = data[:, :, component_idx]
+            elif dim == 3:
+                data_component = data[:, :, :, component_idx]
     
     # Upsample the data with sixth order Lagrange interpolation.
     

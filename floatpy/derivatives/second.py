@@ -20,7 +20,7 @@ def getNumberOfGhostCellsSecondDerivative(method = 'second_order'):
         raise RuntimeError("Unknown method '" + method + "' for number of ghost cells!")
 
 
-def computeSecondDerivative(data, dx, direction = 0, component_idx = 0, uses_one_sided = True, method = 'second_order'):
+def computeSecondDerivative(data, dx, direction = 0, component_idx = None, uses_one_sided = True, method = 'second_order'):
     """
     Computing second derivative using explicit finite differencing.
     """
@@ -35,7 +35,7 @@ def computeSecondDerivative(data, dx, direction = 0, component_idx = 0, uses_one
         raise RuntimeError("Unknown method '" + method + "' for computing second derivative!")
 
 
-def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 0, uses_one_sided = True):
+def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = None, uses_one_sided = True):
     """
     Computing second derivative using explicit second order finite differencing.
     """
@@ -53,24 +53,29 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
     if direction < 0 or direction > 2:
         raise RuntimeError('Direction < 0 or > 2 is invalid!')
     
-    # Check whether the dimension of data is valid.
+    # Check whether the shape of data is valid.
     
-    if data.ndim < 2 or data.ndim > 4:
-        raise RuntimeError('Shape of data is invalid!')
-    
-    # Check whether the component_idx is valid and get the shape of the component's data.
-    
-    if data_order == 'C':
-        if component_idx >= data.shape[0] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
-        
-        data_shape = numpy.array(data.shape[1:])
+    if component_idx is None:
+        if data.ndim < 1 or data.ndim > 3:
+            raise RuntimeError('Shape of data is invalid!')
     
     else:
-        if component_idx >= data.shape[-1] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
+        if data.ndim < 2 or data.ndim > 4:
+            raise RuntimeError('Shape of data is invalid!')
         
-        data_shape = numpy.array(data.shape[:-1])
+        # Check whether the component_idx is valid and get the shape of the component's data.
+        
+        if data_order == 'C':
+            if component_idx >= data.shape[0] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[1:])
+        
+        else:
+            if component_idx >= data.shape[-1] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[:-1])
     
     # Get the dimension of data.
     
@@ -114,20 +119,23 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
     
     data_component = None
     
-    if data_order == 'C':
-        if dim == 1:
-            data_component = data[component_idx, :]
-        elif dim == 2:
-            data_component = data[component_idx, :, :]
-        elif dim == 3:
-            data_component = data[component_idx, :, :, :]
+    if component_idx is None:
+        data_component = data
     else:
-        if dim == 1:
-            data_component = data[:, component_idx]
-        elif dim == 2:
-            data_component = data[:, :, component_idx]
-        elif dim == 3:
-            data_component = data[:, :, :, component_idx]
+        if data_order == 'C':
+            if dim == 1:
+                data_component = data[component_idx, :]
+            elif dim == 2:
+                data_component = data[component_idx, :, :]
+            elif dim == 3:
+                data_component = data[component_idx, :, :, :]
+        else:
+            if dim == 1:
+                data_component = data[:, component_idx]
+            elif dim == 2:
+                data_component = data[:, :, component_idx]
+            elif dim == 3:
+                data_component = data[:, :, :, component_idx]
     
     # Compute the derivatives in the interior of the domain.
     
@@ -240,7 +248,7 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
     return diff_data
 
 
-def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0, uses_one_sided = True):
+def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = None, uses_one_sided = True):
     """
     Computing second derivative using explicit fourth order finite differencing.
     """
@@ -258,24 +266,29 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
     if direction < 0 or direction > 2:
         raise RuntimeError('Direction < 0 or > 2 is invalid!')
     
-    # Check whether the dimension of data is valid.
+    # Check whether the shape of data is valid.
     
-    if data.ndim < 2 or data.ndim > 4:
-        raise RuntimeError('Shape of data is invalid!')
-    
-    # Check whether the component_idx is valid and get the shape of the component's data.
-    
-    if data_order == 'C':
-        if component_idx >= data.shape[0] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
-        
-        data_shape = numpy.array(data.shape[1:])
+    if component_idx is None:
+        if data.ndim < 1 or data.ndim > 3:
+            raise RuntimeError('Shape of data is invalid!')
     
     else:
-        if component_idx >= data.shape[-1] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
+        if data.ndim < 2 or data.ndim > 4:
+            raise RuntimeError('Shape of data is invalid!')
         
-        data_shape = numpy.array(data.shape[:-1])
+        # Check whether the component_idx is valid and get the shape of the component's data.
+        
+        if data_order == 'C':
+            if component_idx >= data.shape[0] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[1:])
+        
+        else:
+            if component_idx >= data.shape[-1] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[:-1])
     
     # Get the dimension of data.
     
@@ -319,20 +332,23 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
     
     data_component = None
     
-    if data_order == 'C':
-        if dim == 1:
-            data_component = data[component_idx, :]
-        elif dim == 2:
-            data_component = data[component_idx, :, :]
-        elif dim == 3:
-            data_component = data[component_idx, :, :, :]
+    if component_idx is None:
+        data_component = data
     else:
-        if dim == 1:
-            data_component = data[:, component_idx]
-        elif dim == 2:
-            data_component = data[:, :, component_idx]
-        elif dim == 3:
-            data_component = data[:, :, :, component_idx]
+        if data_order == 'C':
+            if dim == 1:
+                data_component = data[component_idx, :]
+            elif dim == 2:
+                data_component = data[component_idx, :, :]
+            elif dim == 3:
+                data_component = data[component_idx, :, :, :]
+        else:
+            if dim == 1:
+                data_component = data[:, component_idx]
+            elif dim == 2:
+                data_component = data[:, :, component_idx]
+            elif dim == 3:
+                data_component = data[:, :, :, component_idx]
     
     # Compute the derivatives in the interior of the domain.
     
@@ -510,7 +526,7 @@ def computeFourthOrderSecondDerivative(data, dx, direction = 0, component_idx = 
     return diff_data
 
 
-def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0, uses_one_sided = True):
+def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = None, uses_one_sided = True):
     """
     Computing second derivative using explicit sixth order finite differencing.
     """
@@ -528,24 +544,29 @@ def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0
     if direction < 0 or direction > 2:
         raise RuntimeError('Direction < 0 or > 2 is invalid!')
     
-    # Check whether the dimension of data is valid.
+    # Check whether the shape of data is valid.
     
-    if data.ndim < 2 or data.ndim > 4:
-        raise RuntimeError('Shape of data is invalid!')
-    
-    # Check whether the component_idx is valid and get the shape of the component's data.
-    
-    if data_order == 'C':
-        if component_idx >= data.shape[0] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
-        
-        data_shape = numpy.array(data.shape[1:])
+    if component_idx is None:
+        if data.ndim < 1 or data.ndim > 3:
+            raise RuntimeError('Shape of data is invalid!')
     
     else:
-        if component_idx >= data.shape[-1] or component_idx < 0:
-            raise RuntimeError('Component index is invalid!')
+        if data.ndim < 2 or data.ndim > 4:
+            raise RuntimeError('Shape of data is invalid!')
         
-        data_shape = numpy.array(data.shape[:-1])
+        # Check whether the component_idx is valid and get the shape of the component's data.
+        
+        if data_order == 'C':
+            if component_idx >= data.shape[0] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[1:])
+        
+        else:
+            if component_idx >= data.shape[-1] or component_idx < 0:
+                raise RuntimeError('Component index is invalid!')
+            
+            data_shape = numpy.array(data_shape[:-1])
     
     # Get the dimension of data.
     
@@ -589,20 +610,23 @@ def computeSixthOrderSecondDerivative(data, dx, direction = 0, component_idx = 0
     
     data_component = None
     
-    if data_order == 'C':
-        if dim == 1:
-            data_component = data[component_idx, :]
-        elif dim == 2:
-            data_component = data[component_idx, :, :]
-        elif dim == 3:
-            data_component = data[component_idx, :, :, :]
+    if component_idx is None:
+        data_component = data
     else:
-        if dim == 1:
-            data_component = data[:, component_idx]
-        elif dim == 2:
-            data_component = data[:, :, component_idx]
-        elif dim == 3:
-            data_component = data[:, :, :, component_idx]
+        if data_order == 'C':
+            if dim == 1:
+                data_component = data[component_idx, :]
+            elif dim == 2:
+                data_component = data[component_idx, :, :]
+            elif dim == 3:
+                data_component = data[component_idx, :, :, :]
+        else:
+            if dim == 1:
+                data_component = data[:, component_idx]
+            elif dim == 2:
+                data_component = data[:, :, component_idx]
+            elif dim == 3:
+                data_component = data[:, :, :, component_idx]
     
     # Compute the derivatives in the interior of the domain.
     
