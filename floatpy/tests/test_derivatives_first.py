@@ -3,7 +3,7 @@ import unittest
 
 import floatpy.derivatives.first
 
-class TestFirstDerivatives(unittest.TestCase):
+class TestDerivativesFirst(unittest.TestCase):
     
     def TestFirstDirection(self):
         """

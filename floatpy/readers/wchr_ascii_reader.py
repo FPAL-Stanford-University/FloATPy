@@ -434,4 +434,4 @@ BaseReader.register(WchrAsciiReader)
 
 if __name__ == '__main__':
     print 'Subclass:', issubclass(WchrAsciiReader, BaseReader)
-    print 'Instance:', isinstance(WchrAsciiReader("../tests/test_wchr_ascii_reader_data/WCHR_"), BaseReader)
+    print 'Instance:', isinstance(WchrAsciiReader("../tests/test_data_wchr_ascii/WCHR_"), BaseReader)

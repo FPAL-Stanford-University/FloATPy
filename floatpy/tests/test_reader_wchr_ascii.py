@@ -4,10 +4,10 @@ import unittest
 
 import floatpy.readers.wchr_ascii_reader as war
 
-class TestWchrAsciiReader(unittest.TestCase):
+class TestReaderWchrAscii(unittest.TestCase):
     
     def setUp(self):
-        self.filename_prefix = os.path.join(os.path.dirname(__file__), 'test_wchr_ascii_reader_data/WCHR_')
+        self.filename_prefix = os.path.join(os.path.dirname(__file__), 'test_data_wchr_ascii/WCHR_')
         self.reader = war.WchrAsciiReader(self.filename_prefix)
         
         self.lo = (2 , 4, 1)

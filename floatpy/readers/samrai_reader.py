@@ -2939,4 +2939,4 @@ BaseReader.register(SamraiDataReader)
 
 if __name__ == '__main__':
     print 'Subclass:', issubclass(SamraiDataReader, BaseReader)
-    print 'Instance:', isinstance(SamraiDataReader("../tests/test_samrai_data_reader"), BaseReader)
+    print 'Instance:', isinstance(SamraiDataReader("../tests/test_data_samrai"), BaseReader)
