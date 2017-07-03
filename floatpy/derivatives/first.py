@@ -46,7 +46,7 @@ def computeSecondOrderFirstDerivative(data, dx, direction = 0, component_idx = N
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
+    data_shape = numpy.array(data.shape)
     
     # Check whether the direction is valid.
     
@@ -238,7 +238,7 @@ def computeFourthOrderFirstDerivative(data, dx, direction = 0, component_idx = N
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
+    data_shape = numpy.array(data.shape)
     
     # Check whether the direction is valid.
     
@@ -495,7 +495,7 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = No
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
+    data_shape = numpy.array(data.shape)
     
     # Check whether the direction is valid.
     
@@ -830,4 +830,3 @@ def computeSixthOrderFirstDerivative(data, dx, direction = 0, component_idx = No
                 raise RuntimeError('Data dimension > 3 not supported!')   
     
     return diff_data
-

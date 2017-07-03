@@ -51,7 +51,7 @@ def upsampleConstant(data, refine_ratio, component_idx = None):
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
+    data_shape = numpy.array(data.shape)
     
     # Check whether the shape of data is valid.
     
@@ -167,7 +167,7 @@ def upsampleSecondOrderLagrange(data, refine_ratio, component_idx = None):
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
+    data_shape = numpy.array(data.shape)
     
     # Check whether the shape of data is valid.
     
@@ -493,7 +493,7 @@ def upsampleFourthOrderLagrange(data, refine_ratio, component_idx = None):
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
+    data_shape = numpy.array(data.shape)
     
     # Check whether the shape of data is valid.
     
@@ -843,7 +843,7 @@ def upsampleSixthOrderLagrange(data, refine_ratio, component_idx = None):
     if numpy.isfortran(data):
         data_order = 'F'
     
-    data_shape = data.shape
+    data_shape = numpy.array(data.shape)
     
     # Check whether the shape of data is valid.
     
@@ -1203,4 +1203,3 @@ def upsampleSixthOrderLagrange(data, refine_ratio, component_idx = None):
                 upsampled_data_1[start_idx_fine_0:end_idx_fine_0, start_idx_fine_1:end_idx_fine_1, -half_stencil_size]
     
     return upsampled_data
-
