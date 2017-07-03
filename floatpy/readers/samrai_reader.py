@@ -865,19 +865,7 @@ class SamraiDataReader(BaseReader):
         num_patches = self._basic_info['num_patches']
         num_patches_root_level = num_patches[0]
         
-        # Check the length of num_ghosts is correct.
-        
-        if dim == 1:
-            if len(num_ghosts) < 1:
-                raise RuntimeError('Dimension of num_ghosts is not correct!')
-        
-        elif dim == 2:
-            if len(num_ghosts) < 2:
-                raise RuntimeError('Dimension of num_ghosts is not correct!')
-        
-        elif dim == 3:
-            if len(num_ghosts) < 3:
-                raise RuntimeError('Dimension of num_ghosts is not correct!')
+        # Get the number of ghost cells.
         
         if num_ghosts is None:
             if dim == 1:
@@ -890,7 +878,21 @@ class SamraiDataReader(BaseReader):
                 num_ghosts = (0, 0, 0)
         
         else:
-            num_ghosts = numpy.asarray(num_ghosts[0:dim])
+            # Check the length of num_ghosts is correct.
+            
+            if dim == 1:
+                if len(num_ghosts) < 1:
+                    raise RuntimeError('Dimension of num_ghosts is not correct!')
+            
+            elif dim == 2:
+                if len(num_ghosts) < 2:
+                    raise RuntimeError('Dimension of num_ghosts is not correct!')
+            
+            elif dim == 3:
+                if len(num_ghosts) < 3:
+                    raise RuntimeError('Dimension of num_ghosts is not correct!')
+            
+        num_ghosts = numpy.asarray(num_ghosts[0:dim])
         
         # Get the variable names.
         
@@ -2913,15 +2915,22 @@ class SamraiDataReader(BaseReader):
         Default to the full domain when the sub-domain is not set.
         """
         
-        if self._load == True:
+        if self._data_loaded == True:
             clearData()
         
-        readCombinedDataInSubdomainFromAllLevels(var_names)
+        # If a simple string is passed in, convert to a tuple.
+        if isinstance(var_names, basestring):
+            var_names = (var_names,)
         
-        data = [ numpy.zeros( chunk_size ) for i in range(len(var_names)) ]
+        self.readCombinedDataInSubdomainFromAllLevels(var_names)
+        
+        if len(var_names) == 1:
+            return self._data[var_names[0]]
+        
+        data = []
         
         for i in range(len(var_names)):
-            data[i] = numpy.squeeze(self._data[var_names[i]])
+            data.append(self._data[var_names[i]])
         
         return tuple(data)
 
