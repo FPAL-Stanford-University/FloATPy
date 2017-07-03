@@ -210,7 +210,7 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
             else:
                 raise RuntimeError('Data dimension > 3 not supported!')
     
-    elif direction == 1:
+        elif direction == 1:
             if dim < 2:
                 raise RuntimeError('There is no second direction in data with less than two dimensions!')
             
@@ -231,7 +231,7 @@ def computeSecondOrderSecondDerivative(data, dx, direction = 0, component_idx = 
             else:
                 raise RuntimeError('Data dimension > 3 not supported!')
     
-    elif direction == 2:
+        elif direction == 2:
             if dim < 3:
                 raise IOError('There is no third direction in data with less than three dimensions!')
             
