@@ -86,9 +86,9 @@ class BaseReader(object):
     
     
     @abc.abstractproperty
-    def max_step(self):
+    def steps(self):
         """
-        Return the maximum allowable step.
+        Return all of the steps.
         """
         return
     

@@ -30,11 +30,15 @@ class SamraiDataReader(BaseReader):
         full_dumps_path = data_directory_path + '/' + 'dumps.visit'
         dumps_f = open(full_dumps_path)
         
-        self._full_viz_folder_paths = []
+        self._full_viz_folder_paths = {}
+        self._steps = []
+        
         for line in dumps_f.readlines():
             sub_folder = line
             sub_folder = re.sub('/summary.samrai\n', '', sub_folder)
-            self._full_viz_folder_paths.append(data_directory_path + '/' + sub_folder + '/')
+            step = int(re.sub('visit_dump.', '', sub_folder))
+            self._steps.append(step)
+            self._full_viz_folder_paths[step] = data_directory_path + '/' + sub_folder + '/'
         
         # Set the data order.
         
@@ -49,7 +53,6 @@ class SamraiDataReader(BaseReader):
         # at that time step.
         
         self._step = 0
-        self._num_steps = len(self._full_viz_folder_paths)
         
         self._basic_info = {}
         self._readSummary(self._step)
@@ -124,12 +127,12 @@ class SamraiDataReader(BaseReader):
     
     
     @property
-    def max_step(self):
+    def steps(self):
         """
-        Return the maximum allowable step.
+        Return all of the steps.
         """
         
-        return len(self._full_viz_folder_paths)
+        return self._steps
     
     
     def getDataDirectoryPath(self):
@@ -146,10 +149,7 @@ class SamraiDataReader(BaseReader):
         change the current time step to the new time step.
         """
         
-        if step < 0:
-            raise RuntimeError("Negativ time step is given!")
-        if step >= self._num_steps:
-            raise RuntimeError("Time step is larger than the largest allowable one!")
+        assert (step in self._steps), "Step to read in is not available in the dataset."
         
         self._step = step
         self._readSummary(step)

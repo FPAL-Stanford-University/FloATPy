@@ -23,13 +23,13 @@ class WchrAsciiReader(BaseReader):
         
         files = glob.glob(filename_prefix + '[0-9]*.dat')
         
-        self.steps = steps = set([])
+        self._steps = steps = []
         self.prow  = 0
         self.pcol  = 0
         for f in files:
             step = int(f[len(filename_prefix):len(filename_prefix)+4])
             if not (step in steps):
-                steps.add(step)
+                steps.append(step)
             
             st  = f[len(filename_prefix):]
             ind = st.find('px')
@@ -69,8 +69,8 @@ class WchrAsciiReader(BaseReader):
                 if self._domain_size[1] == 0:
                     self._domain_size[1] = int(line[1]) + 1
                 
-                assert(self._domain_size[1] == (int(line[1]) + 1), \
-                       "Data is invalid. Unequal domain sized in the y direction for different pencils!")
+                assert (self._domain_size[1] == (int(line[1]) + 1)), \
+                    "Data is invalid. Unequal domain sized in the y direction for different pencils!"
                 
                 f.close()
         
@@ -89,7 +89,7 @@ class WchrAsciiReader(BaseReader):
         Update the metadata from the summary file in the data directory at a new time step.
         """
         
-        assert(step in self.steps, "Step to read in is not available in the dataset.")
+        assert (step in self._steps), "Step to read in is not available in the dataset."
         self._step = step
     
     
@@ -167,12 +167,12 @@ class WchrAsciiReader(BaseReader):
     
     
     @property
-    def max_step(self):
+    def steps(self):
         """
-        Return the maximum allowable step.
+        Return all of the steps.
         """
         
-        return 0
+        return self._steps
     
     
     def readCoordinatesInX(self):
