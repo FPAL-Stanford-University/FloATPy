@@ -52,7 +52,7 @@ class SamraiDataReader(BaseReader):
         # Step current time step to be the first time step in dump file and read the summary file
         # at that time step.
         
-        self._step = 0
+        self._step = self._steps[0]
         
         self._basic_info = {}
         self._readSummary(self._step)
