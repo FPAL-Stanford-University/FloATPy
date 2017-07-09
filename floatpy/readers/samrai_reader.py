@@ -351,7 +351,7 @@ class SamraiDataReader(BaseReader):
         num_patches = self._basic_info['num_patches']
         
         # Get the ratio from the coarest level to the finest level.
-        ratio_of_coarest_to_finest = 1
+        ratio_of_coarest_to_finest = numpy.ones(dim)
         ratios_to_coarser_levels = self._basic_info['ratios_to_coarser_levels']
         
         for level_idx in range(1, num_levels):
