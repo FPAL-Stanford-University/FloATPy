@@ -1,0 +1,1579 @@
+module t3dMod
+    use kind_parameters, only: rkind, mpirkind
+    use exits,           only: GracefulExit
+    
+    use mpi
+
+    implicit none
+    ! include 'mpif.h'
+    private
+    public :: t3d, init, optimize_decomposition, destroy, &
+              transpose_3D_to_x, transpose_x_to_3D, transpose_3D_to_y, transpose_y_to_3D, transpose_3D_to_z, transpose_z_to_3D, &
+              fill_halo_x, fill_halo_y, fill_halo_z, get_sz3D, get_st3D, get_en3D, get_sz3Dg, get_st3Dg, get_en3Dg, &
+              get_szX, get_szY, get_szZ
+        
+    logical :: xnumbering = .true.
+    integer, dimension(0:2) :: perm = [0, 1, 2]
+
+    type :: t3d
+        private
+        integer, public :: px, py, pz
+        integer, public :: comm3D, commX, commY, commZ
+        integer, public :: commXY, commYZ, commXZ
+        integer, public :: rank3D, rankX, rankY, rankZ
+        integer, public :: nprocs
+        integer, dimension(0:2) :: coords3D
+        integer, dimension(0:1) :: coordsX, coordsY, coordsZ
+        integer, dimension(:,:), allocatable :: coordsXall, coordsYall, coordsZall
+        integer :: px_y, px_z
+        integer :: py_x, py_z
+        integer :: pz_y, pz_x
+        integer, dimension(3), public :: nghosts              ! Number of ghost points in each direction
+        integer, dimension(3), public :: sz3D, st3D, en3D     ! Size of arrays in 3D decomposition
+        integer, dimension(3), public :: sz3Dg, st3Dg, en3Dg  ! Size of arrays with ghost cells in 3D decomposition
+        integer, dimension(3), public :: szX , stX , enX      ! Size of arrays in X decomposition
+        integer, dimension(3), public :: szY , stY , enY      ! Size of arrays in Y decomposition
+        integer, dimension(3), public :: szZ , stZ , enZ      ! Size of arrays in Z decomposition
+        integer, dimension(:,:), allocatable :: sz3DX, sz3DY, sz3DZ 
+        integer, dimension(:,:), allocatable :: st3DX, st3DY, st3DZ 
+        integer, dimension(:,:), allocatable :: en3DX, en3DY, en3DZ 
+        integer, dimension(:,:), allocatable :: szXall , stXall , enXall
+        integer, dimension(:,:), allocatable :: szYall , stYall , enYall
+        integer, dimension(:,:), allocatable :: szZall , stZall , enZall
+        integer, dimension(:), allocatable :: disp3DX, count3DX, dispX, countX
+        integer, dimension(:), allocatable :: disp3DY, count3DY, dispY, countY
+        integer, dimension(:), allocatable :: disp3DZ, count3DZ, dispZ, countZ
+        logical :: unequalX = .true., unequalY = .true., unequalZ = .true.
+        integer, public :: xleft, xright 
+        integer, public :: yleft, yright 
+        integer, public :: zleft, zright
+        integer :: mpi_halo_x = MPI_DATATYPE_NULL, mpi_halo_y = MPI_DATATYPE_NULL, mpi_halo_z = MPI_DATATYPE_NULL ! MPI derived datatypes for halo communication
+        
+        integer, dimension(:), allocatable :: splitx_y, splitx_z
+        integer, dimension(:), allocatable :: splity_x, splity_z
+        integer, dimension(:), allocatable :: splitz_y, splitz_x
+        
+    contains
+        ! procedure :: transpose_3D_to_x
+        ! procedure :: transpose_x_to_3D
+
+        ! procedure :: transpose_3D_to_y
+        ! procedure :: transpose_y_to_3D
+
+        ! procedure :: transpose_3D_to_z
+        ! procedure :: transpose_z_to_3D
+
+        procedure :: initiate_transpose_3D_to_x
+        procedure :: wait_transpose_3D_to_x
+        procedure :: initiate_transpose_x_to_3D
+        procedure :: wait_transpose_x_to_3D
+
+        procedure :: initiate_transpose_3D_to_y
+        procedure :: wait_transpose_3D_to_y
+        procedure :: initiate_transpose_y_to_3D
+        procedure :: wait_transpose_y_to_3D
+        
+        procedure :: initiate_transpose_3D_to_z
+        procedure :: wait_transpose_3D_to_z
+        procedure :: initiate_transpose_z_to_3D
+        procedure :: wait_transpose_z_to_3D
+
+        ! procedure :: fill_halo_x
+        ! procedure :: fill_halo_y
+        ! procedure :: fill_halo_z
+
+        procedure :: print_summary
+        procedure, private :: timed_transpose
+        procedure :: time
+        ! final :: destroy
+    end type 
+    
+    ! interface t3d
+    !     module procedure init, optimize_decomposition
+    ! end interface
+
+contains 
+
+    subroutine init(this, comm3D, nx, ny, nz, px, py, pz, periodic_, reorder, fail, nghosts, createCrossCommunicators)
+        use reductions, only: P_OR, P_MAXVAL
+        type(t3d), intent(inout) :: this
+        integer, intent(in) :: comm3D, nx, ny, nz, px, py, pz
+        logical, dimension(3), intent(in) :: periodic_
+        logical, intent(in) :: reorder
+        logical, intent(inout) :: fail
+        integer, dimension(3), optional, intent(in) :: nghosts
+        logical, optional, intent(in) :: createCrossCommunicators
+        logical, dimension(0:2) :: remain
+        logical, dimension(0:2) :: periodic
+        integer, dimension(0:2) :: procgrid
+        integer :: ierr, dummycomm, proc, newtype
+        integer, dimension(0:px-1) :: splitx
+        integer, dimension(0:py-1) :: splity
+        integer, dimension(0:pz-1) :: splitz
+        ! real(rkind), dimension(20) :: times
+        ! integer :: tind, i
+        logical :: createCrossCommunicators_
+
+        createCrossCommunicators_ = .true.
+        if (present(createCrossCommunicators)) createCrossCommunicators_ = createCrossCommunicators
+
+        ! if ((px == 0) .and. (py == 0) .and. (pz == 0)) then
+        !     call optimize_decomposition(comm3D, nx, ny, nz, px, py, pz)
+        ! end if 
+
+        this%comm3D = comm3D
+        ! tind = 0
+
+        ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
+
+        fail = .false.
+
+        ! Safegaurd
+        if ((px > nx) .or. (py > ny) .or. (pz > nz)) then
+            fail = .true.
+            return
+        end if 
+        if ((px == 0) .or. (py == 0) .or. (pz == 0)) then
+            call GracefulExit("Cannot have zero processors in any direction", 0)
+        end if 
+
+        call mpi_comm_size(comm3D, this%nprocs, ierr)
+        call mpi_comm_rank(comm3D, this%rank3D, ierr)
+         
+        if (px*py*pz .ne. this%nprocs) then
+            call GracefulExit("(PX x PY x PZ) must equal the number of processes in &
+            & comm3D sent in.", 1)
+        end if
+
+        this%szX(1) = nx; this%szY(2) = ny; this%szZ(3) = nz
+        this%stX(1) =  1; this%stY(2) =  1; this%stZ(3) =  1
+        this%enX(1) = nx; this%enY(2) = ny; this%enZ(3) = nz
+
+        if ( xnumbering ) then
+            perm = [2, 1, 0]
+        else
+            perm = [0, 1, 2]
+        end if
+
+        ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
+
+        procgrid(perm) = [px, py, pz]
+        periodic(perm) = periodic_(:)
+        call mpi_cart_create(comm3D, 3, procgrid, periodic, reorder, this%comm3D, ierr)
+        call mpi_cart_coords(this%comm3D, this%rank3D, 3, this%coords3D, ierr)
+
+        ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
+
+        ! Create X communicator and get properties
+        remain(perm) = [.true., .false., .false.]
+        call mpi_cart_sub(this%comm3D, remain, this%commX, ierr)
+        call mpi_comm_rank(this%commX, this%rankX, ierr)
+        call mpi_comm_size(this%commX, this%px, ierr)
+        call mpi_cart_shift(this%commX, 0, 1, this%xleft, this%xright, ierr)
+
+        ! Get points in X
+        call roundrobin_split( nx, this%px, splitx )
+        this%sz3D(1) = splitx( this%coords3D(perm(0)) )
+        this%st3D(1) = sum( splitx(0:this%coords3D(perm(0))-1) ) + 1
+        this%en3D(1) = sum( splitx(0:this%coords3D(perm(0))  ) )
+
+        ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
+
+        ! Create Y communicator and get properties
+        remain(perm) = [.false., .true., .false.]
+        call mpi_cart_sub(this%comm3D, remain, this%commY, ierr)
+        call mpi_comm_rank(this%commY, this%rankY, ierr)
+        call mpi_comm_size(this%commY, this%py, ierr)
+        call mpi_cart_shift(this%commY, 0, 1, this%yleft, this%yright, ierr)
+
+        ! Get points in Y
+        call roundrobin_split( ny, this%py, splity )
+        this%sz3D(2) = splity( this%coords3D(perm(1)) )
+        this%st3D(2) = sum( splity(0:this%coords3D(perm(1))-1) ) + 1
+        this%en3D(2) = sum( splity(0:this%coords3D(perm(1))  ) )
+
+        ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
+
+        ! Create Z communicator and get properties
+        remain(perm) = [.false., .false., .true.]
+        call mpi_cart_sub(this%comm3D, remain, this%commZ, ierr)
+        call mpi_comm_rank(this%commZ, this%rankZ, ierr)
+        call mpi_comm_size(this%commZ, this%pz, ierr)
+        call mpi_cart_shift(this%commZ, 0, 1, this%zleft, this%zright, ierr)
+
+        ! Get points in Z
+        call roundrobin_split( nz, this%pz, splitz )
+        this%sz3D(3) = splitz( this%coords3D(perm(2)) )
+        this%st3D(3) = sum( splitz(0:this%coords3D(perm(2))-1) ) + 1
+        this%en3D(3) = sum( splitz(0:this%coords3D(perm(2))  ) )
+
+        ! Now set nghosts and compute the size with the ghosts in 3D decomposition
+        this%nghosts = [0, 0, 0]
+        if (present(nghosts)) this%nghosts = nghosts
+
+        this%sz3Dg = [this%sz3D(1) + 2*this%nghosts(1), this%sz3D(2) + 2*this%nghosts(2), this%sz3D(3) + 2*this%nghosts(3)]
+        this%st3Dg = [this%st3D(1) -   this%nghosts(1), this%st3D(2) -   this%nghosts(2), this%st3D(3) -   this%nghosts(3)]
+        this%en3Dg = [this%en3D(1) +   this%nghosts(1), this%en3D(2) +   this%nghosts(2), this%en3D(3) +   this%nghosts(3)]
+
+        ! Non-periodic in X
+        if (periodic_(1) .eqv. .false.) then
+            if ( this%coords3D( perm(0) ) == 0 ) then
+                this%sz3Dg(1) = this%sz3Dg(1) - this%nghosts(1)
+                this%st3Dg(1) = this%st3D(1)
+            end if
+            if ( this%coords3D( perm(0) ) == this%px-1 ) then
+                this%sz3Dg(1) = this%sz3Dg(1) - this%nghosts(1)
+                this%en3Dg(1) = this%en3D(1)
+            end if
+        end if
+
+        ! Non-periodic in Y
+        if (periodic_(2) .eqv. .false.) then
+            if ( this%coords3D( perm(1) ) == 0 ) then
+                this%sz3Dg(2) = this%sz3Dg(2) - this%nghosts(2)
+                this%st3Dg(2) = this%st3D(2)
+            end if
+            if ( this%coords3D( perm(1) ) == this%py-1 ) then
+                this%sz3Dg(2) = this%sz3Dg(2) - this%nghosts(2)
+                this%en3Dg(2) = this%en3D(2)
+            end if
+        end if
+
+        ! Non-periodic in Z
+        if (periodic_(3) .eqv. .false.) then
+            if ( this%coords3D( perm(2) ) == 0 ) then
+                this%sz3Dg(3) = this%sz3Dg(3) - this%nghosts(3)
+                this%st3Dg(3) = this%st3D(3)
+            end if
+            if ( this%coords3D( perm(2) ) == this%pz-1 ) then
+                this%sz3Dg(3) = this%sz3Dg(3) - this%nghosts(3)
+                this%en3Dg(3) = this%en3D(3)
+            end if
+        end if
+
+        ! Create MPI datatypes for halo communication
+        ! X halo datatype
+        call mpi_type_vector(this%sz3D(2)*this%sz3D(3), this%nghosts(1), this%sz3Dg(1), mpirkind, this%mpi_halo_x, ierr)
+        call mpi_type_commit(this%mpi_halo_x, ierr)
+        if ( (ierr /= MPI_SUCCESS) .or. (this%mpi_halo_x == MPI_DATATYPE_NULL) ) call mpi_abort(this%comm3D, 14, ierr)
+
+        ! Y halo datatype
+        call mpi_type_contiguous(this%sz3D(1), mpirkind, newtype, ierr)
+        call mpi_type_vector(this%sz3D(3), this%nghosts(2), this%sz3Dg(2), newtype, this%mpi_halo_y, ierr)
+        call mpi_type_commit(this%mpi_halo_y, ierr)
+        if ( (ierr /= MPI_SUCCESS) .or. (this%mpi_halo_y == MPI_DATATYPE_NULL) ) call mpi_abort(this%comm3D, 14, ierr)
+
+        ! Z halo datatype
+        call mpi_type_contiguous(this%sz3D(1)*this%sz3D(2)*this%nghosts(3), mpirkind, this%mpi_halo_z, ierr)
+        call mpi_type_commit(this%mpi_halo_z, ierr)
+        if ( (ierr /= MPI_SUCCESS) .or. (this%mpi_halo_z == MPI_DATATYPE_NULL) ) call mpi_abort(this%comm3D, 14, ierr)
+
+        ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
+
+        if ( allocated(this%sz3DX) ) deallocate(this%sz3DX); allocate( this%sz3DX(3, 0:this%px-1) )
+        if ( allocated(this%st3DX) ) deallocate(this%st3DX); allocate( this%st3DX(3, 0:this%px-1) )
+        if ( allocated(this%en3DX) ) deallocate(this%en3DX); allocate( this%en3DX(3, 0:this%px-1) )
+        call mpi_allgather(this%sz3D, 3, MPI_INTEGER, this%sz3DX, 3, MPI_INTEGER, this%commX, ierr)
+        call mpi_allgather(this%st3D, 3, MPI_INTEGER, this%st3DX, 3, MPI_INTEGER, this%commX, ierr)
+        call mpi_allgather(this%en3D, 3, MPI_INTEGER, this%en3DX, 3, MPI_INTEGER, this%commX, ierr)
+        
+        if ( allocated(this%sz3DY) ) deallocate(this%sz3DY); allocate( this%sz3DY(3, 0:this%py-1) )
+        if ( allocated(this%st3DY) ) deallocate(this%st3DY); allocate( this%st3DY(3, 0:this%py-1) )
+        if ( allocated(this%en3DY) ) deallocate(this%en3DY); allocate( this%en3DY(3, 0:this%py-1) )
+        call mpi_allgather(this%sz3D, 3, MPI_INTEGER, this%sz3DY, 3, MPI_INTEGER, this%commY, ierr)
+        call mpi_allgather(this%st3D, 3, MPI_INTEGER, this%st3DY, 3, MPI_INTEGER, this%commY, ierr)
+        call mpi_allgather(this%en3D, 3, MPI_INTEGER, this%en3DY, 3, MPI_INTEGER, this%commY, ierr)
+        
+        if ( allocated(this%sz3DZ) ) deallocate(this%sz3DZ); allocate( this%sz3DZ(3, 0:this%pz-1) )
+        if ( allocated(this%st3DZ) ) deallocate(this%st3DZ); allocate( this%st3DZ(3, 0:this%pz-1) )
+        if ( allocated(this%en3DZ) ) deallocate(this%en3DZ); allocate( this%en3DZ(3, 0:this%pz-1) )
+        call mpi_allgather(this%sz3D, 3, MPI_INTEGER, this%sz3DZ, 3, MPI_INTEGER, this%commZ, ierr)
+        call mpi_allgather(this%st3D, 3, MPI_INTEGER, this%st3DZ, 3, MPI_INTEGER, this%commZ, ierr)
+        call mpi_allgather(this%en3D, 3, MPI_INTEGER, this%en3DZ, 3, MPI_INTEGER, this%commZ, ierr)
+        
+        ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
+
+        if (createCrossCommunicators_) then
+            ! Create XY communicator
+            remain(perm) = [.true., .true., .false.]
+            call mpi_cart_sub(this%comm3D, remain, this%commXY, ierr)
+
+            ! Create YZ communicator
+            remain(perm) = [.false., .true., .true.]
+            call mpi_cart_sub(this%comm3D, remain, this%commYZ, ierr)
+
+            ! Create XZ communicator
+            remain(perm) = [.true., .false., .true.]
+            call mpi_cart_sub(this%comm3D, remain, this%commXZ, ierr)
+        end if
+
+        ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
+
+        ! Now get local transpose pencil grid dimensions
+        ! Optimized for vectorization, not thread performance
+
+        ! X split
+        fail = square_factor( this%px, this%sz3D(2), this%sz3D(3), this%px_y, this%px_z)
+        if ( P_OR(fail, this%comm3D) ) then
+            fail = .true.
+            return
+        end if
+        call mpi_cart_create(this%commX, 2, [this%px_y, this%px_z], [.FALSE., .FALSE.], .FALSE., dummycomm, ierr)
+        call mpi_cart_coords(dummycomm, this%rankX, 2, this%coordsX, ierr)
+
+        if ( allocated(this%coordsXall) ) deallocate(this%coordsXall); allocate( this%coordsXall(0:1, 0:this%px-1) )
+        call mpi_allgather(this%coordsX, 2, MPI_INTEGER, this%coordsXall, 2, MPI_INTEGER, this%commX, ierr)
+        
+        if ( allocated(this%szXall) ) deallocate(this%szXall); allocate( this%szXall(3, 0:this%px-1) )
+        if ( allocated(this%stXall) ) deallocate(this%stXall); allocate( this%stXall(3, 0:this%px-1) )
+        if ( allocated(this%enXall) ) deallocate(this%enXall); allocate( this%enXall(3, 0:this%px-1) )
+
+        this%szXall(1,:) = nx; this%stXall(1,:) = 1; this%enXall(1,:) = nx
+
+        if ( allocated(this%splitx_y) ) deallocate(this%splitx_y); allocate( this%splitx_y(0:this%px_y-1) )
+        call roundrobin_split( this%sz3D(2), this%px_y, this%splitx_y)
+        do proc = 0,this%px-1
+            this%szXall(2,proc) = this%splitx_y( this%coordsXall(0,proc) )
+            this%stXall(2,proc) = sum( this%splitx_y(0:this%coordsXall(0,proc)-1) ) + 1
+            this%enXall(2,proc) = sum( this%splitx_y(0:this%coordsXall(0,proc)  ) )
+        end do
+        this%szX(2) = this%szXall( 2, this%rankX )
+        this%stX(2) = this%stXall( 2, this%rankX )
+        this%enX(2) = this%enXall( 2, this%rankX )
+
+        if ( allocated(this%splitx_z) ) deallocate(this%splitx_z); allocate( this%splitx_z(0:this%px_z-1) )
+        call roundrobin_split( this%sz3D(3), this%px_z, this%splitx_z)
+        do proc = 0,this%px-1
+            this%szXall(3,proc) = this%splitx_z( this%coordsXall(1,proc) )
+            this%stXall(3,proc) = sum( this%splitx_z(0:this%coordsXall(1,proc)-1) ) + 1
+            this%enXall(3,proc) = sum( this%splitx_z(0:this%coordsXall(1,proc)  ) )
+        end do
+        this%szX(3) = this%szXall( 3, this%rankX )
+        this%stX(3) = this%stXall( 3, this%rankX )
+        this%enX(3) = this%enXall( 3, this%rankX )
+
+        ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
+
+        ! Y split
+        fail = square_factor(this%py, this%sz3D(1), this%sz3D(3),this%py_x, this%py_z)
+        if ( P_OR(fail, this%comm3D) ) then
+            fail = .true.
+            return
+        end if
+        call mpi_cart_create(this%commY, 2, [this%py_x, this%py_z], [.FALSE., .FALSE.], .FALSE., dummycomm, ierr)
+        call mpi_cart_coords(dummycomm, this%rankY, 2, this%coordsY, ierr)
+
+        if ( allocated(this%coordsYall) ) deallocate(this%coordsYall); allocate( this%coordsYall(0:1, 0:this%py-1) )
+        call mpi_allgather(this%coordsY, 2, MPI_INTEGER, this%coordsYall, 2, MPI_INTEGER, this%commY, ierr)
+        
+        if ( allocated(this%szYall) ) deallocate(this%szYall); allocate( this%szYall(3, 0:this%py-1) )
+        if ( allocated(this%stYall) ) deallocate(this%stYall); allocate( this%stYall(3, 0:this%py-1) )
+        if ( allocated(this%enYall) ) deallocate(this%enYall); allocate( this%enYall(3, 0:this%py-1) )
+
+        this%szYall(2,:) = ny; this%stYall(2,:) = 1; this%enYall(2,:) = ny
+
+        if ( allocated(this%splity_x) ) deallocate(this%splity_x); allocate( this%splity_x(0:this%py_x-1) )
+        call roundrobin_split( this%sz3D(1), this%py_x, this%splity_x)
+        do proc = 0,this%py-1
+            this%szYall(1,proc) = this%splity_x( this%coordsYall(0,proc) )
+            this%stYall(1,proc) = sum( this%splity_x(0:this%coordsYall(0,proc)-1) ) + 1
+            this%enYall(1,proc) = sum( this%splity_x(0:this%coordsYall(0,proc)  ) )
+        end do
+        this%szY(1) = this%szYall( 1, this%rankY )
+        this%stY(1) = this%stYall( 1, this%rankY )
+        this%enY(1) = this%enYall( 1, this%rankY )
+
+        if ( allocated(this%splity_z) ) deallocate(this%splity_z); allocate( this%splity_z(0:this%py_z-1) )
+        call roundrobin_split( this%sz3D(3), this%py_z, this%splity_z)
+        do proc = 0,this%py-1
+            this%szYall(3,proc) = this%splity_z( this%coordsYall(1,proc) )
+            this%stYall(3,proc) = sum( this%splity_z(0:this%coordsYall(1,proc)-1) ) + 1
+            this%enYall(3,proc) = sum( this%splity_z(0:this%coordsYall(1,proc)  ) )
+        end do
+        this%szY(3) = this%szYall( 3, this%rankY )
+        this%stY(3) = this%stYall( 3, this%rankY )
+        this%enY(3) = this%enYall( 3, this%rankY )
+
+        ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
+
+        ! Z split
+        fail = square_factor(this%pz, this%sz3D(1), this%sz3D(2),this%pz_x, this%pz_y) 
+        if ( P_OR(fail, this%comm3D) ) then
+            fail = .true.
+            return
+        end if
+        call mpi_cart_create(this%commZ, 2, [this%pz_x, this%pz_y], [.FALSE., .FALSE.], .FALSE., dummycomm, ierr)
+        call mpi_cart_coords(dummycomm, this%rankZ, 2, this%coordsZ, ierr)
+
+        if ( allocated(this%coordsZall) ) deallocate(this%coordsZall); allocate( this%coordsZall(0:1, 0:this%pz-1) )
+        call mpi_allgather(this%coordsZ, 2, MPI_INTEGER, this%coordsZall, 2, MPI_INTEGER, this%commZ, ierr)
+        
+        if ( allocated(this%szZall) ) deallocate(this%szZall); allocate( this%szZall(3, 0:this%pz-1) )
+        if ( allocated(this%stZall) ) deallocate(this%stZall); allocate( this%stZall(3, 0:this%pz-1) )
+        if ( allocated(this%enZall) ) deallocate(this%enZall); allocate( this%enZall(3, 0:this%pz-1) )
+
+        this%szZall(3,:) = nz; this%stZall(3,:) = 1; this%enZall(3,:) = nz
+
+        if ( allocated(this%splitz_x) ) deallocate(this%splitz_x); allocate( this%splitz_x(0:this%pz_x-1) )
+        call roundrobin_split( this%sz3D(1), this%pz_x, this%splitz_x)
+        do proc = 0,this%pz-1
+            this%szZall(1,proc) = this%splitz_x( this%coordsZall(0,proc) )
+            this%stZall(1,proc) = sum( this%splitz_x(0:this%coordsZall(0,proc)-1) ) + 1
+            this%enZall(1,proc) = sum( this%splitz_x(0:this%coordsZall(0,proc)  ) )
+        end do
+        this%szZ(1) = this%szZall( 1, this%rankZ )
+        this%stZ(1) = this%stZall( 1, this%rankZ )
+        this%enZ(1) = this%enZall( 1, this%rankZ )
+
+        if ( allocated(this%splitz_y) ) deallocate(this%splitz_y); allocate( this%splitz_y(0:this%pz_y-1) )
+        call roundrobin_split( this%sz3D(2), this%pz_y, this%splitz_y)
+        do proc = 0,this%pz-1
+            this%szZall(2,proc) = this%splitz_y( this%coordsZall(1,proc) )
+            this%stZall(2,proc) = sum( this%splitz_y(0:this%coordsZall(1,proc)-1) ) + 1
+            this%enZall(2,proc) = sum( this%splitz_y(0:this%coordsZall(1,proc)  ) )
+        end do
+        this%szZ(2) = this%szZall( 2, this%rankZ )
+        this%stZ(2) = this%stZall( 2, this%rankZ )
+        this%enZ(2) = this%enZall( 2, this%rankZ )
+
+        ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
+
+        ! do i = 2,tind
+        !     times(i-1) = P_MAXVAL(times(i) - times(i-1))
+        !     if (this%rank3D == 0) print*, "Time ", i-1, times(i-1)
+        ! end do
+        ! if (this%rank3D == 0) print*, "Total time ", sum(times(1:tind-1))
+        
+        ! Allocate X displacements and counts
+        if ( allocated(this%disp3DX) ) deallocate(this%disp3DX); allocate( this%disp3DX(0:this%px-1) )
+        if ( allocated(this%count3DX) ) deallocate(this%count3DX); allocate( this%count3DX(0:this%px-1) )
+
+        if ( allocated(this%dispX) ) deallocate(this%dispX); allocate( this%dispX(0:this%px-1) )
+        if ( allocated(this%countX) ) deallocate(this%countX); allocate( this%countX(0:this%px-1) )
+
+        do proc = 0,this%px-1
+            this%disp3DX(proc) = this%sz3D(1)*sum( this%szXall(2,0:proc-1) * this%szXall(3,0:proc-1) )
+            this%count3DX(proc) = this%sz3D(1) * this%szXall(2,proc) * this%szXall(3,proc)
+            
+            this%dispX(proc) = sum( this%sz3DX(1,0:proc-1) * this%szX(2) * this%szX(3) )
+            this%countX(proc) = this%sz3DX(1,proc) * this%szX(2) * this%szX(3)
+        end do
+
+        if ( (maxval(this%count3DX) == minval(this%count3DX)) .and. &
+             (maxval(this%countX  ) == minval(this%countX  )) .and. &
+             (maxval(this%count3DX) == minval(this%countX  )) ) this%unequalX = .false.
+
+        ! Allocate Y displacements and counts
+        if ( allocated(this%disp3DY) ) deallocate(this%disp3DY); allocate( this%disp3DY(0:this%py-1) )
+        if ( allocated(this%count3DY) ) deallocate(this%count3DY); allocate( this%count3DY(0:this%py-1) )
+
+        if ( allocated(this%dispY) ) deallocate(this%dispY); allocate( this%dispY(0:this%py-1) )
+        if ( allocated(this%countY) ) deallocate(this%countY); allocate( this%countY(0:this%py-1) )
+
+        do proc = 0,this%py-1
+            this%disp3DY(proc) = this%sz3D(2)*sum( this%szYall(1,0:proc-1) * this%szYall(3,0:proc-1) )
+            this%count3DY(proc) = this%sz3D(2) * this%szYall(1,proc) * this%szYall(3,proc)
+            
+            this%dispY(proc) = sum( this%sz3DY(2,0:proc-1) * this%szY(1) * this%szY(3) )
+            this%countY(proc) = this%sz3DY(2,proc) * this%szY(1) * this%szY(3)
+        end do
+
+        if ( (maxval(this%count3DY) == minval(this%count3DY)) .and. &
+             (maxval(this%countY  ) == minval(this%countY  )) .and. &
+             (maxval(this%count3DY) == minval(this%countY  )) ) this%unequalY = .false.
+
+        ! Allocate Z displacements and counts
+        if ( allocated(this%disp3DZ) ) deallocate(this%disp3DZ); allocate( this%disp3DZ(0:this%pz-1) )
+        if ( allocated(this%count3DZ) ) deallocate(this%count3DZ); allocate( this%count3DZ(0:this%pz-1) )
+
+        if ( allocated(this%dispZ) ) deallocate(this%dispZ); allocate( this%dispZ(0:this%pz-1) )
+        if ( allocated(this%countZ) ) deallocate(this%countZ); allocate( this%countZ(0:this%pz-1) )
+
+        do proc = 0,this%pz-1
+            this%disp3DZ(proc) = this%sz3D(3)*sum( this%szZall(1,0:proc-1) * this%szZall(2,0:proc-1) )
+            this%count3DZ(proc) = this%sz3D(3) * this%szZall(1,proc) * this%szZall(2,proc)
+            
+            this%dispZ(proc) = sum( this%sz3DZ(3,0:proc-1) * this%szZ(1) * this%szZ(2) )
+            this%countZ(proc) = this%sz3DZ(3,proc) * this%szZ(1) * this%szZ(2)
+        end do
+
+        if ( (maxval(this%count3DZ) == minval(this%count3DZ)) .and. &
+             (maxval(this%countZ  ) == minval(this%countZ  )) .and. &
+             (maxval(this%count3DZ) == minval(this%countZ  )) ) this%unequalZ = .false.
+
+    end subroutine
+   
+
+    subroutine destroy(this)
+        type(t3d), intent(inout) :: this
+        ! integer :: ierr
+
+        if ( allocated(this%splitx_y) ) deallocate( this%splitx_y )
+        if ( allocated(this%splitx_z) ) deallocate( this%splitx_z )
+
+        if ( allocated(this%splity_x) ) deallocate( this%splity_x )
+        if ( allocated(this%splity_z) ) deallocate( this%splity_z )
+
+        if ( allocated(this%splitz_y) ) deallocate( this%splitz_y )
+        if ( allocated(this%splitz_x) ) deallocate( this%splitz_x )
+        
+        ! if (this%mpi_halo_x /= MPI_DATATYPE_NULL) call mpi_type_free(this%mpi_halo_x, ierr)
+        ! if (this%mpi_halo_y /= MPI_DATATYPE_NULL) call mpi_type_free(this%mpi_halo_y, ierr)
+        ! if (this%mpi_halo_z /= MPI_DATATYPE_NULL) call mpi_type_free(this%mpi_halo_z, ierr)
+    end subroutine
+
+    subroutine transpose_3D_to_x(this, input, output)
+        type(t3d), intent(in) :: this
+        real(rkind), dimension(this%sz3D(1),this%sz3D(2),this%sz3D(3)), intent(in)  :: input
+        real(rkind), dimension(this%szX (1),this%szX (2),this%szX (3)), intent(out) :: output
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3))              :: buffer3D
+        real(rkind), dimension(this%szX (1)*this%szX (2)*this%szX (3))              :: bufferX
+        integer :: proc, i, j, k, pos, ierr
+        ! real(rkind) :: start, endt
+
+        ! start = this%time(barrier=.false.)
+        do proc = 0,this%px-1
+            do k = this%stXall(3,proc),this%enXall(3,proc)
+                do j = this%stXall(2,proc),this%enXall(2,proc)
+                    do i = 1,this%sz3D(1)
+                        pos = ( 1 + (i-1) + this%sz3D(1)*(j-this%stXall(2,proc)) + &
+                              this%sz3D(1)*this%szXall(2,proc)*(k-this%stXall(3,proc)) ) + this%disp3DX(proc)
+                        buffer3D(pos) = input(i,j,k)
+                    end do
+                end do
+            end do
+        end do
+        ! endt = this%time(start,reduce=.false.)
+        ! if (this%rank3D == 0) print*, "Do 1", endt
+
+        ! start = this%time(barrier=.false.)
+        select case(this%unequalX)
+        case (.true.)
+            call mpi_alltoallv(buffer3D,this%count3DX,this%disp3DX,mpirkind, &
+                               bufferX, this%countX,  this%dispX,  mpirkind, this%commX, ierr)
+        case (.false.)
+            call mpi_alltoall (buffer3D,this%count3DX(0), mpirkind, &
+                               bufferX, this%countX  (0), mpirkind, this%commX, ierr)
+        end select
+        ! endt = this%time(start,reduce=.false.)
+        ! if (this%rank3D == 0) print*, "2", endt
+
+        ! start = this%time(barrier=.false.)
+        do proc = 0,this%px-1
+            do k = this%stX(3),this%enX(3)
+                do j = this%stX(2),this%enX(2)
+                    do i = this%st3DX(1,proc),this%en3DX(1,proc)
+                        pos = ( 1 + (i-this%st3DX(1,proc)) + &
+                               this%sz3DX(1,proc)*(j-this%stX(2)) + & 
+                               this%sz3DX(1,proc)*this%szX(2)*(k-this%stX(3)) ) + this%dispX(proc)
+                        output(i,j-this%stX(2)+1,k-this%stX(3)+1) = bufferX(pos)
+                    end do
+                end do
+            end do
+        end do
+        ! endt = this%time(start,reduce=.false.)
+        ! if (this%rank3D == 0) print*, "Do 3", endt
+
+    end subroutine 
+
+    subroutine transpose_x_to_3D(this, input, output)
+        type(t3d), intent(in) :: this
+        real(rkind), dimension(this%szX (1),this%szX (2),this%szX (3)), intent(in)  :: input
+        real(rkind), dimension(this%sz3D(1),this%sz3D(2),this%sz3D(3)), intent(out) :: output
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3))              :: buffer3D
+        real(rkind), dimension(this%szX (1)*this%szX (2)*this%szX (3))              :: bufferX
+        integer :: proc, i, j, k, pos, ierr
+
+        do proc = 0,this%px-1
+            do k = this%stX(3),this%enX(3)
+                do j = this%stX(2),this%enX(2)
+                    do i = this%st3DX(1,proc),this%en3DX(1,proc)
+                        pos = ( 1 + (i-this%st3DX(1,proc)) + this%sz3DX(1,proc)*(j-this%stX(2)) + &
+                              this%sz3DX(1,proc)*this%szX(2)*(k-this%stX(3)) ) + this%dispX(proc)
+                        bufferX(pos) = input(i,j-this%stX(2)+1,k-this%stX(3)+1)
+                    end do
+                end do
+            end do
+        end do
+
+        select case(this%unequalX)
+        case (.true.)
+            call mpi_alltoallv(bufferX, this%countX,  this%dispX,  mpirkind, &
+                               buffer3D,this%count3DX,this%disp3DX,mpirkind, this%commX, ierr)
+        case (.false.)
+            call mpi_alltoall (bufferX ,this%countX  (0), mpirkind, &
+                               buffer3D,this%count3DX(0), mpirkind, this%commX, ierr)
+        end select
+
+        do proc = 0,this%px-1
+            do k = this%stXall(3,proc),this%enXall(3,proc)
+                do j = this%stXall(2,proc),this%enXall(2,proc)
+                    do i = 1,this%sz3D(1)
+                        pos = ( 1 + (i-1) + this%sz3D(1)*(j-this%stXall(2,proc)) + &
+                              this%sz3D(1)*this%szXall(2,proc)*(k-this%stXall(3,proc)) ) + this%disp3DX(proc)
+                        output(i,j,k) = buffer3D(pos)
+                    end do
+                end do
+            end do
+        end do
+
+    end subroutine 
+
+    subroutine transpose_3D_to_y(this, input, output)
+        type(t3d), intent(in) :: this
+        real(rkind), dimension(this%sz3D(1),this%sz3D(2),this%sz3D(3)), intent(in)  :: input
+        real(rkind), dimension(this%szY (1),this%szY (2),this%szY (3)), intent(out) :: output
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3))              :: buffer3D
+        real(rkind), dimension(this%szY (1)*this%szY (2)*this%szY (3))              :: bufferY
+        integer :: proc, i, j, k, pos, ierr
+        ! real(rkind) :: start, endt
+
+        ! start = this%time(barrier=.false.)
+        do proc = 0,this%py-1
+            do k = this%stYall(3,proc),this%enYall(3,proc)
+                do j = 1,this%sz3D(2)
+                    do i = this%stYall(1,proc),this%enYall(1,proc)
+                        pos = ( 1 + (i-this%stYall(1,proc)) + this%szYall(1,proc)*(j-1) + &
+                              this%szYall(1,proc)*this%sz3D(2)*(k-this%stYall(3,proc)) ) + this%disp3DY(proc)
+                        buffer3D(pos) = input(i,j,k)
+                    end do
+                end do
+            end do
+        end do
+        ! endt = this%time(start,reduce=.false.)
+        ! if (this%rank3D == 0) print*, "Do 1", endt
+
+        ! start = this%time(barrier=.false.)
+        select case(this%unequalY)
+        case (.true.)
+            call mpi_alltoallv(buffer3D,this%count3DY,this%disp3DY,mpirkind, &
+                               bufferY, this%countY,  this%dispY,  mpirkind, this%commY, ierr)
+        case (.false.)
+            call mpi_alltoall (buffer3D,this%count3DY(0), mpirkind, &
+                               bufferY, this%countY  (0), mpirkind, this%commY, ierr)
+        end select
+        ! endt = this%time(start,reduce=.false.)
+        ! if (this%rank3D == 0) print*, "2", endt
+
+        ! start = this%time(barrier=.false.)
+        do proc = 0,this%py-1
+            do k = this%stY(3),this%enY(3)
+                do j = this%st3DY(2,proc),this%en3DY(2,proc)
+                    do i = this%stY(1),this%enY(1)
+                        pos = ( 1 + (i-this%stY(1)) + &
+                               this%szY(1)*(j-this%st3DY(2,proc)) + & 
+                               this%szY(1)*this%sz3DY(2,proc)*(k-this%stY(3)) ) + this%dispY(proc)
+                        output(i-this%stY(1)+1,j,k-this%stY(3)+1) = bufferY(pos)
+                    end do
+                end do
+            end do
+        end do
+        ! endt = this%time(start,reduce=.false.)
+        ! if (this%rank3D == 0) print*, "Do 3", endt
+
+    end subroutine 
+
+    subroutine transpose_y_to_3D(this, input, output)
+        type(t3d), intent(in) :: this
+        real(rkind), dimension(this%szY (1),this%szY (2),this%szY (3)), intent(in)  :: input
+        real(rkind), dimension(this%sz3D(1),this%sz3D(2),this%sz3D(3)), intent(out) :: output
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3))              :: buffer3D
+        real(rkind), dimension(this%szY (1)*this%szY (2)*this%szY (3))              :: bufferY
+        integer :: proc, i, j, k, pos, ierr
+
+        do proc = 0,this%py-1
+            do k = this%stY(3),this%enY(3)
+                do j = this%st3DY(2,proc),this%en3DY(2,proc)
+                    do i = this%stY(1),this%enY(1)
+                        pos = ( 1 + (i-this%stY(1)) + &
+                               this%szY(1)*(j-this%st3DY(2,proc)) + & 
+                               this%szY(1)*this%sz3DY(2,proc)*(k-this%stY(3)) ) + this%dispY(proc)
+                        bufferY(pos) = input(i-this%stY(1)+1,j,k-this%stY(3)+1)
+                    end do
+                end do
+            end do
+        end do
+
+        select case(this%unequalY)
+        case (.true.)
+            call mpi_alltoallv(bufferY, this%countY,  this%dispY,  mpirkind, &
+                               buffer3D,this%count3DY,this%disp3DY,mpirkind, this%commY, ierr)
+        case (.false.)
+            call mpi_alltoall (bufferY, this%countY  (0), mpirkind, &
+                               buffer3D,this%count3DY(0), mpirkind, this%commY, ierr)
+        end select
+
+        do proc = 0,this%py-1
+            do k = this%stYall(3,proc),this%enYall(3,proc)
+                do j = 1,this%sz3D(2)
+                    do i = this%stYall(1,proc),this%enYall(1,proc)
+                        pos = ( 1 + (i-this%stYall(1,proc)) + this%szYall(1,proc)*(j-1) + &
+                              this%szYall(1,proc)*this%sz3D(2)*(k-this%stYall(3,proc)) ) + this%disp3DY(proc)
+                        output(i,j,k) = buffer3D(pos) 
+                    end do
+                end do
+            end do
+        end do
+
+    end subroutine 
+
+    subroutine transpose_3D_to_z(this, input, output)
+        type(t3d), intent(in) :: this
+        real(rkind), dimension(this%sz3D(1),this%sz3D(2),this%sz3D(3)), intent(in)  :: input
+        real(rkind), dimension(this%szZ (1),this%szZ (2),this%szZ (3)), intent(out) :: output
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3))              :: buffer3D
+        real(rkind), dimension(this%szZ (1)*this%szZ (2)*this%szZ (3))              :: bufferZ
+        integer :: proc, i, j, k, pos, ierr
+        ! real(rkind) :: start, endt
+
+        ! start = this%time(barrier=.false.)
+        do proc = 0,this%pz-1
+            do k = 1,this%sz3D(3)
+                do j = this%stZall(2,proc),this%enZall(2,proc)
+                    do i = this%stZall(1,proc),this%enZall(1,proc)
+                        pos = ( 1 + (i-this%stZall(1,proc)) + this%szZall(1,proc)*(j-this%stZall(2,proc)) + &
+                              this%szZall(1,proc)*this%szZall(2,proc)*(k-1) ) + this%disp3DZ(proc)
+                        buffer3D(pos) = input(i,j,k)
+                    end do
+                end do
+            end do
+        end do
+        ! endt = this%time(start,reduce=.false.)
+        ! if (this%rank3D == 0) print*, "Do 1", endt
+
+        ! start = this%time(barrier=.false.)
+        select case(this%unequalZ)
+        case (.true.)
+            call mpi_alltoallv(buffer3D,this%count3DZ,this%disp3DZ,mpirkind, &
+                               bufferZ, this%countZ,  this%dispZ,  mpirkind, this%commZ, ierr)
+        case (.false.)
+            call mpi_alltoall (buffer3D,this%count3DZ(0), mpirkind, &
+                               bufferZ, this%countZ  (0), mpirkind, this%commZ, ierr)
+        end select
+        ! endt = this%time(start,reduce=.false.)
+        ! if (this%rank3D == 0) print*, "2", endt
+
+        ! start = this%time(barrier=.false.)
+        do proc = 0,this%pz-1
+            do k = this%st3DZ(3,proc),this%en3DZ(3,proc)
+                do j = this%stZ(2),this%enZ(2)
+                    do i = this%stZ(1),this%enZ(1)
+                        pos = ( 1 + (i-this%stZ(1)) + &
+                               this%szZ(1)*(j-this%stZ(2)) + & 
+                               this%szZ(1)*this%szZ(2)*(k-this%st3DZ(3,proc)) ) + this%dispZ(proc)
+                        output(i-this%stZ(1)+1,j-this%stZ(2)+1,k) = bufferZ(pos)
+                    end do
+                end do
+            end do
+        end do
+        ! endt = this%time(start,reduce=.false.)
+        ! if (this%rank3D == 0) print*, "Do 3", endt
+
+    end subroutine 
+
+    subroutine transpose_z_to_3D(this, input, output)
+        type(t3d), intent(in) :: this
+        real(rkind), dimension(this%szZ (1),this%szZ (2),this%szZ (3)), intent(in)  :: input
+        real(rkind), dimension(this%sz3D(1),this%sz3D(2),this%sz3D(3)), intent(out) :: output
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3))              :: buffer3D
+        real(rkind), dimension(this%szZ (1)*this%szZ (2)*this%szZ (3))              :: bufferZ
+        integer :: proc, i, j, k, pos, ierr
+
+        do proc = 0,this%pz-1
+            do k = this%st3DZ(3,proc),this%en3DZ(3,proc)
+                do j = this%stZ(2),this%enZ(2)
+                    do i = this%stZ(1),this%enZ(1)
+                        pos = ( 1 + (i-this%stZ(1)) + &
+                               this%szZ(1)*(j-this%stZ(2)) + & 
+                               this%szZ(1)*this%szZ(2)*(k-this%st3DZ(3,proc)) ) + this%dispZ(proc)
+                        bufferZ(pos) = input(i-this%stZ(1)+1,j-this%stZ(2)+1,k)
+                    end do
+                end do
+            end do
+        end do
+
+        select case(this%unequalZ)
+        case (.true.)
+            call mpi_alltoallv(bufferZ, this%countZ,  this%dispZ,  mpirkind, &
+                               buffer3D,this%count3DZ,this%disp3DZ,mpirkind, this%commZ, ierr)
+        case (.false.)
+            call mpi_alltoall (bufferZ, this%countZ  (0), mpirkind, &
+                               buffer3D,this%count3DZ(0), mpirkind, this%commZ, ierr)
+        end select
+
+        do proc = 0,this%pz-1
+            do k = 1,this%sz3D(3)
+                do j = this%stZall(2,proc),this%enZall(2,proc)
+                    do i = this%stZall(1,proc),this%enZall(1,proc)
+                        pos = ( 1 + (i-this%stZall(1,proc)) + this%szZall(1,proc)*(j-this%stZall(2,proc)) + &
+                              this%szZall(1,proc)*this%szZall(2,proc)*(k-1) ) + this%disp3DZ(proc)
+                        output(i,j,k) = buffer3D(pos)
+                    end do
+                end do
+            end do
+        end do
+
+    end subroutine 
+
+    subroutine initiate_transpose_3D_to_x(this, input, buffer3D, bufferX, request)
+        class(t3d), intent(in) :: this
+        real(rkind), dimension(this%sz3D(1),this%sz3D(2),this%sz3D(3)), intent(in)  :: input
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3)), intent(out) :: buffer3D
+        real(rkind), dimension(this%szX (1)*this%szX (2)*this%szX (3)), intent(out) :: bufferX
+        integer,                                                        intent(out) :: request
+        integer :: proc, i, j, k, pos, ierr
+        ! real(rkind) :: start, endt
+
+        ! start = this%time(barrier=.false.)
+        do proc = 0,this%px-1
+            do k = this%stXall(3,proc),this%enXall(3,proc)
+                do j = this%stXall(2,proc),this%enXall(2,proc)
+                    do i = 1,this%sz3D(1)
+                        pos = ( 1 + (i-1) + this%sz3D(1)*(j-this%stXall(2,proc)) + &
+                              this%sz3D(1)*this%szXall(2,proc)*(k-this%stXall(3,proc)) ) + this%disp3DX(proc)
+                        buffer3D(pos) = input(i,j,k)
+                    end do
+                end do
+            end do
+        end do
+        ! endt = this%time(start,reduce=.false.)
+        ! if (this%rank3D == 0) print*, "Do 1", endt
+
+        ! start = this%time(barrier=.false.)
+        select case(this%unequalX)
+        case (.true.)
+            call mpi_Ialltoallv(buffer3D,this%count3DX,this%disp3DX,mpirkind, &
+                               bufferX, this%countX,  this%dispX,  mpirkind, this%commX, request, ierr)
+        case (.false.)
+            call mpi_Ialltoall (buffer3D,this%count3DX(0), mpirkind, &
+                               bufferX, this%countX  (0), mpirkind, this%commX, request, ierr)
+        end select
+        ! endt = this%time(start,reduce=.false.)
+        ! if (this%rank3D == 0) print*, "2", endt
+    end subroutine 
+
+    subroutine wait_transpose_3D_to_x(this, output, bufferX, request, status)
+        class(t3d), intent(in) :: this
+        real(rkind), dimension(this%szX (1),this%szX (2),this%szX (3)), intent(out)   :: output
+        real(rkind), dimension(this%szX (1)*this%szX (2)*this%szX (3)), intent(in)    :: bufferX
+        integer,                                                        intent(inout) :: request
+        integer, dimension(MPI_STATUS_SIZE),                            intent(out)   :: status
+        integer :: proc, i, j, k, pos, ierr
+
+        call mpi_wait(request, status, ierr)
+
+        ! start = this%time(barrier=.false.)
+        do proc = 0,this%px-1
+            do k = this%stX(3),this%enX(3)
+                do j = this%stX(2),this%enX(2)
+                    do i = this%st3DX(1,proc),this%en3DX(1,proc)
+                        pos = ( 1 + (i-this%st3DX(1,proc)) + &
+                               this%sz3DX(1,proc)*(j-this%stX(2)) + & 
+                               this%sz3DX(1,proc)*this%szX(2)*(k-this%stX(3)) ) + this%dispX(proc)
+                        output(i,j-this%stX(2)+1,k-this%stX(3)+1) = bufferX(pos)
+                    end do
+                end do
+            end do
+        end do
+        ! endt = this%time(start,reduce=.false.)
+        ! if (this%rank3D == 0) print*, "Do 3", endt
+
+    end subroutine 
+
+    subroutine initiate_transpose_x_to_3D(this, input, buffer3D, bufferX, request)
+        class(t3d), intent(in) :: this
+        real(rkind), dimension(this%szX (1),this%szX (2),this%szX (3)), intent(in)  :: input
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3)), intent(out) :: buffer3D
+        real(rkind), dimension(this%szX (1)*this%szX (2)*this%szX (3)), intent(out) :: bufferX
+        integer,                                                        intent(out) :: request
+        integer :: proc, i, j, k, pos, ierr
+
+        do proc = 0,this%px-1
+            do k = this%stX(3),this%enX(3)
+                do j = this%stX(2),this%enX(2)
+                    do i = this%st3DX(1,proc),this%en3DX(1,proc)
+                        pos = ( 1 + (i-this%st3DX(1,proc)) + this%sz3DX(1,proc)*(j-this%stX(2)) + &
+                              this%sz3DX(1,proc)*this%szX(2)*(k-this%stX(3)) ) + this%dispX(proc)
+                        bufferX(pos) = input(i,j-this%stX(2)+1,k-this%stX(3)+1)
+                    end do
+                end do
+            end do
+        end do
+
+        select case(this%unequalX)
+        case (.true.)
+            call mpi_Ialltoallv(bufferX, this%countX,  this%dispX,  mpirkind, &
+                               buffer3D,this%count3DX,this%disp3DX,mpirkind, this%commX, request, ierr)
+        case (.false.)
+            call mpi_Ialltoall (bufferX ,this%countX  (0), mpirkind, &
+                               buffer3D,this%count3DX(0), mpirkind, this%commX, request, ierr)
+        end select
+
+    end subroutine
+    
+    subroutine wait_transpose_x_to_3D(this, output, buffer3D, request, status)
+        class(t3d), intent(in) :: this
+        real(rkind), dimension(this%sz3D(1),this%sz3D(2),this%sz3D(3)), intent(out)   :: output
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3)), intent(in)    :: buffer3D
+        integer,                                                        intent(inout) :: request
+        integer, dimension(mpi_status_size),                            intent(out)   :: status
+        integer :: proc, i, j, k, pos, ierr
+
+        call mpi_wait(request, status, ierr)
+        
+        do proc = 0,this%px-1
+            do k = this%stXall(3,proc),this%enXall(3,proc)
+                do j = this%stXall(2,proc),this%enXall(2,proc)
+                    do i = 1,this%sz3D(1)
+                        pos = ( 1 + (i-1) + this%sz3D(1)*(j-this%stXall(2,proc)) + &
+                              this%sz3D(1)*this%szXall(2,proc)*(k-this%stXall(3,proc)) ) + this%disp3DX(proc)
+                        output(i,j,k) = buffer3D(pos)
+                    end do
+                end do
+            end do
+        end do
+
+    end subroutine 
+
+    subroutine initiate_transpose_3D_to_y(this, input, buffer3D, bufferY, request)
+        class(t3d), intent(in) :: this
+        real(rkind), dimension(this%sz3D(1),this%sz3D(2),this%sz3D(3)), intent(in)  :: input
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3)), intent(out) :: buffer3D
+        real(rkind), dimension(this%szY (1)*this%szY (2)*this%szY (3)), intent(out) :: bufferY
+        integer,                                                        intent(out) :: request
+        integer :: proc, i, j, k, pos, ierr
+
+        do proc = 0,this%py-1
+            do k = this%stYall(3,proc),this%enYall(3,proc)
+                do j = 1,this%sz3D(2)
+                    do i = this%stYall(1,proc),this%enYall(1,proc)
+                        pos = ( 1 + (i-this%stYall(1,proc)) + this%szYall(1,proc)*(j-1) + &
+                              this%szYall(1,proc)*this%sz3D(2)*(k-this%stYall(3,proc)) ) + this%disp3DY(proc)
+                        buffer3D(pos) = input(i,j,k)
+                    end do
+                end do
+            end do
+        end do
+        
+        select case(this%unequalY)
+        case (.true.)
+            call mpi_Ialltoallv(buffer3D,this%count3DY,this%disp3DY,mpirkind, &
+                               bufferY, this%countY,  this%dispY,  mpirkind, this%commY, request, ierr)
+        case (.false.)
+            call mpi_Ialltoall (buffer3D,this%count3DY(0), mpirkind, &
+                               bufferY, this%countY  (0), mpirkind, this%commY, request, ierr)
+        end select
+
+    end subroutine
+
+
+    subroutine wait_transpose_3D_to_y(this, output, bufferY, request, status)
+        class(t3d), intent(in) :: this
+        real(rkind), dimension(this%szY(1)*this%szY(2)*this%szY(3)), intent(in)    :: bufferY
+        real(rkind), dimension(this%szY(1),this%szY(2),this%szY(3)), intent(out)   :: output
+        integer,                                                     intent(inout) :: request
+        integer, dimension(mpi_status_size),                         intent(out)   :: status
+        integer :: proc, i, j, k, pos, ierr
+        
+        call mpi_wait(request, status, ierr)
+        
+        do proc = 0,this%py-1
+            do k = this%stY(3),this%enY(3)
+                do j = this%st3DY(2,proc),this%en3DY(2,proc)
+                    do i = this%stY(1),this%enY(1)
+                        pos = ( 1 + (i-this%stY(1)) + &
+                               this%szY(1)*(j-this%st3DY(2,proc)) + & 
+                               this%szY(1)*this%sz3DY(2,proc)*(k-this%stY(3)) ) + this%dispY(proc)
+                        output(i-this%stY(1)+1,j,k-this%stY(3)+1) = bufferY(pos)
+                    end do
+                end do
+            end do
+        end do
+
+    end subroutine 
+
+    subroutine initiate_transpose_y_to_3D(this, input, buffer3D, bufferY, request)
+        class(t3d), intent(in) :: this
+        real(rkind), dimension(this%szY (1),this%szY (2),this%szY (3)), intent(in)  :: input
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3)), intent(out) :: buffer3D
+        real(rkind), dimension(this%szY (1)*this%szY (2)*this%szY (3)), intent(out) :: bufferY
+        integer,                                                        intent(out) :: request
+        integer :: proc, i, j, k, pos, ierr
+
+        do proc = 0,this%py-1
+            do k = this%stY(3),this%enY(3)
+                do j = this%st3DY(2,proc),this%en3DY(2,proc)
+                    do i = this%stY(1),this%enY(1)
+                        pos = ( 1 + (i-this%stY(1)) + &
+                               this%szY(1)*(j-this%st3DY(2,proc)) + & 
+                               this%szY(1)*this%sz3DY(2,proc)*(k-this%stY(3)) ) + this%dispY(proc)
+                        bufferY(pos) = input(i-this%stY(1)+1,j,k-this%stY(3)+1)
+                    end do
+                end do
+            end do
+        end do
+
+        select case(this%unequalY)
+        case (.true.)
+            call mpi_Ialltoallv(bufferY, this%countY,  this%dispY,  mpirkind, &
+                               buffer3D,this%count3DY,this%disp3DY,mpirkind, this%commY, request, ierr)
+        case (.false.)
+            call mpi_Ialltoall (bufferY, this%countY  (0), mpirkind, &
+                               buffer3D,this%count3DY(0), mpirkind, this%commY, request, ierr)
+        end select
+    
+    end subroutine
+    
+    subroutine wait_transpose_y_to_3D(this, output, buffer3D, request, status)
+        class(t3d), intent(in) :: this
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3)), intent(in)    :: buffer3D
+        real(rkind), dimension(this%sz3D(1),this%sz3D(2),this%sz3D(3)), intent(out)   :: output
+        integer,                                                        intent(inout) :: request
+        integer, dimension(mpi_status_size),                            intent(out)   :: status
+        integer :: proc, i, j, k, pos, ierr
+
+        call mpi_wait(request, status, ierr)
+        
+        do proc = 0,this%py-1
+            do k = this%stYall(3,proc),this%enYall(3,proc)
+                do j = 1,this%sz3D(2)
+                    do i = this%stYall(1,proc),this%enYall(1,proc)
+                        pos = ( 1 + (i-this%stYall(1,proc)) + this%szYall(1,proc)*(j-1) + &
+                              this%szYall(1,proc)*this%sz3D(2)*(k-this%stYall(3,proc)) ) + this%disp3DY(proc)
+                        output(i,j,k) = buffer3D(pos) 
+                    end do
+                end do
+            end do
+        end do
+
+    end subroutine 
+
+
+    subroutine initiate_transpose_3D_to_z(this, input, buffer3D, bufferZ, request)
+        class(t3d), intent(in) :: this
+        real(rkind), dimension(this%sz3D(1),this%sz3D(2),this%sz3D(3)), intent(in)  :: input
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3)), intent(out) :: buffer3D
+        real(rkind), dimension(this%szZ (1)*this%szZ (2)*this%szZ (3)), intent(out) :: bufferZ
+        integer,                                                        intent(out) :: request
+        integer :: proc, i, j, k, pos, ierr
+
+        do proc = 0,this%pz-1
+            do k = 1,this%sz3D(3)
+                do j = this%stZall(2,proc),this%enZall(2,proc)
+                    do i = this%stZall(1,proc),this%enZall(1,proc)
+                        pos = ( 1 + (i-this%stZall(1,proc)) + this%szZall(1,proc)*(j-this%stZall(2,proc)) + &
+                              this%szZall(1,proc)*this%szZall(2,proc)*(k-1) ) + this%disp3DZ(proc)
+                        buffer3D(pos) = input(i,j,k)
+                    end do
+                end do
+            end do
+        end do
+
+        select case(this%unequalZ)
+        case (.true.)
+            call mpi_Ialltoallv(buffer3D,this%count3DZ,this%disp3DZ,mpirkind, &
+                               bufferZ, this%countZ,  this%dispZ,  mpirkind, this%commZ, request, ierr)
+        case (.false.)
+            call mpi_Ialltoall (buffer3D,this%count3DZ(0), mpirkind, &
+                               bufferZ, this%countZ  (0), mpirkind, this%commZ, request, ierr)
+        end select
+        
+    end subroutine
+        
+    subroutine wait_transpose_3D_to_z(this, output, bufferZ, request, status)
+        class(t3d), intent(in) :: this
+        real(rkind), dimension(this%szZ(1)*this%szZ(2)*this%szZ(3)), intent(in)    :: bufferZ
+        real(rkind), dimension(this%szZ(1),this%szZ(2),this%szZ(3)), intent(out)   :: output
+        integer,                                                     intent(inout) :: request
+        integer, dimension(mpi_status_size),                         intent(out)   :: status
+        integer :: proc, i, j, k, pos, ierr
+        
+        call mpi_wait(request, status, ierr)
+        
+        do proc = 0,this%pz-1
+            do k = this%st3DZ(3,proc),this%en3DZ(3,proc)
+                do j = this%stZ(2),this%enZ(2)
+                    do i = this%stZ(1),this%enZ(1)
+                        pos = ( 1 + (i-this%stZ(1)) + &
+                               this%szZ(1)*(j-this%stZ(2)) + & 
+                               this%szZ(1)*this%szZ(2)*(k-this%st3DZ(3,proc)) ) + this%dispZ(proc)
+                        output(i-this%stZ(1)+1,j-this%stZ(2)+1,k) = bufferZ(pos)
+                    end do
+                end do
+            end do
+        end do
+
+    end subroutine 
+
+
+    subroutine initiate_transpose_z_to_3D(this, input, buffer3D, bufferZ, request)
+        class(t3d), intent(in) :: this
+        real(rkind), dimension(this%szZ (1),this%szZ (2),this%szZ (3)), intent(in)  :: input
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3)), intent(out) :: buffer3D
+        real(rkind), dimension(this%szZ (1)*this%szZ (2)*this%szZ (3)), intent(out) :: bufferZ
+        integer,                                                        intent(out) :: request
+        integer :: proc, i, j, k, pos, ierr
+
+        do proc = 0,this%pz-1
+            do k = this%st3DZ(3,proc),this%en3DZ(3,proc)
+                do j = this%stZ(2),this%enZ(2)
+                    do i = this%stZ(1),this%enZ(1)
+                        pos = ( 1 + (i-this%stZ(1)) + &
+                               this%szZ(1)*(j-this%stZ(2)) + & 
+                               this%szZ(1)*this%szZ(2)*(k-this%st3DZ(3,proc)) ) + this%dispZ(proc)
+                        bufferZ(pos) = input(i-this%stZ(1)+1,j-this%stZ(2)+1,k)
+                    end do
+                end do
+            end do
+        end do
+
+        select case(this%unequalZ)
+        case (.true.)
+            call mpi_Ialltoallv(bufferZ, this%countZ,  this%dispZ,  mpirkind, &
+                               buffer3D,this%count3DZ,this%disp3DZ,mpirkind, this%commZ, request, ierr)
+        case (.false.)
+            call mpi_Ialltoall (bufferZ, this%countZ  (0), mpirkind, &
+                               buffer3D,this%count3DZ(0), mpirkind, this%commZ, request, ierr)
+        end select
+    end subroutine
+
+    subroutine wait_transpose_z_to_3D(this, output, buffer3D, request, status)
+        class(t3d), intent(in) :: this
+        real(rkind), dimension(this%sz3D(1)*this%sz3D(2)*this%sz3D(3)), intent(in)    :: buffer3D
+        real(rkind), dimension(this%sz3D(1),this%sz3D(2),this%sz3D(3)), intent(out)   :: output
+        integer,                                                        intent(inout) :: request
+        integer, dimension(mpi_status_size),                            intent(out)   :: status
+        integer :: proc, i, j, k, pos, ierr
+
+        call mpi_wait(request, status, ierr)
+
+        do proc = 0,this%pz-1
+            do k = 1,this%sz3D(3)
+                do j = this%stZall(2,proc),this%enZall(2,proc)
+                    do i = this%stZall(1,proc),this%enZall(1,proc)
+                        pos = ( 1 + (i-this%stZall(1,proc)) + this%szZall(1,proc)*(j-this%stZall(2,proc)) + &
+                              this%szZall(1,proc)*this%szZall(2,proc)*(k-1) ) + this%disp3DZ(proc)
+                        output(i,j,k) = buffer3D(pos)
+                    end do
+                end do
+            end do
+        end do
+
+    end subroutine 
+
+    subroutine fill_halo_x(this, array)
+        type(t3d), intent(in) :: this
+        real(rkind), dimension(this%st3Dg(1):this%en3Dg(1),this%st3D(2):this%en3D(2),this%st3D(3):this%en3D(3)), intent(inout) :: array
+        integer :: recv_request_left, recv_request_right
+        integer :: send_request_left, send_request_right
+        integer, dimension(MPI_STATUS_SIZE) :: status
+        ! integer :: i,j,k
+        integer :: ierr
+
+        ! real(rkind), dimension(this%nghosts(1),this%sz3D(2),this%sz3D(3)) :: sendbuf_l, sendbuf_r, recvbuf_l, recvbuf_r
+
+        ! TODO: Need to rewrite this to use mpi_halo_x derived datatype instead
+        ! of copying
+
+        ! print*, "In fill_halo_x"
+        ! print*, "nghosts = ", this%nghosts
+
+        ! print*, this%rank3D, ": lbound = ", lbound(array)
+        ! print*, this%rank3D, ": ubound = ", ubound(array)
+        ! print*, this%rank3D, ": st3Dg  = ", this%st3Dg
+        ! print*, this%rank3D, ": en3Dg  = ", this%en3Dg
+
+
+        call mpi_irecv( array(this%st3Dg(1),this%st3D(2),this%st3D(3)), 1, this%mpi_halo_x, this%xleft, 0, this%commX, recv_request_left, ierr)
+        call mpi_irecv( array(this%en3Dg(1)-this%nghosts(1)+1,this%st3D(2),this%st3D(3)), 1, this%mpi_halo_x, this%xright, 1, this%commX, recv_request_right, ierr)
+
+        call mpi_isend( array(this%st3Dg(1)+this%nghosts(1),this%st3D(2),this%st3D(3)), 1, this%mpi_halo_x, this%xleft, 1, this%commX, send_request_left, ierr)
+        call mpi_isend( array(this%en3Dg(1)-2*this%nghosts(1)+1,this%st3D(2),this%st3D(3)), 1, this%mpi_halo_x, this%xright, 0, this%commX, send_request_right, ierr)
+
+
+        ! TODO: Use preprocessor flags to choose between explicit copies and MPI derived data types for systems that don't support
+        ! MPI derived data tyes
+
+        ! call mpi_irecv( recvbuf_l, this%nghosts(1)*this%sz3D(2)*this%sz3D(3), mpirkind, this%xleft,  0, this%commX, recv_request_left,  ierr)
+        ! call mpi_irecv( recvbuf_r, this%nghosts(1)*this%sz3D(2)*this%sz3D(3), mpirkind, this%xright, 1, this%commX, recv_request_right, ierr)
+
+        ! do k=1,this%sz3D(3)
+        !     do j=1,this%sz3D(2)
+        !         do i = 1,this%nghosts(1)
+        !             sendbuf_r(i,j,k) = array( this%en3D(1)-this%nghosts(1)+i, this%st3D(2)+j-1, this%st3D(3)+k-1 )
+        !         end do
+        !     end do
+        ! end do
+
+        ! do k=1,this%sz3D(3)
+        !     do j=1,this%sz3D(2)
+        !         do i = 1,this%nghosts(1)
+        !             sendbuf_l(i,j,k) = array( this%st3D(1)+i-1, this%st3D(2)+j-1, this%st3D(3)+k-1 )
+        !         end do
+        !     end do
+        ! end do
+
+        ! call mpi_isend( sendbuf_r, this%nghosts(1)*this%sz3D(2)*this%sz3D(3), mpirkind, this%xright, 0, this%commX, send_request_right, ierr)
+        ! call mpi_isend( sendbuf_l, this%nghosts(1)*this%sz3D(2)*this%sz3D(3), mpirkind, this%xleft,  1, this%commX, send_request_left,  ierr)
+
+        call mpi_wait(recv_request_left,  status, ierr)
+        call mpi_wait(recv_request_right, status, ierr)
+        call mpi_wait(send_request_left,  status, ierr)
+        call mpi_wait(send_request_right, status, ierr)
+
+        ! do k=1,this%sz3D(3)
+        !     do j=1,this%sz3D(2)
+        !         do i = 1,this%nghosts(1)
+        !             array( this%en3D(1)+i, this%st3D(2)+j-1, this%st3D(3)+k-1 ) = recvbuf_r(i,j,k)
+        !         end do
+        !     end do
+        ! end do
+
+        ! do k=1,this%sz3D(3)
+        !     do j=1,this%sz3D(2)
+        !         do i = 1,this%nghosts(1)
+        !             array( this%st3Dg(1)+i-1, this%st3D(2)+j-1, this%st3D(3)+k-1 ) = recvbuf_l(i,j,k)
+        !         end do
+        !     end do
+        ! end do
+
+    end subroutine
+
+    subroutine fill_halo_y(this, array)
+        type(t3d), intent(in) :: this
+        real(rkind), dimension(this%st3D(1):this%en3D(1),this%st3Dg(2):this%en3Dg(2),this%st3D(3):this%en3D(3)), intent(inout) :: array
+        integer :: recv_request_left, recv_request_right
+        integer :: send_request_left, send_request_right
+        integer, dimension(MPI_STATUS_SIZE) :: status
+        integer :: ierr
+
+        call mpi_irecv( array(this%st3D(1),this%st3Dg(2),this%st3D(3)), 1, this%mpi_halo_y, this%yleft, 0, this%commY, recv_request_left, ierr)
+        call mpi_irecv( array(this%st3D(1),this%en3Dg(2)-this%nghosts(2)+1,this%st3D(3)), 1, this%mpi_halo_y, this%yright, 1, this%commY, recv_request_right, ierr)
+
+        call mpi_isend( array(this%st3D(1),this%st3Dg(2)+this%nghosts(2),this%st3D(3)), 1, this%mpi_halo_y, this%yleft, 1, this%commY, send_request_left, ierr)
+        call mpi_isend( array(this%st3D(1),this%en3Dg(2)-2*this%nghosts(2)+1,this%st3D(3)), 1, this%mpi_halo_y, this%yright, 0, this%commY, send_request_right, ierr)
+
+
+        call mpi_wait(recv_request_left,  status, ierr)
+        call mpi_wait(recv_request_right, status, ierr)
+        call mpi_wait(send_request_left,  status, ierr)
+        call mpi_wait(send_request_right, status, ierr)
+
+    end subroutine
+
+    subroutine fill_halo_z(this, array)
+        type(t3d), intent(in) :: this
+        real(rkind), dimension(this%st3D(1):this%en3D(1),this%st3D(2):this%en3D(2),this%st3Dg(3):this%en3Dg(3)), intent(inout) :: array
+        integer :: recv_request_left, recv_request_right
+        integer :: send_request_left, send_request_right
+        integer, dimension(MPI_STATUS_SIZE) :: status
+        integer :: ierr
+
+        call mpi_irecv( array(this%st3D(1),this%st3D(2),this%st3Dg(3)), 1, this%mpi_halo_z, this%zleft, 0, this%commZ, recv_request_left, ierr)
+        call mpi_irecv( array(this%st3D(1),this%st3D(2),this%en3Dg(3)-this%nghosts(3)+1), 1, this%mpi_halo_z, this%zright, 1, this%commZ, recv_request_right, ierr)
+
+        call mpi_isend( array(this%st3D(1),this%st3D(2),this%st3Dg(3)+this%nghosts(3)), 1, this%mpi_halo_z, this%zleft, 1, this%commZ, send_request_left, ierr)
+        call mpi_isend( array(this%st3D(1),this%st3D(2),this%en3Dg(3)-2*this%nghosts(3)+1), 1, this%mpi_halo_z, this%zright, 0, this%commZ, send_request_right, ierr)
+
+
+        call mpi_wait(recv_request_left,  status, ierr)
+        call mpi_wait(recv_request_right, status, ierr)
+        call mpi_wait(send_request_left,  status, ierr)
+        call mpi_wait(send_request_right, status, ierr)
+
+    end subroutine
+
+    logical function square_factor(nprocs,nrow,ncol,prow,pcol) result(fail)
+        use constants, only: eps
+        integer, intent(in) :: nprocs, nrow, ncol
+        integer, intent(out) :: prow, pcol
+        integer :: incr
+
+        fail = .false.
+        if ( nrow < ncol ) then
+            incr = -1
+            prow = int(sqrt( real(nprocs,rkind) ) + 1000*eps)
+            pcol = nprocs / prow
+        else
+            incr = 1
+            pcol = int(sqrt( real(nprocs,rkind) ) + 1000*eps)
+            prow = nprocs / pcol
+        end if
+
+        do while ( (prow > 1) .and. (prow < nprocs) .and. &
+                 ( (mod(nprocs,prow) /= 0) .or. (prow > nrow) .or. (pcol > ncol) ) )
+            prow = prow + incr
+            pcol = nprocs / prow
+        end do
+        
+        if ( (mod(nprocs,prow) /= 0) .or. (prow > nrow) .or. (pcol > ncol) ) then
+            fail = .true.
+        end if
+
+    end function
+
+    pure subroutine roundrobin_split(na, nb, split)
+        integer, intent(in) :: na, nb
+        integer, dimension(0:nb-1), intent(out) :: split
+        integer :: i, idx
+
+        split = 0
+        do i = 0,na-1
+            idx = mod(i,nb)
+            split(idx) = split(idx) + 1
+        end do
+    end subroutine
+
+    function optimize_decomposition(comm3D, nx, ny, nz, periodic, nghosts) result(this)
+        use constants,       only: rhuge
+        use kind_parameters, only: stdout
+        type(t3d) :: this
+        integer, intent(in)  :: comm3D, nx, ny, nz
+        logical, dimension(3), intent(in) :: periodic
+        integer, dimension(3), optional, intent(in) :: nghosts
+        integer, dimension(3) :: nghosts_
+        integer :: px, py, pz, pxopt, pyopt, pzopt
+        real(rkind) :: t, topt
+        integer :: pypz, nprocs, ierr, rank, niters, siters
+        logical :: fail
+        logical, parameter :: reorder = .false.
+
+        call mpi_comm_size(comm3D,nprocs,ierr)
+        call mpi_comm_rank(comm3D,rank  ,ierr)
+
+        nghosts_ = [0,0,0]
+        if (present(nghosts)) nghosts_ = nghosts
+
+        if (rank == 0) then
+            write(stdout,'(A)') " "
+            write(stdout,'(A)') " ================ Optimizing t3d ================ "
+        end if
+
+        niters = 0; siters = 0
+        topt = rhuge
+        do px = 1,nprocs
+            if (mod(nprocs,px) /= 0) cycle
+            pypz = nprocs / px
+            do py = 1,pypz
+                if (mod(pypz,py) /= 0) cycle
+                pz = pypz / py
+               
+                niters = niters + 1
+                call mpi_barrier(comm3D,ierr)
+                call init(this, comm3D, nx, ny, nz, px, py, pz, periodic, reorder, fail, nghosts=nghosts_, createCrossCommunicators=.false.)
+                if (.not. fail) then
+                    siters = siters + 1
+                    t = this%timed_transpose()
+                    if (rank == 0) then
+                        write(stdout,'(A,3(I5,A),ES12.3E3,A)') "Processor decomposition: ", &
+                                        px, " x", py, " x", pz, ". Time = ", t, " seconds"
+                    end if
+                    if (t < topt) then
+                        topt = t; pxopt = px; pyopt = py; pzopt = pz;
+                        if (rank == 0) then
+                            write(stdout,'(A,3(I0,A),ES12.3E3,A)') " >>>> Found a better processor decomposition ", &
+                                            pxopt, " x ", pyopt, " x ", pzopt, " with time ", topt, " seconds"
+                        end if
+                    end if
+                else
+                    if (rank == 0) then
+                        write(stdout,'(A,3(I3,A))') "Processor decomposition ", &
+                                        px, " x ", py, " x ", pz, " infeasible."
+                    end if
+                end if
+                call destroy(this)
+            end do
+        end do
+
+        call init(this, comm3D, nx, ny, nz, pxopt, pyopt, pzopt, periodic, reorder, fail, nghosts=nghosts_, createCrossCommunicators=.true.)
+        if (fail) then
+            print*, pxopt, pyopt, pzopt
+            call GracefulExit("Couldn't find a working decomposition for t3d.",457)
+        end if
+
+        if (rank == 0) then
+            print '(3(A,I0))', ">>>> Using 3D processor decomposition ", pxopt, 'x', pyopt, 'x', pzopt
+            print '(1(A,I0))', ">>>> Total decompositions tried = ", niters
+            print '(1(A,I0))', ">>>> Total feasible decompositions = ", siters
+        end if
+
+        if (rank == 0) then
+            write(stdout,'(A)') " ================================================ "
+            write(stdout,'(A)') " "
+            ! write(stdout,'(A,3(I0,X))') "nghosts = ", this%nghosts(1), this%nghosts(2), this%nghosts(3)
+            ! write(stdout,'(A,3(I0,X))') "sz3Dg   = ", this%sz3Dg(1), this%sz3Dg(2), this%sz3Dg(3)
+            ! write(stdout,'(A,3(I0,X))') "st3Dg   = ", this%st3Dg(1), this%st3Dg(2), this%st3Dg(3)
+            ! write(stdout,'(A,3(I0,X))') "en3Dg   = ", this%en3Dg(1), this%en3Dg(2), this%en3Dg(3)
+            ! write(stdout,'(A)') " "
+        end if
+
+    end function
+
+    function timed_transpose(gp) result(time)
+        real(rkind) :: time
+        class(t3d), intent(in) :: gp
+        real(rkind), dimension(gp%sz3D(1),gp%sz3D(2),gp%sz3D(3)) :: array3D
+        real(rkind), dimension(gp%szX (1),gp%szX (2),gp%szX (3)) :: arrayX 
+        real(rkind), dimension(gp%szY (1),gp%szY (2),gp%szY (3)) :: arrayY 
+        real(rkind), dimension(gp%szZ (1),gp%szZ (2),gp%szZ (3)) :: arrayZ 
+        real(rkind) :: start
+        
+        array3D = real(gp%sz3D(1),rkind)
+
+        start = gp%time(barrier=.true.,reduce=.false.)
+
+        call transpose_3D_to_x(gp,array3D, arrayX)
+        call transpose_x_to_3D(gp,arrayX, array3D)
+        
+        call transpose_3D_to_y(gp,array3D, arrayY)
+        call transpose_y_to_3D(gp,arrayY, array3D)
+        
+        call transpose_3D_to_z(gp,array3D, arrayZ)
+        call transpose_z_to_3D(gp,arrayZ, array3D)
+        
+        time = gp%time(start=start, barrier=.true., reduce=.true.)
+
+    end function
+
+    real(rkind) function time(this,start,barrier,reduce)
+        class(t3d), intent(in) :: this
+        real(rkind), optional, intent(in) :: start
+        logical, optional, intent(in) :: barrier
+        logical, optional, intent(in) :: reduce 
+        logical :: barrier_, reduce_
+        real(rkind) :: ptime
+        integer :: ierr
+
+        barrier_ = .false.
+        if ( present(barrier) ) barrier_ = barrier
+
+        if (barrier_) call mpi_barrier(this%comm3D,ierr)
+
+        ptime = mpi_wtime()
+        if ( present(start) ) ptime = ptime - start
+
+        reduce_ = .false.
+        if ( present(reduce) ) reduce_ = reduce
+
+        select case (reduce_)
+        case(.true.)
+            call mpi_allreduce(ptime, time, 1, mpirkind, MPI_MAX, this%comm3D, ierr)
+        case(.false.)
+            time = ptime
+        end select
+    end function
+
+    subroutine print_summary(this)
+        use kind_parameters, only: stdout
+        class(t3d), intent(in) :: this
+        integer :: ierr
+
+        if (this%rank3D == 0) then
+            write(stdout,'(A)') "========== SUMMARY =========="
+            write(stdout,'(3(A,I0))') "Grid size: ", this%szX(1), ' x ', this%szY(2), ' x ', this%szZ(3)
+
+            ! Processors
+            write(stdout,'(3(A,I0))') "Processor decomposition: ", this%px, ' x ', this%py, ' x ', this%pz
+            write(stdout,'(A)') " "
+        end if
+
+        call mpi_barrier(this%comm3D, ierr)
+        call sleep(this%rank3D)
+
+        write(stdout,'(4(A,I0))') "Process ", this%rank3D, " Process coordinate: ", this%coords3D(perm(0)), ' x ', this%coords3D(perm(1)), ' x ', this%coords3D(perm(2))
+        write(stdout,'(4(A,I0))') "Process ", this%rank3D, " Grid size: ", this%sz3D(1), ' x ', this%sz3D(2), ' x ', this%sz3D(3)
+        write(stdout,'(4(A,I0))') "Process ", this%rank3D, " Grid start index: ", this%st3D(1), ' x ', this%st3D(2), ' x ', this%st3D(3)
+        write(stdout,'(4(A,I0))') "Process ", this%rank3D, " Grid last index: ", this%en3D(1), ' x ', this%en3D(2), ' x ', this%en3D(3)
+        write(stdout,'(A)') " "
+        
+        write(stdout,'(2(A,I0))') "X pencil processor grid: ", this%px_y, ' x ', this%px_z
+        write(stdout,'(4(A,I0))') "X pencil size: ", this%szX(1), ' x ', this%szX(2), ' x ', this%szX(3)
+        write(stdout,'(6(A,I0))') "X pencil start: ", this%stX(1), ':',this%enX(1), ' x ',  this%stX(2), ':', this%enX(2), ' x ', this%stX(3) , ':', this%enX(3)
+        
+        write(stdout,'(A)') " "
+        write(stdout,'(2(A,I0))') "Y pencil processor grid: ", this%py_x, ' x ', this%py_z
+        write(stdout,'(4(A,I0))') "Y pencil size: ", this%szY(1), ' x ', this%szY(2), ' x ', this%szY(3)
+        write(stdout,'(6(A,I0))') "Y pencil start: ", this%stY(1), ':',this%enY(1), ' x ',  this%stY(2), ':', this%enY(2), ' x ', this%stY(3) , ':', this%enY(3)
+        
+        write(stdout,'(A)') " "
+        write(stdout,'(2(A,I0))') "Z pencil processor grid: ", this%pz_x, ' x ', this%pz_y
+        write(stdout,'(4(A,I0))') "Z pencil size: ", this%szZ(1), ' x ', this%szZ(2), ' x ', this%szZ(3)
+        write(stdout,'(6(A,I0))') "Z pencil start: ", this%stZ(1), ':',this%enZ(1), ' x ',  this%stZ(2), ':', this%enZ(2), ' x ', this%stZ(3) , ':', this%enZ(3)
+        write(stdout,'(A)') " -------------------------"
+        write(stdout,'(A)') " "
+
+        call sleep(1)
+        call mpi_barrier(this%comm3D, ierr)
+       
+    end subroutine
+
+
+
+    subroutine get_sz3D(this,sz3D)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: sz3D
+
+        sz3D = this%sz3D
+    end subroutine
+
+    subroutine get_st3D(this,st3D)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: st3D
+
+        st3D = this%st3D
+    end subroutine
+
+    subroutine get_en3D(this,en3D)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: en3D
+
+        en3D = this%en3D
+    end subroutine
+
+
+
+    subroutine get_sz3Dg(this,sz3Dg)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: sz3Dg
+
+        sz3Dg = this%sz3Dg
+    end subroutine
+
+    subroutine get_st3Dg(this,st3Dg)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: st3Dg
+
+        st3Dg = this%st3Dg
+    end subroutine
+
+    subroutine get_en3Dg(this,en3Dg)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: en3Dg
+
+        en3Dg = this%en3Dg
+    end subroutine
+
+
+
+    subroutine get_szX(this,szX)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: szX
+
+        szX = this%szX
+    end subroutine
+
+    subroutine get_szY(this,szY)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: szY
+
+        szY = this%szY
+    end subroutine
+
+    subroutine get_szZ(this,szZ)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: szZ
+
+        szZ = this%szZ
+    end subroutine
+
+end module 

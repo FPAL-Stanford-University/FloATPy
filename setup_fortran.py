@@ -1,6 +1,8 @@
 import os
 import subprocess
 
+compiler_flags = '-Wall -Wconversion -Wextra -Waliasing -ffree-form -ffree-line-length-none -ffast-math -march=native -funroll-loops -fno-protect-parens'
+
 def BuildFortranObjects(sources, compiler='gfortran'):
     objects = []
     
@@ -14,7 +16,7 @@ def BuildFortranObjects(sources, compiler='gfortran'):
         objects.append(os.path.relpath(path_object))
         
         command_compile_fortran_mod = (
-            compiler + ' -O3 -fPIC -J' + path_dir + ' '
+            compiler + ' -O3 -fPIC ' + compiler_flags + ' -J' + path_dir + ' '
             + source + ' -c -o ' + path_object)
         
         print(command_compile_fortran_mod)
