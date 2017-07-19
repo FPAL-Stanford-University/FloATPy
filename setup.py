@@ -16,13 +16,19 @@ print "Using MPI Fortran compiler ", MPIFC
 
 MPI_INCLUDE_DIRS = subprocess.check_output([MPIFC,'--showme:incdirs']).split()
 MPI_LINK_DIRS = subprocess.check_output([MPIFC,'--showme:libdirs']).split()
+MPI_LIBS = subprocess.check_output([MPIFC,'--showme:libs']).split()
 
 f2py_mpi_include = '--include-paths '
 for incdir in MPI_INCLUDE_DIRS:
     f2py_mpi_include += incdir + ' '
 print "f2py_mpi_include = ", f2py_mpi_include
 
-f2py_mpi_link = subprocess.check_output([MPIFC,'--showme:link']).strip()
+# f2py_mpi_link = subprocess.check_output([MPIFC,'--showme:link']).strip()
+f2py_mpi_link = []
+for libdir in MPI_LINK_DIRS:
+    f2py_mpi_link.append('-L' + libdir)
+for lib in MPI_LIBS:
+    f2py_mpi_link.append('-l' + lib)
 print "f2py_mpi_link = ", f2py_mpi_link
 
 
@@ -53,8 +59,11 @@ obj_pyt3d = BuildFortranObjects(['floatpy/parallel/pyt3d/kind_parameters.F90',
 
 ext_pyt3d = Extension('_pyt3d',
                       sources = ['floatpy/parallel/pyt3d/f90wrap_t3dMod.f90'],
-                      extra_objects = obj_compact_6th_order,
-                      f2py_options = [f2py_mpi_include, f2py_mpi_link])
+                      extra_objects = obj_pyt3d,
+                      f2py_options = [],
+                      include_dirs = MPI_INCLUDE_DIRS,
+                      library_dirs = MPI_LINK_DIRS,
+                      libraries = MPI_LIBS)
 
 # Modules.
 modules = ['floatpy.parallel',
@@ -69,6 +78,6 @@ setup(name='FloATPy',
       description='Postprocessing utilities for codes in FPAL',
       author='Flow Physics and Aeroacoustics Laboratory of Stanford University',
       author_email='wongml@stanford.edu',
-      ext_modules = [ext_compact_6th_order],
+      ext_modules = [ext_compact_6th_order, ext_pyt3d],
       packages=['floatpy'] + modules,
       )

@@ -1,7 +1,7 @@
 from mpi4py import MPI
 import numpy
 
-import floatpy.parallel.pyt3d as pyt3d
+import floatpy.parallel.pyt3d.pyt3d as pyt3d
 
 #------------------------------------
 # Set the MPI communicator
