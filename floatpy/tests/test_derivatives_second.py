@@ -5,7 +5,7 @@ import floatpy.derivatives.second
 
 class TestDerivativesSecond(unittest.TestCase):
     
-    def TestFirstDirection(self):
+    def testFirstDirection(self):
         """
         Test the second derivatives in the first direction.
         """
@@ -30,7 +30,7 @@ class TestDerivativesSecond(unittest.TestCase):
         self.assertLess(error_6, 1.0e-7, "Incorrect derivative in first direction for sixth order finite difference")
     
     
-    def TestSecondDirection(self):
+    def testSecondDirection(self):
         """
         Test the second derivatives in the second direction.
         """
@@ -55,7 +55,7 @@ class TestDerivativesSecond(unittest.TestCase):
         self.assertLess(error_6, 1.0e-7, "Incorrect derivative in second direction for sixth order finite difference")
     
     
-    def TestThirdDirection(self):
+    def testThirdDirection(self):
         """
         Test the second derivatives in the thrid direction.
         """

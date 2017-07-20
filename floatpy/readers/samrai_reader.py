@@ -351,8 +351,8 @@ class SamraiDataReader(BaseReader):
         num_patches = self._basic_info['num_patches']
         
         # Get the ratio from the coarest level to the finest level.
-        ratio_of_coarest_to_finest = numpy.ones(dim)
         ratios_to_coarser_levels = self._basic_info['ratios_to_coarser_levels']
+        ratio_of_coarest_to_finest = numpy.ones(dim, dtype = ratios_to_coarser_levels.dtype)
         
         for level_idx in range(1, num_levels):
             ratio_of_coarest_to_finest = numpy.multiply(ratios_to_coarser_levels[level_idx][0:dim], ratio_of_coarest_to_finest)
@@ -368,7 +368,7 @@ class SamraiDataReader(BaseReader):
             lo_root_level = numpy.minimum(lo_root_level, self._patch_extents[patch_idx][0])
             hi_root_level = numpy.maximum(hi_root_level, self._patch_extents[patch_idx][1])
         
-        domain_shape = hi_root_level[0:dim] - lo_root_level[0:dim] + numpy.ones(dim, dtype = numpy.int)
+        domain_shape = hi_root_level[0:dim] - lo_root_level[0:dim] + numpy.ones(dim, dtype = lo_root_level.dtype)
         domain_shape = numpy.multiply(domain_shape, ratio_of_coarest_to_finest)
         
         return tuple(domain_shape)
