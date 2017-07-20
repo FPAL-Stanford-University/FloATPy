@@ -1,5 +1,6 @@
 from mpi4py import MPI
 import numpy
+import unittest
 
 import floatpy.parallel.pyt3d.pyt3d as pyt3d
 
@@ -43,8 +44,8 @@ gp.get_st3dg(st3dg)
 gp.get_en3dg(en3dg)
 st3dg = st3dg - 1  # Convert to 0 based indexing
 
-print "rank ", comm.rank, ": sz3D  = ", sz3d,  ", st3D  = ", st3d,  ", en3D  = ", en3d
-print "rank ", comm.rank, ": sz3Dg = ", sz3dg, ", st3Dg = ", st3dg, ", en3Dg = ", en3dg
+# print "rank ", comm.rank, ": sz3D  = ", sz3d,  ", st3D  = ", st3d,  ", en3D  = ", en3d
+# print "rank ", comm.rank, ": sz3Dg = ", sz3dg, ", st3Dg = ", st3dg, ", en3Dg = ", en3dg
 
 array = numpy.zeros( (sz3dg[0], sz3dg[1], sz3dg[2]), dtype=numpy.float64, order='F' )
 for k in range(nghosts[2],sz3dg[2]-nghosts[2]):
@@ -68,5 +69,41 @@ if comm.rank == 0:
     if correct[0]:
         print "Halo communication in X works! :)"
     else:
-        print "Halo communication in X fails! :("
+        print "ERROR: Halo communication in X fails! :("
+
+gp.fill_halo_y( array )
+
+mycorrect = numpy.array([True])
+for k in range(nghosts[2],sz3dg[2]-nghosts[2]):
+    for j in range(sz3dg[1]):
+        for i in range(sz3dg[0]):
+            if numpy.absolute(array[i,j,k] - ( (i+st3dg[0]+nx)%nx + ((j+st3dg[1]+ny)%ny)*nx + ((k+st3dg[2]+nz)%nz)*nx*ny ) ) > 1.e-15:
+                mycorrect[0] = False
+
+correct = numpy.array([False])
+comm.Reduce(mycorrect, correct, op=MPI.LAND, root=0)
+
+if comm.rank == 0:
+    if correct[0]:
+        print "Halo communication in Y works! :)"
+    else:
+        print "ERROR: Halo communication in Y fails! :("
+
+gp.fill_halo_z( array )
+
+mycorrect = numpy.array([True])
+for k in range(sz3dg[2]):
+    for j in range(sz3dg[1]):
+        for i in range(sz3dg[0]):
+            if numpy.absolute(array[i,j,k] - ( (i+st3dg[0]+nx)%nx + ((j+st3dg[1]+ny)%ny)*nx + ((k+st3dg[2]+nz)%nz)*nx*ny ) ) > 1.e-15:
+                mycorrect[0] = False
+
+correct = numpy.array([False])
+comm.Reduce(mycorrect, correct, op=MPI.LAND, root=0)
+
+if comm.rank == 0:
+    if correct[0]:
+        print "Halo communication in Z works! :)"
+    else:
+        print "ERROR: Halo communication in Z fails! :("
 
