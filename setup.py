@@ -77,7 +77,7 @@ setup(name = 'FloATPy',
       version = version,
       description = 'Postprocessing utilities for codes in FPAL',
       author = 'Flow Physics and Aeroacoustics Laboratory of Stanford University',
-      author_email = 'wongml@stanford.edu', 'akshays@stanford.edu'
+      author_email = 'wongml@stanford.edu, akshays@stanford.edu',
       ext_modules = [ext_compact_6th_order, ext_pyt3d],
       packages = ['floatpy'] + modules,
       )
