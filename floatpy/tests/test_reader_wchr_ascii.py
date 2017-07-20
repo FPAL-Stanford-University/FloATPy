@@ -16,19 +16,19 @@ class TestReaderWchrAscii(unittest.TestCase):
         self.reader.step = 0
     
     
-    def TestReadCoordinatesChunk(self):
+    def testReadCoordinatesChunk(self):
         
-        # Read full coordinates
+        # Read full coordinates.
         
         self.reader.sub_domain = (0,0,0), self.reader.domain_size
         x, y, z = self.reader.readCoordinates()
         
-        # Read chunked coordinates
+        # Read chunked coordinates.
         
         self.reader.sub_domain = self.lo, self.hi
         x_c, y_c, z_c = self.reader.readCoordinates()
 
-        # Check that the chunked coordinates are equal to the corresponding full coords
+        # Check that the chunked coordinates are equal to the corresponding full coords.
         
         xerr = numpy.absolute(x[ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - x_c).max()
         yerr = numpy.absolute(y[ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - y_c).max()
@@ -39,16 +39,16 @@ class TestReaderWchrAscii(unittest.TestCase):
         self.assertEqual(zerr, 0., "Incorrect chunked coordinate data reader in Z")
     
     
-    def TestReadDataChunk(self):
+    def testReadDataChunk(self):
         
-        # Read full data
+        # Read full data.
         
         self.reader.sub_domain = (0,0,0), self.reader.domain_size
         rho,    = self.reader.readData('rho')
         u, v, w = self.reader.readData(('u','v','w'))
         p,      = self.reader.readData('p')
         
-        # Read in chunked data
+        # Read in chunked data.
         
         self.reader.sub_domain = self.lo, self.hi
         rho_c,        = self.reader.readData('rho')
