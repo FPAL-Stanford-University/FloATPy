@@ -17,7 +17,7 @@ class SamraiDataReader(BaseReader):
     """
     
     def __init__(self, data_directory_path, periodic_dimensions = (False, False, False), \
-                 upsampling_method = 'constant', data_order = 'F'):
+                 upsampling_method = 'constant', data_order = 'F', dump_directory_name_zero_padding_length = 5):
         """
         Constructor of the class.
         The current time step of the class is set to the first time step in dump file.
@@ -82,6 +82,9 @@ class SamraiDataReader(BaseReader):
         # Set the upsampling method.
         
         self._upsampling_method = upsampling_method
+        
+        # Set the length of zero-padding of the dump directories.
+        self._dump_directory_name_zero_padding_length = dump_directory_name_zero_padding_length
         
         # Initialize subdomain.
         
@@ -351,8 +354,8 @@ class SamraiDataReader(BaseReader):
         num_patches = self._basic_info['num_patches']
         
         # Get the ratio from the coarest level to the finest level.
-        ratio_of_coarest_to_finest = numpy.ones(dim)
         ratios_to_coarser_levels = self._basic_info['ratios_to_coarser_levels']
+        ratio_of_coarest_to_finest = numpy.ones(dim, dtype = ratios_to_coarser_levels.dtype)
         
         for level_idx in range(1, num_levels):
             ratio_of_coarest_to_finest = numpy.multiply(ratios_to_coarser_levels[level_idx][0:dim], ratio_of_coarest_to_finest)
@@ -368,7 +371,7 @@ class SamraiDataReader(BaseReader):
             lo_root_level = numpy.minimum(lo_root_level, self._patch_extents[patch_idx][0])
             hi_root_level = numpy.maximum(hi_root_level, self._patch_extents[patch_idx][1])
         
-        domain_shape = hi_root_level[0:dim] - lo_root_level[0:dim] + numpy.ones(dim, dtype = numpy.int)
+        domain_shape = hi_root_level[0:dim] - lo_root_level[0:dim] + numpy.ones(dim, dtype = lo_root_level.dtype)
         domain_shape = numpy.multiply(domain_shape, ratio_of_coarest_to_finest)
         
         return tuple(domain_shape)
@@ -587,11 +590,13 @@ class SamraiDataReader(BaseReader):
         
         if dim == 1:
             for process_idx in range(0, num_file_clusters):
-                file_name = 'processor_cluster.' + str(process_idx).zfill(5) + '.samrai'
+                file_name = 'processor_cluster.' + str(process_idx).zfill(self._dump_directory_name_zero_padding_length) \
+                    + '.samrai'
                 full_path = self._full_viz_folder_paths[self._step] + '/' + file_name
                 f_input = h5py.File(full_path, 'r')
                 
-                file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
+                file_cluster = f_input['processor.' \
+                    + str(process_idx).zfill(self._dump_directory_name_zero_padding_length)]
                 file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                 
                 for var_name in var_names:
@@ -619,11 +624,13 @@ class SamraiDataReader(BaseReader):
         
         elif dim == 2:
             for process_idx in range(0, num_file_clusters):
-                file_name = 'processor_cluster.' + str(process_idx).zfill(5) + '.samrai'
+                file_name = 'processor_cluster.' + str(process_idx).zfill(self._dump_directory_name_zero_padding_length) \
+                    + '.samrai'
                 full_path = self._full_viz_folder_paths[self._step] + '/' + file_name
                 f_input = h5py.File(full_path, 'r')
                 
-                file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
+                file_cluster = f_input['processor.' \
+                    + str(process_idx).zfill(self._dump_directory_name_zero_padding_length)]
                 file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                 
                 for var_name in var_names:
@@ -656,11 +663,12 @@ class SamraiDataReader(BaseReader):
         
         elif dim == 3:
             for process_idx in range(0, num_file_clusters):
-                file_name = 'processor_cluster.' + str(process_idx).zfill(5) + '.samrai'
+                file_name = 'processor_cluster.' + str(process_idx).zfill(self._dump_directory_name_zero_padding_length) \
+                    + '.samrai'
                 full_path = self._full_viz_folder_paths[self._step] + '/' + file_name
                 f_input = h5py.File(full_path, 'r')
                 
-                file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
+                file_cluster = f_input['processor.' + str(process_idx).zfill(self._dump_directory_name_zero_padding_length)]
                 file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                 
                 for var_name in var_names:
@@ -1357,7 +1365,8 @@ class SamraiDataReader(BaseReader):
         
         if dim == 1:
             for process_idx in file_clusters_to_load:
-                file_name = 'processor_cluster.' + str(process_idx).zfill(5) + '.samrai'
+                file_name = 'processor_cluster.' + str(process_idx).zfill(self._dump_directory_name_zero_padding_length) \
+                    + '.samrai'
                 full_path = self._full_viz_folder_paths[self._step] + '/' + file_name
                 f_input = h5py.File(full_path, 'r')
                 
@@ -1366,7 +1375,8 @@ class SamraiDataReader(BaseReader):
                     for level_idx in range(0, level_num):
                         patch_level_start_idx = patch_level_start_idx + num_patches[level_idx]
                     
-                    file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
+                    file_cluster = f_input['processor.' \
+                        + str(process_idx).zfill(self._dump_directory_name_zero_padding_length)]
                     file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                     
                     for var_name in var_names:
@@ -1437,7 +1447,8 @@ class SamraiDataReader(BaseReader):
         
         elif dim == 2:
             for process_idx in range(0, num_file_clusters):
-                file_name = 'processor_cluster.' + str(process_idx).zfill(5) + '.samrai'
+                file_name = 'processor_cluster.' + str(process_idx).zfill(self._dump_directory_name_zero_padding_length) \
+                    + '.samrai'
                 full_path = self._full_viz_folder_paths[self._step] + '/' + file_name
                 f_input = h5py.File(full_path, 'r')
                 
@@ -1446,7 +1457,8 @@ class SamraiDataReader(BaseReader):
                     for level_idx in range(0, level_num):
                         patch_level_start_idx = patch_level_start_idx + num_patches[level_idx]
                     
-                    file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
+                    file_cluster = f_input['processor.' \
+                        + str(process_idx).zfill(self._dump_directory_name_zero_padding_length)]
                     file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                     
                     for var_name in var_names:
@@ -1688,7 +1700,8 @@ class SamraiDataReader(BaseReader):
         
         elif dim == 3:
             for process_idx in range(0, num_file_clusters):
-                file_name = 'processor_cluster.' + str(process_idx).zfill(5) + '.samrai'
+                file_name = 'processor_cluster.' + str(process_idx).zfill(self._dump_directory_name_zero_padding_length) \
+                    + '.samrai'
                 full_path = self._full_viz_folder_paths[self._step] + '/' + file_name
                 f_input = h5py.File(full_path, 'r')
                 
@@ -1697,7 +1710,8 @@ class SamraiDataReader(BaseReader):
                     for level_idx in range(0, level_num):
                         patch_level_start_idx = patch_level_start_idx + num_patches[level_idx]
                     
-                    file_cluster = f_input['processor.' + str(process_idx).zfill(5)]
+                    file_cluster = f_input['processor.' \
+                        + str(process_idx).zfill(self._dump_directory_name_zero_padding_length)]
                     file_cluster_level = file_cluster['level.' + str(level_num).zfill(5)]
                     
                     for var_name in var_names:
