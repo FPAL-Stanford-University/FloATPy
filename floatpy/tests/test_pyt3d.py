@@ -33,8 +33,7 @@ en3d = numpy.zeros(3, dtype=numpy.int32, order='F')
 gp.get_sz3d(sz3d)
 gp.get_st3d(st3d)
 gp.get_en3d(en3d)
-
-print "rank ", comm.rank, ": sz3D = ", sz3d, ", st3D = ", st3d, ", en3D = ", en3d
+st3d = st3d - 1  # Convert to 0 based indexing
 
 sz3dg = numpy.zeros(3, dtype=numpy.int32, order='F')
 st3dg = numpy.zeros(3, dtype=numpy.int32, order='F')
@@ -42,20 +41,24 @@ en3dg = numpy.zeros(3, dtype=numpy.int32, order='F')
 gp.get_sz3dg(sz3dg)
 gp.get_st3dg(st3dg)
 gp.get_en3dg(en3dg)
+st3dg = st3dg - 1  # Convert to 0 based indexing
 
-array = numpy.zeros( (sz3dg[0], sz3d[1], sz3d[2]), dtype=numpy.float64, order='F' )
-for k in range(sz3d[2]):
-    for j in range(sz3d[1]):  
+print "rank ", comm.rank, ": sz3D  = ", sz3d,  ", st3D  = ", st3d,  ", en3D  = ", en3d
+print "rank ", comm.rank, ": sz3Dg = ", sz3dg, ", st3Dg = ", st3dg, ", en3Dg = ", en3dg
+
+array = numpy.zeros( (sz3dg[0], sz3dg[1], sz3dg[2]), dtype=numpy.float64, order='F' )
+for k in range(nghosts[2],sz3dg[2]-nghosts[2]):
+    for j in range(nghosts[1],sz3dg[1]-nghosts[1]):
         for i in range(nghosts[0],sz3dg[0]-nghosts[0]):
-            array[i,j,k] = (i+st3dg[0]-1) + (j+st3d[1]-1)*nx + (k+st3d[2]-1)*nx*ny
+            array[i,j,k] = (i+st3dg[0]) + (j+st3dg[1])*nx + (k+st3dg[2])*nx*ny
 
 gp.fill_halo_x( array )
 
 mycorrect = numpy.array([True])
-for k in range(sz3d[2]):
-    for j in range(sz3d[1]):  
+for k in range(nghosts[2],sz3dg[2]-nghosts[2]):
+    for j in range(nghosts[1],sz3dg[1]-nghosts[1]):
         for i in range(sz3dg[0]):
-            if numpy.absolute(array[i,j,k] - ( (i+st3dg[0]-1+nx)%nx + ((j+st3d[1]-1+ny)%ny)*nx + ((k+st3d[2]-1+nz)%nz)*nx*ny ) ) > 1.e-15:
+            if numpy.absolute(array[i,j,k] - ( (i+st3dg[0]+nx)%nx + ((j+st3dg[1]+ny)%ny)*nx + ((k+st3dg[2]+nz)%nz)*nx*ny ) ) > 1.e-15:
                 mycorrect[0] = False
 
 correct = numpy.array([False])
