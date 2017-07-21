@@ -10,7 +10,8 @@ module t3dMod
     public :: t3d, init, optimize_decomposition, destroy, &
               transpose_3D_to_x, transpose_x_to_3D, transpose_3D_to_y, transpose_y_to_3D, transpose_3D_to_z, transpose_z_to_3D, &
               fill_halo_x, fill_halo_y, fill_halo_z, get_sz3D, get_st3D, get_en3D, get_sz3Dg, get_st3Dg, get_en3Dg, &
-              get_szX, get_szY, get_szZ
+              get_szX, get_stX, get_enX, get_szY, get_stY, get_enY, get_szZ, get_stZ, get_enZ, &
+              comm3D, commX, commY, commZ, commXY, commYZ, commXZ, px, py, pz, nprocs
         
     logical :: xnumbering = .true.
     integer, dimension(0:2) :: perm = [0, 1, 2]
@@ -1162,7 +1163,7 @@ contains
     end subroutine 
 
     subroutine fill_halo_x(this, array)
-        class(t3d), intent(in) :: this
+        type(t3d), intent(in) :: this
         real(rkind), dimension(this%st3Dg(1):this%en3Dg(1),this%st3Dg(2):this%en3Dg(2),this%st3Dg(3):this%en3Dg(3)), intent(inout) :: array
         integer :: recv_request_left, recv_request_right
         integer :: send_request_left, send_request_right
@@ -1184,7 +1185,7 @@ contains
     end subroutine
 
     subroutine fill_halo_y(this, array)
-        class(t3d), intent(in) :: this
+        type(t3d), intent(in) :: this
         real(rkind), dimension(this%st3Dg(1):this%en3Dg(1),this%st3Dg(2):this%en3Dg(2),this%st3Dg(3):this%en3Dg(3)), intent(inout) :: array
         integer :: recv_request_left, recv_request_right
         integer :: send_request_left, send_request_right
@@ -1206,7 +1207,7 @@ contains
     end subroutine
 
     subroutine fill_halo_z(this, array)
-        class(t3d), intent(in) :: this
+        type(t3d), intent(in) :: this
         real(rkind), dimension(this%st3Dg(1):this%en3Dg(1),this%st3Dg(2):this%en3Dg(2),this%st3Dg(3):this%en3Dg(3)), intent(inout) :: array
         integer :: recv_request_left, recv_request_right
         integer :: send_request_left, send_request_right
@@ -1269,10 +1270,10 @@ contains
         end do
     end subroutine
 
-    function optimize_decomposition(comm3D, nx, ny, nz, periodic, nghosts) result(this)
+    subroutine optimize_decomposition(this,comm3D, nx, ny, nz, periodic, nghosts)
         use constants,       only: rhuge
         use kind_parameters, only: stdout
-        type(t3d) :: this
+        type(t3d), intent(inout) :: this
         integer, intent(in)  :: comm3D, nx, ny, nz
         logical, dimension(3), intent(in) :: periodic
         integer, dimension(3), optional, intent(in) :: nghosts
@@ -1352,7 +1353,7 @@ contains
             ! write(stdout,'(A)') " "
         end if
 
-    end function
+    end subroutine
 
     function timed_transpose(gp) result(time)
         real(rkind) :: time
@@ -1507,6 +1508,21 @@ contains
         szX = this%szX
     end subroutine
 
+    subroutine get_stX(this,stX)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: stX
+
+        stX = this%stX
+    end subroutine
+
+    subroutine get_enX(this,enX)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: enX
+
+        enX = this%enX
+    end subroutine
+
+
     subroutine get_szY(this,szY)
         type(t3d), intent(in) :: this
         integer, dimension(3), intent(out) :: szY
@@ -1514,11 +1530,117 @@ contains
         szY = this%szY
     end subroutine
 
+    subroutine get_stY(this,stY)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: stY
+
+        stY = this%stY
+    end subroutine
+
+    subroutine get_enY(this,enY)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: enY
+
+        enY = this%enY
+    end subroutine
+
+
     subroutine get_szZ(this,szZ)
         type(t3d), intent(in) :: this
         integer, dimension(3), intent(out) :: szZ
 
         szZ = this%szZ
     end subroutine
+
+    subroutine get_stZ(this,stZ)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: stZ
+
+        stZ = this%stZ
+    end subroutine
+
+    subroutine get_enZ(this,enZ)
+        type(t3d), intent(in) :: this
+        integer, dimension(3), intent(out) :: enZ
+
+        enZ = this%enZ
+    end subroutine
+
+    function comm3D(this)
+        type(t3d), intent(in) :: this
+        integer :: comm3D
+
+        comm3D = this%comm3D
+    end function
+
+    function commX(this)
+        type(t3d), intent(in) :: this
+        integer :: commX
+
+        commX = this%commX
+    end function
+
+    function commY(this)
+        type(t3d), intent(in) :: this
+        integer :: commY
+
+        commY = this%commY
+    end function
+
+    function commZ(this)
+        type(t3d), intent(in) :: this
+        integer :: commZ
+
+        commZ = this%commZ
+    end function
+
+    function commXY(this)
+        type(t3d), intent(in) :: this
+        integer :: commXY
+
+        commXY = this%commXY
+    end function
+
+    function commYZ(this)
+        type(t3d), intent(in) :: this
+        integer :: commYZ
+
+        commYZ = this%commYZ
+    end function
+
+    function commXZ(this)
+        type(t3d), intent(in) :: this
+        integer :: commXZ
+
+        commXZ = this%commXZ
+    end function
+
+    function px(this)
+        type(t3d), intent(in) :: this
+        integer :: px
+
+        px = this%px
+    end function
+
+    function py(this)
+        type(t3d), intent(in) :: this
+        integer :: py
+
+        py = this%py
+    end function
+
+    function pz(this)
+        type(t3d), intent(in) :: this
+        integer :: pz
+
+        pz = this%pz
+    end function
+
+    function nprocs(this)
+        type(t3d), intent(in) :: this
+        integer :: nprocs
+
+        nprocs = this%nprocs
+    end function
 
 end module 

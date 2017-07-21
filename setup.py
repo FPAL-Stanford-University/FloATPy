@@ -18,20 +18,6 @@ MPI_INCLUDE_DIRS = subprocess.check_output([MPIFC,'--showme:incdirs']).split()
 MPI_LINK_DIRS = subprocess.check_output([MPIFC,'--showme:libdirs']).split()
 MPI_LIBS = subprocess.check_output([MPIFC,'--showme:libs']).split()
 
-f2py_mpi_include = '--include-paths '
-for incdir in MPI_INCLUDE_DIRS:
-    f2py_mpi_include += incdir + ' '
-print "f2py_mpi_include = ", f2py_mpi_include
-
-# f2py_mpi_link = subprocess.check_output([MPIFC,'--showme:link']).strip()
-f2py_mpi_link = []
-for libdir in MPI_LINK_DIRS:
-    f2py_mpi_link.append('-L' + libdir)
-for lib in MPI_LIBS:
-    f2py_mpi_link.append('-l' + lib)
-print "f2py_mpi_link = ", f2py_mpi_link
-
-
 # Python version
 if sys.version_info[:2] < (2, 7):
     print('FloATPy requires Python 2.7 or newer')

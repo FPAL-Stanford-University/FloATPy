@@ -9,7 +9,7 @@ subroutine f90wrap_init(this, comm3d, nx, ny, nz, px, py, pz, periodic_, &
         type(t3d), pointer :: p => NULL()
     end type t3d_ptr_type
     type(t3d_ptr_type) :: this_ptr
-    integer, intent(out), dimension(2) :: this
+    integer, intent(in), dimension(2) :: this
     integer, intent(in) :: comm3d
     integer, intent(in) :: nx
     integer, intent(in) :: ny
@@ -22,11 +22,10 @@ subroutine f90wrap_init(this, comm3d, nx, ny, nz, px, py, pz, periodic_, &
     logical, intent(inout) :: fail
     integer, dimension(3), optional, intent(in) :: nghosts
     logical, optional, intent(in) :: createcrosscommunicators
-    allocate(this_ptr%p)
+    this_ptr = transfer(this, this_ptr)
     call init(this=this_ptr%p, comm3D=comm3d, nx=nx, ny=ny, nz=nz, px=px, py=py, &
         pz=pz, periodic_=periodic_, reorder=reorder, fail=fail, nghosts=nghosts, &
         createCrossCommunicators=createcrosscommunicators)
-    this = transfer(this_ptr, this)
 end subroutine f90wrap_init
 
 subroutine f90wrap_destroy(this)
@@ -271,6 +270,28 @@ subroutine f90wrap_fill_halo_z(this, array, n0, n1, n2)
     call fill_halo_z(this=this_ptr%p, array=array)
 end subroutine f90wrap_fill_halo_z
 
+subroutine f90wrap_optimize_decomposition(this, comm3d, nx, ny, nz, periodic, &
+    nghosts)
+    use t3dmod, only: t3d, optimize_decomposition
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(out), dimension(2) :: this
+    integer, intent(in) :: comm3d
+    integer, intent(in) :: nx
+    integer, intent(in) :: ny
+    integer, intent(in) :: nz
+    logical, dimension(3), intent(in) :: periodic
+    integer, dimension(3), optional, intent(in) :: nghosts
+    allocate(this_ptr%p)
+    call optimize_decomposition(this=this_ptr%p, comm3D=comm3d, nx=nx, ny=ny, nz=nz, &
+        periodic=periodic, nghosts=nghosts)
+    this = transfer(this_ptr, this)
+end subroutine f90wrap_optimize_decomposition
+
 subroutine f90wrap_get_sz3d(this, sz3d)
     use t3dmod, only: get_sz3d, t3d
     implicit none
@@ -369,6 +390,34 @@ subroutine f90wrap_get_szx(this, szx)
     call get_szx(this=this_ptr%p, szX=szx)
 end subroutine f90wrap_get_szx
 
+subroutine f90wrap_get_stx(this, stx)
+    use t3dmod, only: get_stx, t3d
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    integer, dimension(3), intent(inout) :: stx
+    this_ptr = transfer(this, this_ptr)
+    call get_stx(this=this_ptr%p, stX=stx)
+end subroutine f90wrap_get_stx
+
+subroutine f90wrap_get_enx(this, enx)
+    use t3dmod, only: get_enx, t3d
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    integer, dimension(3), intent(inout) :: enx
+    this_ptr = transfer(this, this_ptr)
+    call get_enx(this=this_ptr%p, enX=enx)
+end subroutine f90wrap_get_enx
+
 subroutine f90wrap_get_szy(this, szy)
     use t3dmod, only: get_szy, t3d
     implicit none
@@ -382,6 +431,34 @@ subroutine f90wrap_get_szy(this, szy)
     this_ptr = transfer(this, this_ptr)
     call get_szy(this=this_ptr%p, szY=szy)
 end subroutine f90wrap_get_szy
+
+subroutine f90wrap_get_sty(this, sty)
+    use t3dmod, only: get_sty, t3d
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    integer, dimension(3), intent(inout) :: sty
+    this_ptr = transfer(this, this_ptr)
+    call get_sty(this=this_ptr%p, stY=sty)
+end subroutine f90wrap_get_sty
+
+subroutine f90wrap_get_eny(this, eny)
+    use t3dmod, only: get_eny, t3d
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    integer, dimension(3), intent(inout) :: eny
+    this_ptr = transfer(this, this_ptr)
+    call get_eny(this=this_ptr%p, enY=eny)
+end subroutine f90wrap_get_eny
 
 subroutine f90wrap_get_szz(this, szz)
     use t3dmod, only: get_szz, t3d
@@ -397,27 +474,187 @@ subroutine f90wrap_get_szz(this, szz)
     call get_szz(this=this_ptr%p, szZ=szz)
 end subroutine f90wrap_get_szz
 
-subroutine f90wrap_optimize_decomposition(comm3d, nx, ny, nz, periodic, &
-    ret_this, nghosts)
-    use t3dmod, only: t3d, optimize_decomposition
+subroutine f90wrap_get_stz(this, stz)
+    use t3dmod, only: t3d, get_stz
     implicit none
     
     type t3d_ptr_type
         type(t3d), pointer :: p => NULL()
     end type t3d_ptr_type
-    integer, intent(in) :: comm3d
-    integer, intent(in) :: nx
-    integer, intent(in) :: ny
-    integer, intent(in) :: nz
-    logical, dimension(3), intent(in) :: periodic
-    type(t3d_ptr_type) :: ret_this_ptr
-    integer, intent(out), dimension(2) :: ret_this
-    integer, dimension(3), optional, intent(in) :: nghosts
-    allocate(ret_this_ptr%p)
-    ret_this_ptr%p = optimize_decomposition(comm3D=comm3d, nx=nx, ny=ny, nz=nz, &
-        periodic=periodic, nghosts=nghosts)
-    ret_this = transfer(ret_this_ptr, ret_this)
-end subroutine f90wrap_optimize_decomposition
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    integer, dimension(3), intent(inout) :: stz
+    this_ptr = transfer(this, this_ptr)
+    call get_stz(this=this_ptr%p, stZ=stz)
+end subroutine f90wrap_get_stz
+
+subroutine f90wrap_get_enz(this, enz)
+    use t3dmod, only: t3d, get_enz
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    integer, dimension(3), intent(inout) :: enz
+    this_ptr = transfer(this, this_ptr)
+    call get_enz(this=this_ptr%p, enZ=enz)
+end subroutine f90wrap_get_enz
+
+subroutine f90wrap_comm3d(ret_comm3d, this)
+    use t3dmod, only: t3d, comm3d
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    integer, intent(out) :: ret_comm3d
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    this_ptr = transfer(this, this_ptr)
+    ret_comm3d = comm3d(this=this_ptr%p)
+end subroutine f90wrap_comm3d
+
+subroutine f90wrap_commx(ret_commx, this)
+    use t3dmod, only: t3d, commx
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    integer, intent(out) :: ret_commx
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    this_ptr = transfer(this, this_ptr)
+    ret_commx = commx(this=this_ptr%p)
+end subroutine f90wrap_commx
+
+subroutine f90wrap_commy(ret_commy, this)
+    use t3dmod, only: t3d, commy
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    integer, intent(out) :: ret_commy
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    this_ptr = transfer(this, this_ptr)
+    ret_commy = commy(this=this_ptr%p)
+end subroutine f90wrap_commy
+
+subroutine f90wrap_commz(ret_commz, this)
+    use t3dmod, only: t3d, commz
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    integer, intent(out) :: ret_commz
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    this_ptr = transfer(this, this_ptr)
+    ret_commz = commz(this=this_ptr%p)
+end subroutine f90wrap_commz
+
+subroutine f90wrap_commxy(ret_commxy, this)
+    use t3dmod, only: t3d, commxy
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    integer, intent(out) :: ret_commxy
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    this_ptr = transfer(this, this_ptr)
+    ret_commxy = commxy(this=this_ptr%p)
+end subroutine f90wrap_commxy
+
+subroutine f90wrap_commyz(ret_commyz, this)
+    use t3dmod, only: t3d, commyz
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    integer, intent(out) :: ret_commyz
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    this_ptr = transfer(this, this_ptr)
+    ret_commyz = commyz(this=this_ptr%p)
+end subroutine f90wrap_commyz
+
+subroutine f90wrap_commxz(ret_commxz, this)
+    use t3dmod, only: t3d, commxz
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    integer, intent(out) :: ret_commxz
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    this_ptr = transfer(this, this_ptr)
+    ret_commxz = commxz(this=this_ptr%p)
+end subroutine f90wrap_commxz
+
+subroutine f90wrap_px(ret_px, this)
+    use t3dmod, only: px, t3d
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    integer, intent(out) :: ret_px
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    this_ptr = transfer(this, this_ptr)
+    ret_px = px(this=this_ptr%p)
+end subroutine f90wrap_px
+
+subroutine f90wrap_py(ret_py, this)
+    use t3dmod, only: t3d, py
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    integer, intent(out) :: ret_py
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    this_ptr = transfer(this, this_ptr)
+    ret_py = py(this=this_ptr%p)
+end subroutine f90wrap_py
+
+subroutine f90wrap_pz(ret_pz, this)
+    use t3dmod, only: pz, t3d
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    integer, intent(out) :: ret_pz
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    this_ptr = transfer(this, this_ptr)
+    ret_pz = pz(this=this_ptr%p)
+end subroutine f90wrap_pz
+
+subroutine f90wrap_nprocs(ret_nprocs, this)
+    use t3dmod, only: t3d, nprocs
+    implicit none
+    
+    type t3d_ptr_type
+        type(t3d), pointer :: p => NULL()
+    end type t3d_ptr_type
+    integer, intent(out) :: ret_nprocs
+    type(t3d_ptr_type) :: this_ptr
+    integer, intent(in), dimension(2) :: this
+    this_ptr = transfer(this, this_ptr)
+    ret_nprocs = nprocs(this=this_ptr%p)
+end subroutine f90wrap_nprocs
 
 ! End of module t3dmod defined in file t3dMod.F90
 
