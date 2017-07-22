@@ -462,7 +462,11 @@ contains
 
         if ( (maxval(this%count3DX) == minval(this%count3DX)) .and. &
              (maxval(this%countX  ) == minval(this%countX  )) .and. &
-             (maxval(this%count3DX) == minval(this%countX  )) ) this%unequalX = .false.
+             (maxval(this%count3DX) == minval(this%countX  )) ) then 
+            this%unequalX = .false.
+        else
+            this%unequalX = .true.
+        end if
 
         ! Allocate Y displacements and counts
         if ( allocated(this%disp3DY) ) deallocate(this%disp3DY); allocate( this%disp3DY(0:this%py-1) )
@@ -481,7 +485,11 @@ contains
 
         if ( (maxval(this%count3DY) == minval(this%count3DY)) .and. &
              (maxval(this%countY  ) == minval(this%countY  )) .and. &
-             (maxval(this%count3DY) == minval(this%countY  )) ) this%unequalY = .false.
+             (maxval(this%count3DY) == minval(this%countY  )) ) then
+            this%unequalY = .false.
+        else
+            this%unequalY = .true.
+        end if
 
         ! Allocate Z displacements and counts
         if ( allocated(this%disp3DZ) ) deallocate(this%disp3DZ); allocate( this%disp3DZ(0:this%pz-1) )
@@ -500,7 +508,11 @@ contains
 
         if ( (maxval(this%count3DZ) == minval(this%count3DZ)) .and. &
              (maxval(this%countZ  ) == minval(this%countZ  )) .and. &
-             (maxval(this%count3DZ) == minval(this%countZ  )) ) this%unequalZ = .false.
+             (maxval(this%count3DZ) == minval(this%countZ  )) ) then
+            this%unequalZ = .false.
+        else
+            this%unequalZ = .true.
+        end if
 
     end subroutine
    
