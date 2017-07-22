@@ -339,8 +339,8 @@ contains
             this%enXall(2,proc) = sum( this%splitx_y(0:this%coordsXall(0,proc)  ) )
         end do
         this%szX(2) = this%szXall( 2, this%rankX )
-        this%stX(2) = this%stXall( 2, this%rankX )
-        this%enX(2) = this%enXall( 2, this%rankX )
+        this%stX(2) = this%stXall( 2, this%rankX ) + this%st3D(2) - 1
+        this%enX(2) = this%enXall( 2, this%rankX ) + this%st3D(2) - 1
 
         if ( allocated(this%splitx_z) ) deallocate(this%splitx_z); allocate( this%splitx_z(0:this%px_z-1) )
         call roundrobin_split( this%sz3D(3), this%px_z, this%splitx_z)
@@ -350,8 +350,8 @@ contains
             this%enXall(3,proc) = sum( this%splitx_z(0:this%coordsXall(1,proc)  ) )
         end do
         this%szX(3) = this%szXall( 3, this%rankX )
-        this%stX(3) = this%stXall( 3, this%rankX )
-        this%enX(3) = this%enXall( 3, this%rankX )
+        this%stX(3) = this%stXall( 3, this%rankX ) + this%st3D(3) - 1
+        this%enX(3) = this%enXall( 3, this%rankX ) + this%st3D(3) - 1
 
         ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
 
@@ -381,8 +381,8 @@ contains
             this%enYall(1,proc) = sum( this%splity_x(0:this%coordsYall(0,proc)  ) )
         end do
         this%szY(1) = this%szYall( 1, this%rankY )
-        this%stY(1) = this%stYall( 1, this%rankY )
-        this%enY(1) = this%enYall( 1, this%rankY )
+        this%stY(1) = this%stYall( 1, this%rankY ) + this%st3D(1) - 1
+        this%enY(1) = this%enYall( 1, this%rankY ) + this%st3D(1) - 1
 
         if ( allocated(this%splity_z) ) deallocate(this%splity_z); allocate( this%splity_z(0:this%py_z-1) )
         call roundrobin_split( this%sz3D(3), this%py_z, this%splity_z)
@@ -392,8 +392,8 @@ contains
             this%enYall(3,proc) = sum( this%splity_z(0:this%coordsYall(1,proc)  ) )
         end do
         this%szY(3) = this%szYall( 3, this%rankY )
-        this%stY(3) = this%stYall( 3, this%rankY )
-        this%enY(3) = this%enYall( 3, this%rankY )
+        this%stY(3) = this%stYall( 3, this%rankY ) + this%st3D(3) - 1
+        this%enY(3) = this%enYall( 3, this%rankY ) + this%st3D(3) - 1
 
         ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
 
@@ -423,8 +423,8 @@ contains
             this%enZall(1,proc) = sum( this%splitz_x(0:this%coordsZall(0,proc)  ) )
         end do
         this%szZ(1) = this%szZall( 1, this%rankZ )
-        this%stZ(1) = this%stZall( 1, this%rankZ )
-        this%enZ(1) = this%enZall( 1, this%rankZ )
+        this%stZ(1) = this%stZall( 1, this%rankZ ) + this%st3D(1) - 1
+        this%enZ(1) = this%enZall( 1, this%rankZ ) + this%st3D(1) - 1
 
         if ( allocated(this%splitz_y) ) deallocate(this%splitz_y); allocate( this%splitz_y(0:this%pz_y-1) )
         call roundrobin_split( this%sz3D(2), this%pz_y, this%splitz_y)
@@ -434,8 +434,8 @@ contains
             this%enZall(2,proc) = sum( this%splitz_y(0:this%coordsZall(1,proc)  ) )
         end do
         this%szZ(2) = this%szZall( 2, this%rankZ )
-        this%stZ(2) = this%stZall( 2, this%rankZ )
-        this%enZ(2) = this%enZall( 2, this%rankZ )
+        this%stZ(2) = this%stZall( 2, this%rankZ ) + this%st3D(2) - 1
+        this%enZ(2) = this%enZall( 2, this%rankZ ) + this%st3D(2) - 1
 
         ! tind = tind + 1; times(tind) = this%time(barrier=.true.)
 
