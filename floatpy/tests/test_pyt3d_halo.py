@@ -1,8 +1,12 @@
 from mpi4py import MPI
 import numpy
+import os
+import sys
 import unittest
 
-import floatpy.parallel.pyt3d.pyt3d as pyt3d
+cwd = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(cwd + '/../parallel/pyt3d/')
+import pyt3d
 
 #------------------------------------
 # Set the MPI communicator
