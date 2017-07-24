@@ -22,6 +22,15 @@ class BaseReader(object):
     __metaclass__ = abc.ABCMeta
     
     
+    @property
+    def dimension(self):
+        """
+        Return the dimension of the domain.
+        """
+        
+        return 3
+    
+    
     @abc.abstractmethod
     def setStep(self, step):
         """

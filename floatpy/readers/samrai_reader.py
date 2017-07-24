@@ -109,6 +109,15 @@ class SamraiDataReader(BaseReader):
     
     
     @property
+    def dimension(self):
+        """
+        Return the dimension of the domain.
+        """
+        
+        return self._basic_info['dim']
+    
+    
+    @property
     def periodic_dimensions(self):
         """
         Return a tuple indicating if data is periodic in each dimension.
