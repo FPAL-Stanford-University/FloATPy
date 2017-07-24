@@ -16,7 +16,7 @@ class ParallelDataReader():
     Class to read data and exchange data across nodes with MPI.
     """
     
-    def __init__(self, serial_reader, num_ghosts = None):
+    def __init__(self, serial_reader, num_ghosts=None):
         """
         Constructor of the class.
         """
@@ -71,11 +71,12 @@ class ParallelDataReader():
         return self._serial_reader
     
     
-    @abc.abstractproperty
+    @property
     def domain_size(self):
         """
         Return a tuple containing the full domain size of this dataset.
         """
+        
         return tuple(self._domain_size[0:self._dim])
     
     
@@ -120,10 +121,25 @@ class ParallelDataReader():
     def setSubDomain(self, lo_and_hi):
         """
         Set the sub-domain for reading coordinates and data.
-        (Not yet implemented!)
         """
         
-        return
+        # Check if lo and hi are within the domain bounds first!!!
+        
+        try:
+            lo, hi = lo_and_hi
+        except ValueError:
+            raise ValueError("Pass an iterable with two items!")
+        
+        for i in range(3):
+            if lo[i] < 0 or lo[i] > self._domain_size[i]:
+                raise ValueError('Invalid indices in sub-domain. Cannot be < 0 or > domain size!')
+            if hi[i] < 0 or hi[i] > self._domain_size[i]:
+                raise ValueError('Invalid indices in sub-domain. Cannot be < 0 or > domain size!')
+            if hi[i] < lo[i]:
+                raise ValueError('Invalid indices in sub-domain. Upper bound cannot be smaller than lower bound!')
+        
+        self._lo_subdomain = (lo[0], lo[1], lo[2])
+        self._hi_subdomain = (hi[0], hi[1], hi[2])
     
     
     def getSubDomain(self):
