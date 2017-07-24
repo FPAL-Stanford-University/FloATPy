@@ -76,7 +76,7 @@ class ParallelDataReader():
         """
         Return a tuple containing the full domain size of this dataset.
         """
-        return self._domain_size[0:self._dim]
+        return tuple(self._domain_size[0:self._dim])
     
     
     @property
@@ -85,7 +85,7 @@ class ParallelDataReader():
         Return a tuple indicating if data is periodic in each dimension.
         """
         
-        return self._periodic_dimensions[0:self._dim]
+        return tuple(self._periodic_dimensions[0:self._dim])
     
     
     @property
