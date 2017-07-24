@@ -33,19 +33,34 @@ class ParallelDataReader():
         
         if self._dim == 1:
             self._periodic_dimensions = numpy.array([serial_reader.dimension[0], False, False])
-            self._domain_size = numpy.array([serial_reader.domain_size[0], 1, 1], order='F')
+            self._domain_size = numpy.array([serial_reader.domain_size[0], 1, 1])
         
         elif self._dim == 2:
             self._periodic_dimensions = numpy.array([serial_reader.dimension[0], serial_reader.dimension[1] , False])
-            self._domain_size = numpy.array([serial_reader.domain_size[0], serial_reader.domain_size[1], 1], order='F')
+            self._domain_size = numpy.array([serial_reader.domain_size[0], serial_reader.domain_size[1], 1])
         
         elif self._dim == 3:
-            self._periodic_dimensions = numpy.asarray(serial_reader.dimension, order='F')
-            self._domain_size = numpy.asarray(serial_reader.domain_size, order='F')
+            self._periodic_dimensions = numpy.asarray(serial_reader.dimension)
+            self._domain_size = numpy.asarray(serial_reader.domain_size)
+        
+        if num_ghosts is None:
+            self._num_ghosts = numpy.array([0, 0, 0], dtype=numpy.int32)
+        else:
+            if len(num_ghosts) != 3:
+                raise RuntimeError('Dimension of num_ghosts should be 3!')
+            self._num_ghosts = numpy.asarray(num_ghosts, dtype=numpy.int32)
         
         self._steps = serial_reader.steps
-        
         self._step = serial_reader.step
+        
+        self._lo_subdomain = numpy.array([0, 0, 0], dtype=self._domain_size.dtype)
+        self._hi_subdomain = self._domain_size - numpy.array([1, 1, 1], dtype=self._domain_size.dtype)
+        
+        # Get the local chunk.
+        
+        self._lo_chunk = self._lo_subdomain
+        self._hi_chunk = self._hi_subdomain
+    
     
     @property
     def serial_reader(self):
