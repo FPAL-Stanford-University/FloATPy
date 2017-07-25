@@ -4,6 +4,8 @@ import os
 import sys
 import unittest
 
+cwd = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, os.path.abspath(os.path.join(cwd, '../parallel/pyt3d')))
 import pyt3d
 
 #------------------------------------
