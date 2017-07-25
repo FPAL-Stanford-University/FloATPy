@@ -298,7 +298,7 @@ class ParallelDataReader():
                 data_vars[i][self._interior[0:self._dim]] = data_var
             
             else:
-                data_vars.append( numpy.zeros( tuple( self._full_chunk_size[0:self._dim] + (slice(0, num_components), ), \
+                data_vars.append( numpy.zeros( tuple( self._full_chunk_size[0:self._dim] ) + (num_components, ), \
                                                dtype=numpy.float64, order='F' ) )
                 data_vars[i][ self._interior[0:self._dim] + (slice(0, num_components), ) ] = data_var
             
