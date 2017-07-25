@@ -52,7 +52,8 @@ ext_pyt3d = Extension('_pyt3d',
                       libraries = MPI_LIBS)
 
 # Modules.
-modules = ['floatpy.derivatives',
+modules = ['floatpy.parallel',
+           'floatpy.derivatives',
            'floatpy.upsampling',
            'floatpy.readers']
 

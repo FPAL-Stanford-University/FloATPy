@@ -4,9 +4,7 @@ import os
 import sys
 import unittest
 
-cwd = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, os.path.abspath(os.path.join(cwd, '../parallel/pyt3d')))
-import pyt3d
+from floatpy.parallel import _t3dmod as t3dmod
 
 #------------------------------------
 # Set the MPI communicator
@@ -23,8 +21,8 @@ nghosts  = numpy.array([1,1,1], dtype=numpy.int32, order='F')
 fail = numpy.array([True])
 reorder = True
 
-# gp = pyt3d.t3dmod.t3d(fcomm, nx, ny, nz, px, py, pz, periodic, reorder, fail, nghosts=nghosts, createcrosscommunicators=True)
-gp = pyt3d.t3dmod.t3d(fcomm, nx, ny, nz, periodic, nghosts=nghosts)
+# gp = t3dmod.t3d(fcomm, nx, ny, nz, px, py, pz, periodic, reorder, fail, nghosts=nghosts, createcrosscommunicators=True)
+gp = t3dmod.t3d(fcomm, nx, ny, nz, periodic, nghosts=nghosts)
 
 # Get # of procs in x, y and z
 px = gp.px()
