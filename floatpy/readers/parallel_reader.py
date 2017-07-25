@@ -86,20 +86,19 @@ class ParallelDataReader():
         self._full_chunk_sz = numpy.zeros(3, dtype=numpy.int32, order='F') # Size of the full chunk of this process
         self._full_chunk_lo = numpy.zeros(3, dtype=numpy.int32, order='F') # Index of the start of the full chunk of this process
         self._full_chunk_hi = numpy.zeros(3, dtype=numpy.int32, order='F') # Index of the end of the full chunk of this process
-        self.grid_partition.get_sz3d(self._full_chunk_sz)
-        self.grid_partition.get_st3d(self._full_chunk_lo)
-        self.grid_partition.get_en3d(self._full_chunk_hi)
+        self.grid_partition.get_sz3dg(self._full_chunk_sz)
+        self.grid_partition.get_st3dg(self._full_chunk_lo)
+        self.grid_partition.get_en3dg(self._full_chunk_hi)
         self._full_chunk_lo = self._full_chunk_lo - 1 # Convert to 0 based indexing
 
         # Set the sub domain to read in using the serial data reader.
-        self.serial_reader.sub_domain = ( tuple(self._interior_chunk_lo), tuple(self._interior_chunk_hi) )
+        self._serial_reader.sub_domain = ( tuple(self._interior_chunk_lo), tuple(self._interior_chunk_hi) )
 
-        self._interior = numpy.zeros( tuple(self._full_chunk_sz), dtype=bool, order='F' )
-        self._interior[self._num_ghosts[0]:self._full_chunk_sz[0]-self._num_ghosts[0],
-                       self._num_ghosts[1]:self._full_chunk_sz[1]-self._num_ghosts[1],
-                       self._num_ghosts[2]:self._full_chunk_sz[2]-self._num_ghosts[2] ] = True
+        self._interior = ( slice(self._num_ghosts[0],self._full_chunk_sz[0]-self._num_ghosts[0]),
+                           slice(self._num_ghosts[1],self._full_chunk_sz[1]-self._num_ghosts[1]),
+                           slice(self._num_ghosts[2],self._full_chunk_sz[2]-self._num_ghosts[2]) )
 
-    
+
     @property
     def serial_reader(self):
         """
@@ -153,17 +152,14 @@ class ParallelDataReader():
    
     step = property(getStep, setStep)
     
-    
-    def getSubDomain(self):
+    @property
+    def sub_domain(self):
         """
         Return two tuples containing the sub-domain used in this reader
         as a lower bound (lo) and upper bound (hi).
         """
         
         return self._subdomain_lo, self._subdomain_hi
-    
-    
-    sub_domain = property(getSubDomain, setSubDomain)
     
     
     @property
@@ -211,7 +207,6 @@ class ParallelDataReader():
         and False for ghost cells
         """
         return self._interior
-
     
     def readCoordinates(self):
         """
@@ -220,7 +215,13 @@ class ParallelDataReader():
         (Not yet implemented!)
         """
         
-        return
+        x_c = numpy.zeros( tuple(self._full_chunk_sz), dtype=numpy.float64, order='F' )
+        y_c = numpy.zeros( tuple(self._full_chunk_sz), dtype=numpy.float64, order='F' )
+        z_c = numpy.zeros( tuple(self._full_chunk_sz), dtype=numpy.float64, order='F' )
+
+        x_c[self._interior], y_c[self._interior], z_c[self._interior] = self._serial_reader.readCoordinates()
+        
+        return x_c, y_c, z_c
     
     
     def readData(self, var_names):
@@ -230,4 +231,12 @@ class ParallelDataReader():
         (Not yet implemented!)
         """
         
-        return
+        if isinstance(var_names, basestring):
+            var_names = (var_names,)
+
+        data = [ numpy.zeros( tuple(self._full_chunk_sz), dtype=numpy.float64, order='F' ) for i in range(len(var_names)) ]
+
+        for i in range(len(var_names)):
+            data[i][self._interior], = self._serial_reader.readData(var_names[i])
+
+        return tuple(data)
