@@ -2945,16 +2945,34 @@ class SamraiDataReader(BaseReader):
         if len(var_names) == 1:
             return self._data[var_names[0]]
         
+        dim = self._basic_info['dim']
+        
         if data == None:
             _data = []
             for i in range(len(var_names)):
-                _data.append(self._data[var_names[i]])
+                if self._data_order == 'C':
+                    if self._data[var_names[i]].shape[0] == 1:
+                        _data.append(self._data[var_names[i]][1:(dim + 1)])
+                    else:
+                        _data.append(self._data[var_names[i]])
+                else:
+                    if self._data[var_names[i]].shape[-1] == 1:
+                        _data.append(self._data[var_names[i]][0:dim])
+                    else:
+                        _data.append(self._data[var_names[i]])
             return tuple(_data)
         else:
             for i in range(len(var_names)):
-                data[i] = self._data[var_names[i]]
-        
-        
+                if self._data_order == 'C':
+                    if self._data[var_names[i]].shape[0] == 1:
+                        data[i] = self._data[var_names[i]][1:(dim + 1)]
+                    else:
+                        data[i] = self._data[var_names[i]]
+                else:
+                    if self._data[var_names[i]].shape[-1] == 1:
+                        data[i] = self._data[var_names[i]][0:dim]
+                    else:
+                        data[i] = self._data[var_names[i]]
 
 
 BaseReader.register(SamraiDataReader)
