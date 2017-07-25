@@ -94,6 +94,11 @@ class ParallelDataReader():
         # Set the sub domain to read in using the serial data reader.
         self.serial_reader.sub_domain = ( tuple(self._interior_chunk_lo), tuple(self._interior_chunk_hi) )
 
+        self._interior = numpy.zeros( tuple(self._full_chunk_sz), dtype=bool, order='F' )
+        self._interior[self._num_ghosts[0]:self._full_chunk_sz[0]-self._num_ghosts[0],
+                       self._num_ghosts[1]:self._full_chunk_sz[1]-self._num_ghosts[1],
+                       self._num_ghosts[2]:self._full_chunk_sz[2]-self._num_ghosts[2] ] = True
+
     
     @property
     def serial_reader(self):
@@ -197,7 +202,16 @@ class ParallelDataReader():
         """
         
         return tuple(self._full_chunk_sz)
-    
+   
+
+    @property
+    def interior(self):
+        """
+        Return a boolean numpy array which is True only in the interior of the domain
+        and False for ghost cells
+        """
+        return self._interior
+
     
     def readCoordinates(self):
         """
