@@ -286,13 +286,13 @@ class ParallelDataReader():
             
             num_components = 1
             if self._dim == 1:
-                if data_var.ndim == 2
+                if data_var.ndim == 2:
                     num_components = data_var.shape[1]
             elif self._dim == 2:
-                if data_var.ndim == 3
+                if data_var.ndim == 3:
                     num_components = data_var.shape[2]
             elif self._dim == 3:
-                if data_var.ndim == 4
+                if data_var.ndim == 4:
                     num_components = data_var.shape[3]
             
             if num_components == 1:
