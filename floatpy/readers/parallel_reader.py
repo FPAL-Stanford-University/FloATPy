@@ -282,7 +282,7 @@ class ParallelDataReader():
         data_vars = []
         
         for i in range(len(var_names)):
-            data_var = self._serial_reader.readData(var_names[i])
+            data_var = self._serial_reader.readData(var_names[i])[0]
             
             num_components = 1
             if self._dim == 1:
