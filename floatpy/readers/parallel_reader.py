@@ -16,7 +16,7 @@ class ParallelDataReader():
     def __init__(self, comm, serial_reader, sub_domain_lo_hi=None, num_ghosts=None):
         """
         Constructor of the class.
-
+        
         comm : mpi4py communicator object
         serial_reader : a concrete object that extends BaseReader
         sub_domain_lo_hi : Iterable of size 2 with the first entry being lo and second entry being hi
@@ -32,10 +32,10 @@ class ParallelDataReader():
         # Set the communicator and it's Fortran value
         self._comm  = comm
         self._fcomm = comm.py2f()
-
+        
         # Set the serial data reader to use
         self._serial_reader = serial_reader
-       
+        
         # Dimensionality of the data set (1D, 2D or 3D)
         self._dim = serial_reader.dimension
         
@@ -100,33 +100,40 @@ class ParallelDataReader():
             self._subdomain_size = self._subdomain_hi - self._subdomain_lo
         
         # Create the parallel grid partition object that handles all the communication stuff.
-        self.grid_partition = pyt3d.t3dmod.t3d(self._fcomm, self._subdomain_size[0], self._subdomain_size[1], self._subdomain_size[2],
+        self.grid_partition = pyt3d.t3dmod.t3d(self._fcomm, \
+                                               self._subdomain_size[0], self._subdomain_size[1], self._subdomain_size[2], \
                                                self._periodic_dimensions, nghosts=self._num_ghosts )
-
-        self._interior_chunk_size = numpy.zeros(3, dtype=numpy.int32, order='F') # Size of the interior chunk of this process
-        self._interior_chunk_lo = numpy.zeros(3, dtype=numpy.int32, order='F') # Index of the start of the interior chunk of this process
-        self._interior_chunk_hi = numpy.zeros(3, dtype=numpy.int32, order='F') # Index of the end of the interior chunk of this process
+        
+        # Size of the interior chunk of this process.
+        self._interior_chunk_size = numpy.zeros(3, dtype=numpy.int32, order='F')
+        # Indices of the start and end of the interior chunk of this process.
+        self._interior_chunk_lo = numpy.zeros(3, dtype=numpy.int32, order='F')
+        self._interior_chunk_hi = numpy.zeros(3, dtype=numpy.int32, order='F')
+        
         self.grid_partition.get_sz3d(self._interior_chunk_size)
         self.grid_partition.get_st3d(self._interior_chunk_lo)
         self.grid_partition.get_en3d(self._interior_chunk_hi)
         self._interior_chunk_lo = self._interior_chunk_lo - 1 # Convert to 0 based indexing
-
-        self._full_chunk_size = numpy.zeros(3, dtype=numpy.int32, order='F') # Size of the full chunk of this process
-        self._full_chunk_lo = numpy.zeros(3, dtype=numpy.int32, order='F') # Index of the start of the full chunk of this process
-        self._full_chunk_hi = numpy.zeros(3, dtype=numpy.int32, order='F') # Index of the end of the full chunk of this process
+        
+        # Size of the full chunk of this process.
+        self._full_chunk_size = numpy.zeros(3, dtype=numpy.int32, order='F')
+        # Indices of the start and end of the full chunk of this process.
+        self._full_chunk_lo = numpy.zeros(3, dtype=numpy.int32, order='F')
+        self._full_chunk_hi = numpy.zeros(3, dtype=numpy.int32, order='F')
+        
         self.grid_partition.get_sz3dg(self._full_chunk_size)
         self.grid_partition.get_st3dg(self._full_chunk_lo)
         self.grid_partition.get_en3dg(self._full_chunk_hi)
         self._full_chunk_lo = self._full_chunk_lo - 1 # Convert to 0 based indexing
-
+        
         # Set the sub domain to read in using the serial data reader.
         self._serial_reader.sub_domain = ( tuple(self._interior_chunk_lo), tuple(self._interior_chunk_hi) )
-
-        self._interior = ( slice(self._num_ghosts[0],self._full_chunk_size[0]-self._num_ghosts[0]),
-                           slice(self._num_ghosts[1],self._full_chunk_size[1]-self._num_ghosts[1]),
-                           slice(self._num_ghosts[2],self._full_chunk_size[2]-self._num_ghosts[2]) )
-
-
+        
+        self._interior = ( slice(self._num_ghosts[0],self._full_chunk_size[0] - self._num_ghosts[0]),
+                           slice(self._num_ghosts[1],self._full_chunk_size[1] - self._num_ghosts[1]),
+                           slice(self._num_ghosts[2],self._full_chunk_size[2] - self._num_ghosts[2]) )
+    
+    
     @property
     def serial_reader(self):
         """
@@ -193,8 +200,8 @@ class ParallelDataReader():
     @property
     def interior_chunk(self):
         """
-        Return two tuples containing the interior chunk of sub-domain used in this reader
-        as a lower bound (lo) and upper bound (hi).
+        Return two tuples containing the interior chunk of sub-domain used in this reader as a lower bound (lo)
+        and upper bound (hi).
         """
         
         return tuple(self._interior_chunk_lo[0:self._dim]), tuple(self._interior_chunk_hi[0:self._dim])
@@ -212,8 +219,8 @@ class ParallelDataReader():
     @property
     def full_chunk(self):
         """
-        Return two tuples containing the full chunk of sub-domain used in this reader
-        as a lower bound (lo) and upper bound (hi).
+        Return two tuples containing the full chunk of sub-domain used in this reader as a lower bound (lo) and
+        upper bound (hi).
         """
         
         return tuple(self._full_chunk_lo[0:self._dim]), tuple(self._full_chunk_hi[0:self._dim])
@@ -227,12 +234,11 @@ class ParallelDataReader():
         
         return tuple(self._full_chunk_size[0:self._dim])
    
-
+    
     @property
     def interior(self):
         """
-        Return a boolean numpy array which is True only in the interior of the domain
-        and False for ghost cells
+        Return a boolean numpy array which is True only in the interior of the domain and False for ghost cells.
         """
         
         return self._interior[0:self._dim]
@@ -248,8 +254,15 @@ class ParallelDataReader():
         x_c = numpy.zeros( tuple(self._full_chunk_size), dtype=numpy.float64, order='F' )
         y_c = numpy.zeros( tuple(self._full_chunk_size), dtype=numpy.float64, order='F' )
         z_c = numpy.zeros( tuple(self._full_chunk_size), dtype=numpy.float64, order='F' )
-
+        
         x_c[self._interior], y_c[self._interior], z_c[self._interior] = self._serial_reader.readCoordinates()
+        
+        # Communicate to get the coordinates in the ghost cell regions.
+        if self._dim == 1:
+        
+        elif self._dim == 2:
+        
+        elif self._dim == 3:
         
         return x_c, y_c, z_c
     
@@ -263,10 +276,37 @@ class ParallelDataReader():
         
         if isinstance(var_names, basestring):
             var_names = (var_names,)
-
-        data = [ numpy.zeros( tuple(self._full_chunk_size[0:self._dim]), dtype=numpy.float64, order='F' ) for i in range(len(var_names)) ]
-
+        
+        data_vars = []
+        
         for i in range(len(var_names)):
-            data[i][self._interior[0:self._dim]], = self._serial_reader.readData(var_names[i])
-
-        return tuple(data)
+            data_var = self._serial_reader.readData(var_names[i])
+            
+            num_components = 1
+            if self._dim == 1:
+                if data_var.ndim == 2
+                    num_components = data_var.shape[1]
+            elif self._dim == 2:
+                if data_var.ndim == 3
+                    num_components = data_var.shape[2]
+            elif self._dim == 3:
+                if data_var.ndim == 4
+                    num_components = data_var.shape[3]
+            
+            if num_components == 1:
+                data_vars.append( numpy.zeros( tuple(self._full_chunk_size[0:self._dim]), dtype=numpy.float64, order='F' ) )
+                data_vars[i][self._interior[0:self._dim]] = data_var
+            
+            else:
+                data_vars.append( numpy.zeros( tuple( self._full_chunk_size[0:self._dim] + (slice(0, num_components), ), \
+                                               dtype=numpy.float64, order='F' ) )
+                data_vars[i][ self._interior[0:self._dim] + (slice(0, num_components), ) ] = data_var
+            
+            # Communicate to get the data in the ghost cell regions.
+            if self._dim == 1:
+            
+            elif self._dim == 2:
+            
+            elif self._dim == 3:
+        
+        return tuple(data_vars)
