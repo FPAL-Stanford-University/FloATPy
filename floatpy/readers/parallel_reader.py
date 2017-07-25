@@ -258,11 +258,13 @@ class ParallelDataReader():
         x_c[self._interior], y_c[self._interior], z_c[self._interior] = self._serial_reader.readCoordinates()
         
         # Communicate to get the coordinates in the ghost cell regions.
+        '''
         if self._dim == 1:
         
         elif self._dim == 2:
         
         elif self._dim == 3:
+        '''
         
         return x_c, y_c, z_c
     
@@ -303,10 +305,12 @@ class ParallelDataReader():
                 data_vars[i][ self._interior[0:self._dim] + (slice(0, num_components), ) ] = data_var
             
             # Communicate to get the data in the ghost cell regions.
+            '''
             if self._dim == 1:
             
             elif self._dim == 2:
             
             elif self._dim == 3:
+            '''
         
         return tuple(data_vars)
