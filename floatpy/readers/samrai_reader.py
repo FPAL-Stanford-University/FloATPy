@@ -2918,7 +2918,7 @@ class SamraiDataReader(BaseReader):
         return getCombinedCoordinatesInSubdomainFromAllLevels()
     
     
-    def readData(self, var_names):
+    def readData(self, var_names, data=None):
         """
         Read the data of several variables in the stored sub-domain.
         Default to the full domain when the sub-domain is not set.
@@ -2936,12 +2936,16 @@ class SamraiDataReader(BaseReader):
         if len(var_names) == 1:
             return self._data[var_names[0]]
         
-        data = []
+        if data == None:
+            _data = []
+            for i in range(len(var_names)):
+                _data.append(self._data[var_names[i]])
+            return tuple(_data)
+        else:
+            for i in range(len(var_names)):
+                data[i] = self._data[var_names[i]]
         
-        for i in range(len(var_names)):
-            data.append(self._data[var_names[i]])
         
-        return tuple(data)
 
 
 BaseReader.register(SamraiDataReader)

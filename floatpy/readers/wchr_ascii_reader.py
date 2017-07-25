@@ -305,7 +305,7 @@ class WchrAsciiReader(BaseReader):
         return x_c, y_c, z_c
     
     
-    def readData(self, var_names):
+    def readData(self, var_names, data=None):
         """
         Method to read in the a chunk of the data for variables at current vizdump step.
         """
@@ -315,13 +315,16 @@ class WchrAsciiReader(BaseReader):
             var_names = (var_names,)
         
         chunk_size = (self.chunk[0][1]-self.chunk[0][0], self.chunk[1][1]-self.chunk[1][0], self.chunk[2][1]-self.chunk[2][0])
-        data = [ numpy.zeros( chunk_size ) for i in range(len(var_names)) ]
+        if data == None:
+            _data = [ numpy.zeros( chunk_size ) for i in range(len(var_names)) ]
+        else:
+            _data = data
         
         ny = self._domain_size[1]
         
         for i in range(len(var_names)):
             var = var_names[i]
-            v   = data[i]
+            v   = _data[i]
             
             ind = self.inds[var]
             
@@ -352,7 +355,8 @@ class WchrAsciiReader(BaseReader):
                               max(0,self.chunk[1][0]- 0   ):min(  ny -  0  ,self.chunk[1][1]- 0   ),
                               max(0,self.chunk[2][0]-lo[1]):min(hi[1]-lo[1],self.chunk[2][1]-lo[1]) ]
         
-        return tuple(data)
+        if data == None:
+            return tuple(_data)
     
     
     def plotThreeSlice(self, var, index):
