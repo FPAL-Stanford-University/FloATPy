@@ -136,6 +136,15 @@ class SamraiDataReader(BaseReader):
     
     
     @property
+    def data_order(self):
+        """
+        Return the data order.
+        """
+        
+        return self._data_order
+    
+    
+    @property
     def steps(self):
         """
         Return all of the steps.

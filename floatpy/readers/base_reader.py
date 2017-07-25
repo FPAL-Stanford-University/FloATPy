@@ -22,13 +22,12 @@ class BaseReader(object):
     __metaclass__ = abc.ABCMeta
     
     
-    @property
+    @abc.abstractmethod
     def dimension(self):
         """
         Return the dimension of the domain.
         """
-        
-        return 3
+        return
     
     
     @abc.abstractmethod
@@ -98,6 +97,14 @@ class BaseReader(object):
     def steps(self):
         """
         Return all of the steps.
+        """
+        return
+    
+    
+    @abc.abstractproperty
+    def data_order(self):
+        """
+        Return the data order.
         """
         return
     

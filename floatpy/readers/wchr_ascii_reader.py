@@ -149,6 +149,15 @@ class WchrAsciiReader(BaseReader):
     
     
     @property
+    def dimension(self):
+        """
+        Return the dimension of the domain.
+        """
+        
+        return 3
+    
+    
+    @property
     def periodic_dimensions(self):
         """
         Return a tuple indicating if data is periodic in each dimension.
@@ -164,6 +173,15 @@ class WchrAsciiReader(BaseReader):
         """
         
         return 0.
+    
+    
+    @property
+    def data_order(self):
+        """
+        Return the data order.
+        """
+        
+        return 'F'
     
     
     @property
