@@ -13,13 +13,13 @@ class ParallelDataReader():
     Class to read data and exchange data across nodes with MPI.
     """
     
-    def __init__(self, comm, serial_reader, sub_domain_lo_hi=None, num_ghosts=None):
+    def __init__(self, comm, serial_reader, sub_domain=None, num_ghosts=None):
         """
         Constructor of the class.
         
         comm : mpi4py communicator object
-        serial_reader : a concrete object that extends BaseReader
-        sub_domain_lo_hi : Iterable of size 2 with the first entry being lo and second entry being hi
+        serial_reader : a concrete object that extends BaseReader (Do not use this outside of this class)
+        sub_domain : Iterable of size 2 with the first entry being lo and second entry being hi
         num_ghosts : numpy integer array of size 3 with the no. of ghost values in the x, y and z directions respectively
         """
         
@@ -74,7 +74,7 @@ class ParallelDataReader():
             self._periodic_dimensions = numpy.asarray(serial_reader.periodic_dimensions)
             self._domain_size = numpy.asarray(serial_reader.domain_size)
        
-        if sub_domain_lo_hi == None:
+        if sub_domain == None:
             self._subdomain_lo = numpy.array([0, 0, 0], dtype=self._domain_size.dtype)
             self._subdomain_hi = self._domain_size
             self._subdomain_size = self._domain_size
@@ -83,9 +83,9 @@ class ParallelDataReader():
             raise NotImplementedError('Reading in only a partial sub domain is not yet implemented. Sorry!')
             
             try:
-                lo, hi = sub_domain_lo_hi
+                lo, hi = sub_domain
             except ValueError:
-                raise ValueError("Pass an iterable of sub_domain_lo_hi with two items!")
+                raise ValueError("Pass an iterable of sub_domain with two items!")
             
             for i in range(self._dim):
                 if lo[i] < 0 or lo[i] > self._domain_size[i]:
@@ -244,7 +244,7 @@ class ParallelDataReader():
         return self._interior[0:self._dim]
     
     
-    def readCoordinates(self):
+    def readCoordinates(self, communicate=False):
         """
         Get the coordinates of the stored sub-domain.
         Default to the full domain when the sub-domain is not set.
@@ -258,18 +258,20 @@ class ParallelDataReader():
         x_c[self._interior], y_c[self._interior], z_c[self._interior] = self._serial_reader.readCoordinates()
         
         # Communicate to get the coordinates in the ghost cell regions.
-        '''
-        if self._dim == 1:
-        
-        elif self._dim == 2:
-        
-        elif self._dim == 3:
-        '''
+        if communicate:
+            '''
+            if self._dim == 1:
+            
+            elif self._dim == 2:
+            
+            elif self._dim == 3:
+            '''
+            pass
         
         return x_c, y_c, z_c
     
     
-    def readData(self, var_names):
+    def readData(self, var_names, communicate=False):
         """
         Read the data of several variables in the assigned chunk of the stored sub-domain.
         Default to the full domain when the sub-domain is not set.
@@ -282,19 +284,12 @@ class ParallelDataReader():
         data_vars = []
         
         for i in range(len(var_names)):
-            data_var = self._serial_reader.readData(var_names[i])[0]
+            data_var, = self._serial_reader.readData(var_names[i])
             
             num_components = 1
-            if self._dim == 1:
-                if data_var.ndim == 2:
-                    num_components = data_var.shape[1]
-            elif self._dim == 2:
-                if data_var.ndim == 3:
-                    num_components = data_var.shape[2]
-            elif self._dim == 3:
-                if data_var.ndim == 4:
-                    num_components = data_var.shape[3]
-            
+            if data_var.ndim == self._dim + 1:
+                num_components = data_var.shape[self._dim]
+
             if num_components == 1:
                 data_vars.append( numpy.zeros( tuple(self._full_chunk_size[0:self._dim]), dtype=numpy.float64, order='F' ) )
                 data_vars[i][self._interior[0:self._dim]] = data_var
@@ -305,12 +300,14 @@ class ParallelDataReader():
                 data_vars[i][ self._interior[0:self._dim] + (slice(0, num_components), ) ] = data_var
             
             # Communicate to get the data in the ghost cell regions.
-            '''
-            if self._dim == 1:
-            
-            elif self._dim == 2:
-            
-            elif self._dim == 3:
-            '''
+            if communicate:
+                '''
+                if self._dim == 1:
+                
+                elif self._dim == 2:
+                
+                elif self._dim == 3:
+                '''
+                pass
         
         return tuple(data_vars)
