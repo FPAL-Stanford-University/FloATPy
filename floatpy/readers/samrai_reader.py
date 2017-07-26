@@ -736,20 +736,6 @@ class SamraiDataReader(BaseReader):
         num_patches = self._basic_info['num_patches']
         num_patches_root_level = num_patches[0]
         
-        # Check the length of num_ghosts is correct.
-        
-        if dim == 1:
-            if len(num_ghosts) < 1:
-                raise RuntimeError('Dimension of num_ghosts is not correct!')
-        
-        elif dim == 2:
-            if len(num_ghosts) < 2:
-                raise RuntimeError('Dimension of num_ghosts is not correct!')
-        
-        elif dim == 3:
-            if len(num_ghosts) < 3:
-                raise RuntimeError('Dimension of num_ghosts is not correct!')
-        
         if num_ghosts is None:
             if dim == 1:
                 num_ghosts = (0,)
@@ -761,7 +747,20 @@ class SamraiDataReader(BaseReader):
                 num_ghosts = (0, 0, 0)
         
         else:
-            num_ghosts = numpy.asarray(num_ghosts[0:dim])
+            # Check the length of num_ghosts is correct.
+            if dim == 1:
+                if len(num_ghosts) < 1:
+                    raise RuntimeError('Dimension of num_ghosts is not correct!')
+            
+            elif dim == 2:
+                if len(num_ghosts) < 2:
+                    raise RuntimeError('Dimension of num_ghosts is not correct!')
+            
+            elif dim == 3:
+                if len(num_ghosts) < 3:
+                    raise RuntimeError('Dimension of num_ghosts is not correct!')
+            
+        num_ghosts = numpy.asarray(num_ghosts[0:dim])
         
         # Get the refinement ratios from different levels to finest level.
         
@@ -2905,8 +2904,8 @@ class SamraiDataReader(BaseReader):
             z_patch_end_idx = min(patch_data.shape[2], z_patch_end_idx)
             
             if (x_local_start_idx < x_local_end_idx) and \
-                (y_local_start_idx < y_local_end_idx) and \
-                (z_local_start_idx < z_local_end_idx):
+               (y_local_start_idx < y_local_end_idx) and \
+               (z_local_start_idx < z_local_end_idx):
                 subdomain_data[x_local_start_idx:x_local_end_idx, \
                                       y_local_start_idx:y_local_end_idx, \
                                       z_local_start_idx:z_local_end_idx] = \
@@ -2924,7 +2923,36 @@ class SamraiDataReader(BaseReader):
         Default to the full domain when the sub-domain is not set.
         """
         
-        return getCombinedCoordinatesInSubdomainFromAllLevels()
+        # Get the dimension of the problem.
+        
+        dim = self._basic_info['dim']
+        
+        x_coords, y_coords, z_coords = self.getCombinedCoordinatesInSubdomainFromAllLevels()
+        
+        x_c = []
+        y_c = []
+        z_c = []
+        
+        if dim == 1:
+            x_c = x_coords
+        elif dim == 2:
+            if self._data_order == 'C':
+                x_c, y_c = numpy.meshgrid(x_coords, y_coords, indexing = 'ij', sparse = False, copy=True)
+            else:
+                x_c, y_c = numpy.meshgrid(x_coords, y_coords, indexing = 'ij', sparse = False, copy=False)
+                x_c = numpy.asfortranarray(x_c)
+                y_c = numpy.asfortranarray(y_c)
+        
+        elif dim == 3:
+            if self._data_order == 'C':
+                x_c, y_c, z_c = numpy.meshgrid(x_coords, y_coords, z_coords, indexing = 'ij', sparse = False, copy=True)
+            else:
+                x_c, y_c, z_c = numpy.meshgrid(x_coords, y_coords, z_coords, indexing = 'ij', sparse = False, copy=False)
+                x_c = numpy.asfortranarray(x_c)
+                y_c = numpy.asfortranarray(y_c)
+                z_c = numpy.asfortranarray(z_c)
+        
+        return x_c, y_c, z_c
     
     
     def readData(self, var_names, data=None):
@@ -2934,7 +2962,7 @@ class SamraiDataReader(BaseReader):
         """
         
         if self._data_loaded == True:
-            clearData()
+            self.clearData()
         
         # If a simple string is passed in, convert to a tuple.
         if isinstance(var_names, basestring):
@@ -2952,12 +2980,12 @@ class SamraiDataReader(BaseReader):
             for i in range(len(var_names)):
                 if self._data_order == 'C':
                     if self._data[var_names[i]].shape[0] == 1:
-                        _data.append(self._data[var_names[i]][1:(dim + 1)])
+                        _data.append(numpy.squeeze(self._data[var_names[i]], 0))
                     else:
                         _data.append(self._data[var_names[i]])
                 else:
                     if self._data[var_names[i]].shape[-1] == 1:
-                        _data.append(self._data[var_names[i]][0:dim])
+                        _data.append(numpy.squeeze(self._data[var_names[i]], dim))
                     else:
                         _data.append(self._data[var_names[i]])
             return tuple(_data)
@@ -2965,12 +2993,12 @@ class SamraiDataReader(BaseReader):
             for i in range(len(var_names)):
                 if self._data_order == 'C':
                     if self._data[var_names[i]].shape[0] == 1:
-                        data[i] = self._data[var_names[i]][1:(dim + 1)]
+                        data[i] = numpy.squeeze(self._data[var_names[i]], 0)
                     else:
                         data[i] = self._data[var_names[i]]
                 else:
                     if self._data[var_names[i]].shape[-1] == 1:
-                        data[i] = self._data[var_names[i]][0:dim]
+                        data[i] = numpy.squeeze(self._data[var_names[i]], dim)
                     else:
                         data[i] = self._data[var_names[i]]
 

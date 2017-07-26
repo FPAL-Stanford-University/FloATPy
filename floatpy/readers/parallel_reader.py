@@ -257,20 +257,37 @@ class ParallelDataReader():
         y_c = numpy.zeros( tuple(self._full_chunk_size), dtype=numpy.float64, order='F' )
         z_c = numpy.zeros( tuple(self._full_chunk_size), dtype=numpy.float64, order='F' )
         
-        x_c[self._interior], y_c[self._interior], z_c[self._interior] = self._serial_reader.readCoordinates()
+        if self._dim == 1:
+            x_coords, y_coords, z_coords = self._serial_reader.readCoordinates()
+            nx = x_coords.shape[0]
+            x_coords = x_coords.reshape((nx, 1, 1), order='F')
+            x_c[self._interior] = x_coords
+        
+        elif self._dim == 2:
+            x_coords, y_coords, z_coords = self._serial_reader.readCoordinates()
+            
+            nx = x_coords.shape[0]
+            ny = x_coords.shape[1]
+            
+            x_coords = x_coords.reshape((nx, ny, 1), order='F')
+            y_coords = y_coords.reshape((nx, ny, 1), order='F')
+            
+            x_c[self._interior] = x_coords
+            y_c[self._interior] = y_coords
+        
+        else:
+            x_c[self._interior], y_c[self._interior], z_c[self._interior] = self._serial_reader.readCoordinates()
         
         # Communicate to get the coordinates in the ghost cell regions.
         if communicate:
-            '''
-            if self._dim == 1:
-            
-            elif self._dim == 2:
-            
-            elif self._dim == 3:
-            '''
             pass
         
-        return x_c, y_c, z_c
+        if self._dim == 1:
+            return numpy.squeeze(x_c, (1, 2)), [], []
+        elif self._dim == 2:
+            return numpy.squeeze(x_c, 2), numpy.squeeze(y_c, 2), []
+        else:
+            return x_c, y_c, z_c
     
     
     def readData(self, var_names, communicate=False):
