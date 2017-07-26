@@ -53,6 +53,7 @@ ext_pyt3d = Extension('_pyt3d',
 
 # Modules.
 modules = ['floatpy.parallel',
+           'floatpy.parallel.pyt3d',
            'floatpy.derivatives',
            'floatpy.upsampling',
            'floatpy.readers']
