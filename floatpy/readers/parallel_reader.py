@@ -285,7 +285,21 @@ class ParallelDataReader():
         
         # Communicate to get the coordinates in the ghost cell regions.
         if communicate:
-            pass
+            self.grid_partition.fill_halo_x(x_c)
+            
+            if self._dim > 1:
+                self.grid_partition.fill_halo_y(x_c)
+                
+                self.grid_partition.fill_halo_x(y_c)
+                self.grid_partition.fill_halo_y(y_c)
+            
+            if self._dim > 2:
+                self.grid_partition.fill_halo_z(x_c)
+                self.grid_partition.fill_halo_z(y_c)
+                
+                self.grid_partition.fill_halo_x(z_c)
+                self.grid_partition.fill_halo_y(z_c)
+                self.grid_partition.fill_halo_z(z_c)
         
         if self._dim == 1:
             return numpy.squeeze(x_c, (1, 2)), [], []
@@ -325,13 +339,25 @@ class ParallelDataReader():
             
             # Communicate to get the data in the ghost cell regions.
             if communicate:
-                '''
+                shape_modified = data_vars[i].shape[0:self._dim]
+                
                 if self._dim == 1:
-                
+                    shape_modified = numpy.append(shape_modified, [1, 1])
                 elif self._dim == 2:
+                    shape_modified = numpy.append(shape_modified, 1)
                 
-                else:
-                '''
-                pass
+                for ic in range(0, num_components):
+                    if self._dim == 1:
+                        data_to_communicate = numpy.reshape(data_vars[i][:, ic], shape_modified)
+                        self.grid_partition.fill_halo_x(data_to_communicate)
+                    elif self._dim == 2:
+                        data_to_communicate = numpy.reshape(data_vars[i][:, :, ic], shape_modified)
+                        self.grid_partition.fill_halo_x(data_to_communicate)
+                        self.grid_partition.fill_halo_y(data_to_communicate)
+                    else:
+                        data_to_communicate = numpy.reshape(data_vars[i][:, :, :, ic], shape_modified)
+                        self.grid_partition.fill_halo_x(data_to_communicate)
+                        self.grid_partition.fill_halo_y(data_to_communicate)
+                        self.grid_partition.fill_halo_z(data_to_communicate)
         
         return tuple(data_vars)
