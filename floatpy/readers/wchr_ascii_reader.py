@@ -271,9 +271,9 @@ class WchrAsciiReader(BaseReader):
         """
         
         chunk_size = (self.chunk[0][1]-self.chunk[0][0], self.chunk[1][1]-self.chunk[1][0], self.chunk[2][1]-self.chunk[2][0])
-        x_c = numpy.zeros( chunk_size )
-        y_c = numpy.zeros( chunk_size )
-        z_c = numpy.zeros( chunk_size )
+        x_c = numpy.empty(chunk_size, order='F')
+        y_c = numpy.empty(chunk_size, order='F')
+        z_c = numpy.empty(chunk_size, order='F')
         
         ny = self._domain_size[1]
         
