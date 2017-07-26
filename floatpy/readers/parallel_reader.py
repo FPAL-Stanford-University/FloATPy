@@ -346,16 +346,31 @@ class ParallelDataReader():
                 elif self._dim == 2:
                     shape_modified = numpy.append(shape_modified, 1)
                 
+                data_to_communicate = []
                 for ic in range(0, num_components):
                     if self._dim == 1:
-                        data_to_communicate = numpy.reshape(data_vars[i][:, ic], shape_modified)
+                        if num_components == 1:
+                            data_to_communicate = numpy.reshape(data_vars[i][:], shape_modified)
+                        else:
+                            data_to_communicate = numpy.reshape(data_vars[i][:, ic], shape_modified)
+		        
                         self.grid_partition.fill_halo_x(data_to_communicate)
+                    
                     elif self._dim == 2:
-                        data_to_communicate = numpy.reshape(data_vars[i][:, :, ic], shape_modified)
+                        if num_components == 1:
+                            data_to_communicate = numpy.reshape(data_vars[i][:, :], shape_modified)
+                        else:
+                            data_to_communicate = numpy.reshape(data_vars[i][:, :, ic], shape_modified)
+		        
                         self.grid_partition.fill_halo_x(data_to_communicate)
                         self.grid_partition.fill_halo_y(data_to_communicate)
+                    
                     else:
-                        data_to_communicate = numpy.reshape(data_vars[i][:, :, :, ic], shape_modified)
+                        if num_components == 1:
+                            data_to_communicate = data_vars[i]
+                        else:
+                            data_to_communicate = data_vars[i][:, :, :, ic]
+		        
                         self.grid_partition.fill_halo_x(data_to_communicate)
                         self.grid_partition.fill_halo_y(data_to_communicate)
                         self.grid_partition.fill_halo_z(data_to_communicate)
