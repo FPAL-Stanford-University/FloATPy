@@ -15,9 +15,9 @@ addons:
         - build-essential
         - libblas-dev
         - liblapack-dev
-        - openmpi-bin
-        - openmpi-doc
-        - libopenmpi-dev
+
+before_install:
+  - sh ./travis/install-openMPI.sh
 
 # command to install dependencies
 install:
