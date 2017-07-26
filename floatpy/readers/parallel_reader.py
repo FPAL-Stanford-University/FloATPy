@@ -76,7 +76,7 @@ class ParallelDataReader():
        
         if sub_domain == None:
             self._subdomain_lo = numpy.array([0, 0, 0], dtype=self._domain_size.dtype)
-            self._subdomain_hi = self._domain_size
+            self._subdomain_hi = self._domain_size - 1
             self._subdomain_size = self._domain_size
         else:
             # Need to change periodic_dimensions if only reading in a sub-domain
@@ -97,7 +97,7 @@ class ParallelDataReader():
             
             self._subdomain_lo = numpy.asarray(lo)
             self._subdomain_hi = numpy.asarray(hi)
-            self._subdomain_size = self._subdomain_hi - self._subdomain_lo
+            self._subdomain_size = self._subdomain_hi - self._subdomain_lo + 1
         
         # Create the parallel grid partition object that handles all the communication stuff.
         self.grid_partition = pyt3d.t3dmod.t3d(self._fcomm, \
@@ -114,6 +114,7 @@ class ParallelDataReader():
         self.grid_partition.get_st3d(self._interior_chunk_lo)
         self.grid_partition.get_en3d(self._interior_chunk_hi)
         self._interior_chunk_lo = self._interior_chunk_lo - 1 # Convert to 0 based indexing
+        self._interior_chunk_hi = self._interior_chunk_hi - 1 # Convert to 0 based indexing
         
         # Size of the full chunk of this process.
         self._full_chunk_size = numpy.zeros(3, dtype=numpy.int32, order='F')
@@ -125,6 +126,7 @@ class ParallelDataReader():
         self.grid_partition.get_st3dg(self._full_chunk_lo)
         self.grid_partition.get_en3dg(self._full_chunk_hi)
         self._full_chunk_lo = self._full_chunk_lo - 1 # Convert to 0 based indexing
+        self._full_chunk_hi = self._full_chunk_hi - 1 # Convert to 0 based indexing
         
         # Set the sub domain to read in using the serial data reader.
         self._serial_reader.sub_domain = ( tuple(self._interior_chunk_lo), tuple(self._interior_chunk_hi) )

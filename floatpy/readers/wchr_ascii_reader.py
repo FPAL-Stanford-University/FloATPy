@@ -119,9 +119,9 @@ class WchrAsciiReader(BaseReader):
                 raise ValueError('Invalid indices in chunk. Cannot be < 0 or > domain size!')
             if hi[i] < lo[i]:
                 raise ValueError('Invalid indices in chunk. Upper bound cannot be smaller than lower bound!')
-
+        
         # Now set the chunk to be used later.
-        self.chunk = ((lo[0],hi[0]),(lo[1],hi[1]),(lo[2],hi[2]))
+        self.chunk = ( (lo[0], hi[0] + 1), (lo[1], hi[1] + 1), (lo[2], hi[2] + 1) )
     
     
     def getSubDomain(self):
@@ -131,7 +131,7 @@ class WchrAsciiReader(BaseReader):
         """
         
         lo = (self.chunk[0][0], self.chunk[1][0], self.chunk[2][0])
-        hi = (self.chunk[0][1], self.chunk[1][1], self.chunk[2][1])
+        hi = (self.chunk[0][1] - 1, self.chunk[1][1] - 1, self.chunk[2][1] - 1)
         
         return lo, hi
     
