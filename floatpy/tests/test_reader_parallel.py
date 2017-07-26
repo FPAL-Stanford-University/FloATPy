@@ -24,7 +24,7 @@ class TestReaderWchrAscii(unittest.TestCase):
         
         # Read full coordinates.
         
-        self.serial_reader.sub_domain = (0,0,0), self.serial_reader.domain_size
+        self.serial_reader.sub_domain = (0,0,0), (self.serial_reader.domain_size[0]-1, self.serial_reader.domain_size[1]-1, self.serial_reader.domain_size[2]-1)
         x, y, z = self.serial_reader.readCoordinates()
 
         # Read chunked coordinates.
@@ -33,9 +33,9 @@ class TestReaderWchrAscii(unittest.TestCase):
 
         # Check that the chunked coordinates are equal to the corresponding full coords.
         
-        xerr = numpy.absolute(x[ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - x_c[self.reader.interior]).max()
-        yerr = numpy.absolute(y[ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - y_c[self.reader.interior]).max()
-        zerr = numpy.absolute(z[ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - z_c[self.reader.interior]).max()
+        xerr = numpy.absolute(x[ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, self.lo[2]:self.hi[2]+1 ] - x_c[self.reader.interior]).max()
+        yerr = numpy.absolute(y[ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, self.lo[2]:self.hi[2]+1 ] - y_c[self.reader.interior]).max()
+        zerr = numpy.absolute(z[ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, self.lo[2]:self.hi[2]+1 ] - z_c[self.reader.interior]).max()
         
         self.assertEqual(xerr, 0., "Incorrect chunked coordinate data reader in X")
         self.assertEqual(yerr, 0., "Incorrect chunked coordinate data reader in Y")
@@ -46,7 +46,7 @@ class TestReaderWchrAscii(unittest.TestCase):
         
         # Read full data.
         
-        self.serial_reader.sub_domain = (0,0,0), self.serial_reader.domain_size
+        self.serial_reader.sub_domain = (0,0,0), (self.serial_reader.domain_size[0]-1, self.serial_reader.domain_size[1]-1, self.serial_reader.domain_size[2]-1)
         rho,    = self.serial_reader.readData('rho')
         u, v, w = self.serial_reader.readData(('u','v','w'))
         p,      = self.serial_reader.readData('p')
@@ -58,11 +58,11 @@ class TestReaderWchrAscii(unittest.TestCase):
         u_c, v_c, w_c = self.reader.readData(('u','v','w'))
         p_c,          = self.reader.readData('p')
         
-        rerr = numpy.absolute(rho[ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - rho_c[self.reader.interior]).max()
-        uerr = numpy.absolute(u  [ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - u_c  [self.reader.interior]).max()
-        verr = numpy.absolute(v  [ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - v_c  [self.reader.interior]).max()
-        werr = numpy.absolute(w  [ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - w_c  [self.reader.interior]).max()
-        perr = numpy.absolute(p  [ self.lo[0]:self.hi[0], self.lo[1]:self.hi[1], self.lo[2]:self.hi[2] ] - p_c  [self.reader.interior]).max()
+        rerr = numpy.absolute(rho[ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, self.lo[2]:self.hi[2]+1 ] - rho_c[self.reader.interior]).max()
+        uerr = numpy.absolute(u  [ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, self.lo[2]:self.hi[2]+1 ] - u_c  [self.reader.interior]).max()
+        verr = numpy.absolute(v  [ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, self.lo[2]:self.hi[2]+1 ] - v_c  [self.reader.interior]).max()
+        werr = numpy.absolute(w  [ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, self.lo[2]:self.hi[2]+1 ] - w_c  [self.reader.interior]).max()
+        perr = numpy.absolute(p  [ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, self.lo[2]:self.hi[2]+1 ] - p_c  [self.reader.interior]).max()
         
         self.assertEqual(rerr, 0., "Incorrect chunked variable data reader for rho")
         self.assertEqual(uerr, 0., "Incorrect chunked variable data reader for u  ")
