@@ -29,15 +29,18 @@ class ParallelDataReader():
         if serial_reader.data_order != 'F':
             raise RuntimeError("The data order should be 'F'!")
         
-        # Set the communicator and it's Fortran value
+        # Set the communicator and it's Fortran value.
         self._comm  = comm
         self._fcomm = comm.py2f()
         
-        # Set the serial data reader to use
+        # Set the serial data reader to use.
         self._serial_reader = serial_reader
         
         # Dimensionality of the data set (1D, 2D or 3D)
         self._dim = serial_reader.dimension
+        
+        if self._dim < 0 or self._dim > 3:
+            raise RuntimeError('Dimension of data should be between 1 and 3!')
         
         self._periodic_dimensions = None
         self._domain_size = None
@@ -55,7 +58,7 @@ class ParallelDataReader():
                     raise RuntimeError('Dimension of num_ghosts should be between 2 and 3!')
                 self._num_ghosts = numpy.array([num_ghosts[0], num_ghosts[1], 0], dtype=numpy.int32)
                 
-            elif self._dim == 3:
+            else:
                 if len(num_ghosts) != 3:
                     raise RuntimeError('Dimension of num_ghosts should be 3!')
                 self._num_ghosts = numpy.asarray(num_ghosts, dtype=numpy.int32)
@@ -70,7 +73,7 @@ class ParallelDataReader():
             self._domain_size = numpy.array([serial_reader.domain_size[0], serial_reader.domain_size[1], 1])
             self._num_ghosts[2] = 0
         
-        elif self._dim == 3:
+        else:
             self._periodic_dimensions = numpy.asarray(serial_reader.periodic_dimensions)
             self._domain_size = numpy.asarray(serial_reader.domain_size)
        
@@ -186,8 +189,10 @@ class ParallelDataReader():
         """
         
         return self._serial_reader.step
-   
+    
+    
     step = property(getStep, setStep)
+    
     
     @property
     def sub_domain(self):
@@ -308,7 +313,7 @@ class ParallelDataReader():
             num_components = 1
             if data_var.ndim == self._dim + 1:
                 num_components = data_var.shape[self._dim]
-
+            
             if num_components == 1:
                 data_vars.append( numpy.zeros( tuple(self._full_chunk_size[0:self._dim]), dtype=numpy.float64, order='F' ) )
                 data_vars[i][self._interior[0:self._dim]] = data_var
@@ -325,7 +330,7 @@ class ParallelDataReader():
                 
                 elif self._dim == 2:
                 
-                elif self._dim == 3:
+                else:
                 '''
                 pass
         
