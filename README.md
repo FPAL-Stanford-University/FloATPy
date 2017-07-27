@@ -1,6 +1,6 @@
 # FloATPy: Flow Physics and Aeroacoustics Toolbox with Python #
 
-[![Build Status](https://travis-ci.org/mlwong/FloATPy.svg?branch=master)](https://travis-ci.org/mlwong/FloATPy)
+[![Build Status](https://travis-ci.org/FPAL-Stanford-University/FloATPy.svg?branch=master)](https://travis-ci.org/FPAL-Stanford-University/FloATPy)
 
 FloATPy is a post-processing toolbox for the numerical codes in the [Flow Physics and Aeroacoustics Laboratory](https://fpal.stanford.edu/) (FPAL) at the [Department of Aeronautics and Astronautics](https://aa.stanford.edu/) of [Stanford University](https://www.stanford.edu/).
 
