@@ -8,9 +8,10 @@ class T3Dmod(f90wrap.runtime.FortranModule):
     Module t3dmod
     
     
-    Defined at t3dMod.F90 lines 1-1644
+    Defined at t3dMod.F90 lines 1-1656
     
     """
+    @f90wrap.runtime.register_class("t3d")
     class t3d(f90wrap.runtime.FortranDerivedType):
         """
         Type(name=t3d)
@@ -26,7 +27,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
                 createcrosscommunicators])
             
             
-            Defined at t3dMod.F90 lines 98-506
+            Defined at t3dMod.F90 lines 98-518
             
             Parameters
             ----------
@@ -54,7 +55,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             Destructor for class T3D
             
             
-            Defined at t3dMod.F90 lines 508-524
+            Defined at t3dMod.F90 lines 520-536
             
             Parameters
             ----------
@@ -69,7 +70,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             transpose_3d_to_x(self, input, output)
             
             
-            Defined at t3dMod.F90 lines 526-578
+            Defined at t3dMod.F90 lines 538-590
             
             Parameters
             ----------
@@ -85,7 +86,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             transpose_x_to_3d(self, input, output)
             
             
-            Defined at t3dMod.F90 lines 580-621
+            Defined at t3dMod.F90 lines 592-633
             
             Parameters
             ----------
@@ -101,7 +102,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             transpose_3d_to_y(self, input, output)
             
             
-            Defined at t3dMod.F90 lines 623-675
+            Defined at t3dMod.F90 lines 635-687
             
             Parameters
             ----------
@@ -117,7 +118,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             transpose_y_to_3d(self, input, output)
             
             
-            Defined at t3dMod.F90 lines 677-719
+            Defined at t3dMod.F90 lines 689-731
             
             Parameters
             ----------
@@ -133,7 +134,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             transpose_3d_to_z(self, input, output)
             
             
-            Defined at t3dMod.F90 lines 721-773
+            Defined at t3dMod.F90 lines 733-785
             
             Parameters
             ----------
@@ -149,7 +150,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             transpose_z_to_3d(self, input, output)
             
             
-            Defined at t3dMod.F90 lines 775-817
+            Defined at t3dMod.F90 lines 787-829
             
             Parameters
             ----------
@@ -165,7 +166,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             fill_halo_x(self, array)
             
             
-            Defined at t3dMod.F90 lines 1165-1185
+            Defined at t3dMod.F90 lines 1177-1197
             
             Parameters
             ----------
@@ -180,7 +181,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             fill_halo_y(self, array)
             
             
-            Defined at t3dMod.F90 lines 1187-1207
+            Defined at t3dMod.F90 lines 1199-1219
             
             Parameters
             ----------
@@ -195,7 +196,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             fill_halo_z(self, array)
             
             
-            Defined at t3dMod.F90 lines 1209-1230
+            Defined at t3dMod.F90 lines 1221-1242
             
             Parameters
             ----------
@@ -210,7 +211,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             self = T3D(comm3d, nx, ny, nz, periodic[, nghosts])
             
             
-            Defined at t3dMod.F90 lines 1273-1356
+            Defined at t3dMod.F90 lines 1285-1368
             
             Parameters
             ----------
@@ -235,7 +236,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_sz3d(self, sz3d)
             
             
-            Defined at t3dMod.F90 lines 1458-1463
+            Defined at t3dMod.F90 lines 1470-1475
             
             Parameters
             ----------
@@ -250,7 +251,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_st3d(self, st3d)
             
             
-            Defined at t3dMod.F90 lines 1465-1470
+            Defined at t3dMod.F90 lines 1477-1482
             
             Parameters
             ----------
@@ -265,7 +266,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_en3d(self, en3d)
             
             
-            Defined at t3dMod.F90 lines 1472-1479
+            Defined at t3dMod.F90 lines 1484-1491
             
             Parameters
             ----------
@@ -280,7 +281,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_sz3dg(self, sz3dg)
             
             
-            Defined at t3dMod.F90 lines 1481-1486
+            Defined at t3dMod.F90 lines 1493-1498
             
             Parameters
             ----------
@@ -295,7 +296,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_st3dg(self, st3dg)
             
             
-            Defined at t3dMod.F90 lines 1488-1493
+            Defined at t3dMod.F90 lines 1500-1505
             
             Parameters
             ----------
@@ -310,7 +311,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_en3dg(self, en3dg)
             
             
-            Defined at t3dMod.F90 lines 1495-1502
+            Defined at t3dMod.F90 lines 1507-1514
             
             Parameters
             ----------
@@ -325,7 +326,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_szx(self, szx)
             
             
-            Defined at t3dMod.F90 lines 1504-1509
+            Defined at t3dMod.F90 lines 1516-1521
             
             Parameters
             ----------
@@ -340,7 +341,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_stx(self, stx)
             
             
-            Defined at t3dMod.F90 lines 1511-1516
+            Defined at t3dMod.F90 lines 1523-1528
             
             Parameters
             ----------
@@ -355,7 +356,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_enx(self, enx)
             
             
-            Defined at t3dMod.F90 lines 1518-1524
+            Defined at t3dMod.F90 lines 1530-1536
             
             Parameters
             ----------
@@ -370,7 +371,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_szy(self, szy)
             
             
-            Defined at t3dMod.F90 lines 1526-1531
+            Defined at t3dMod.F90 lines 1538-1543
             
             Parameters
             ----------
@@ -385,7 +386,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_sty(self, sty)
             
             
-            Defined at t3dMod.F90 lines 1533-1538
+            Defined at t3dMod.F90 lines 1545-1550
             
             Parameters
             ----------
@@ -400,7 +401,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_eny(self, eny)
             
             
-            Defined at t3dMod.F90 lines 1540-1546
+            Defined at t3dMod.F90 lines 1552-1558
             
             Parameters
             ----------
@@ -415,7 +416,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_szz(self, szz)
             
             
-            Defined at t3dMod.F90 lines 1548-1553
+            Defined at t3dMod.F90 lines 1560-1565
             
             Parameters
             ----------
@@ -430,7 +431,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_stz(self, stz)
             
             
-            Defined at t3dMod.F90 lines 1555-1560
+            Defined at t3dMod.F90 lines 1567-1572
             
             Parameters
             ----------
@@ -445,7 +446,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             get_enz(self, enz)
             
             
-            Defined at t3dMod.F90 lines 1562-1567
+            Defined at t3dMod.F90 lines 1574-1579
             
             Parameters
             ----------
@@ -460,7 +461,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             comm3d = comm3d(self)
             
             
-            Defined at t3dMod.F90 lines 1569-1574
+            Defined at t3dMod.F90 lines 1581-1586
             
             Parameters
             ----------
@@ -479,7 +480,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             commx = commx(self)
             
             
-            Defined at t3dMod.F90 lines 1576-1581
+            Defined at t3dMod.F90 lines 1588-1593
             
             Parameters
             ----------
@@ -498,7 +499,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             commy = commy(self)
             
             
-            Defined at t3dMod.F90 lines 1583-1588
+            Defined at t3dMod.F90 lines 1595-1600
             
             Parameters
             ----------
@@ -517,7 +518,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             commz = commz(self)
             
             
-            Defined at t3dMod.F90 lines 1590-1595
+            Defined at t3dMod.F90 lines 1602-1607
             
             Parameters
             ----------
@@ -536,7 +537,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             commxy = commxy(self)
             
             
-            Defined at t3dMod.F90 lines 1597-1602
+            Defined at t3dMod.F90 lines 1609-1614
             
             Parameters
             ----------
@@ -555,7 +556,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             commyz = commyz(self)
             
             
-            Defined at t3dMod.F90 lines 1604-1609
+            Defined at t3dMod.F90 lines 1616-1621
             
             Parameters
             ----------
@@ -574,7 +575,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             commxz = commxz(self)
             
             
-            Defined at t3dMod.F90 lines 1611-1616
+            Defined at t3dMod.F90 lines 1623-1628
             
             Parameters
             ----------
@@ -593,7 +594,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             px = px(self)
             
             
-            Defined at t3dMod.F90 lines 1618-1623
+            Defined at t3dMod.F90 lines 1630-1635
             
             Parameters
             ----------
@@ -612,7 +613,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             py = py(self)
             
             
-            Defined at t3dMod.F90 lines 1625-1630
+            Defined at t3dMod.F90 lines 1637-1642
             
             Parameters
             ----------
@@ -631,7 +632,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             pz = pz(self)
             
             
-            Defined at t3dMod.F90 lines 1632-1637
+            Defined at t3dMod.F90 lines 1644-1649
             
             Parameters
             ----------
@@ -650,7 +651,7 @@ class T3Dmod(f90wrap.runtime.FortranModule):
             nprocs = nprocs(self)
             
             
-            Defined at t3dMod.F90 lines 1639-1644
+            Defined at t3dMod.F90 lines 1651-1656
             
             Parameters
             ----------
@@ -666,8 +667,6 @@ class T3Dmod(f90wrap.runtime.FortranModule):
         
         _dt_array_initialisers = []
         
-    
-    f90wrap.runtime.register_class(t3d, "t3d")
     
     _dt_array_initialisers = []
     
