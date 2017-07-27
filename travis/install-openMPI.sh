@@ -21,9 +21,9 @@ case "$os" in
         wget --no-check-certificate https://www.open-mpi.org/software/ompi/v1.10/downloads/openmpi-1.10.2.tar.gz
         tar -zxf openmpi-1.10.2.tar.gz
         cd openmpi-1.10.2
-        sh ./configure --disable-dlopen > /dev/null
+        sh ./configure --disable-dlopen --prefix=${HOME}/openmpi > /dev/null
         make -j > /dev/null
-        sudo make install > /dev/null
+        make install > /dev/null
         ;;
 
     *)
