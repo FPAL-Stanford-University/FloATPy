@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/mlwong/FloATPy.svg?branch=master)](https://travis-ci.org/mlwong/FloATPy)
 
-FloATPy is a post-processing toolbox for the numerical codes in the FPAL (Flow Physics and Aeroacoustics Laboratory) at Stanford University.
+FloATPy is a post-processing toolbox for the numerical codes in the [Flow Physics and Aeroacoustics Laboratory](https://fpal.stanford.edu/) (FPAL) at Stanford University.
 
 ### How do I get set up? ###
 
