@@ -20,6 +20,7 @@ before_install:
   - sh ./travis/install-openMPI.sh
   - export PATH=${HOME}/openmpi/bin:${PATH}
   - export LD_LIBRARY_PATH=${HOME}/openmpi/lib:${LD_LIBRARY_PATH}
+  - sh ./travis/install-f90wrap.sh
 
 # command to install dependencies
 install:
