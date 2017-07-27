@@ -124,4 +124,3 @@ if comm.rank == 0:
     else:
         print "ERROR: Halo communication in Z fails! :("
 # ------------------------------------------------------
-

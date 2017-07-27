@@ -30,10 +30,8 @@ obj_compact_6th_order = BuildFortranObjects(['floatpy/derivatives/compact/kind_p
                                              'floatpy/derivatives/compact/constants.F90',
                                              'floatpy/derivatives/compact/cd06.F90'])
 
-ext_compact_6th_order = Extension('_compact_sixth_order',
-                                    sources = ['floatpy/derivatives/compact/f90wrap_kind_parameters.f90',
-                                               'floatpy/derivatives/compact/f90wrap_constants.f90',
-                                               'floatpy/derivatives/compact/f90wrap_cd06.f90'],
+ext_compact_6th_order = Extension('_pycd06',
+                                    sources = ['floatpy/derivatives/compact/f90wrap_cd06.f90'],
                                     extra_objects = obj_compact_6th_order,
                                     f2py_options = [])
 
@@ -53,6 +51,7 @@ ext_pyt3d = Extension('_pyt3d',
 
 # Modules.
 modules = ['floatpy.parallel',
+           'floatpy.parallel.pyt3d',
            'floatpy.derivatives',
            'floatpy.upsampling',
            'floatpy.readers']
