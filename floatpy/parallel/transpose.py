@@ -44,31 +44,31 @@ class Transpose():
         if direction >= dim:
             raise RuntimeError('Direction to transpose is not allowed with the dimensinality of data!')
         
-        # Get size of sub-domain of this processor and lo and up of the sub-domain.
+        # Get size of sub-domain of this processor and lo and hi of the sub-domain.
         size = numpy.empty(3, dtype=numpy.int32)
         lo   = numpy.empty(3, dtype=numpy.int32)
-        up   = numpy.empty(3, dtype=numpy.int32)
+        hi   = numpy.empty(3, dtype=numpy.int32)
         
         gp = self._parallel_reader._grid_partition
         
         if direction == 0:
             gp.get_szx(size)
             gp.get_stx(lo)
-            gp.get_enx(up)
+            gp.get_enx(hi)
         
         elif direction == 1:
             gp.get_szy(size)
             gp.get_sty(lo)
-            gp.get_eny(up)
+            gp.get_eny(hi)
         
         else:
             gp.get_szz(size)
             gp.get_stz(lo)
-            gp.get_enz(up)
+            gp.get_enz(hi)
         
         # Convert to 0 based indexing.
         lo = lo - 1
-        up = up - 1
+        hi = hi - 1
         
         num_components = 1
         if data.ndim == dim + 1:
@@ -121,4 +121,4 @@ class Transpose():
                 else:
                     gp.transpose_3d_to_z(data_3D, data_transposed)
         
-        return data_out, lo, up
+        return data_out, lo, hi
