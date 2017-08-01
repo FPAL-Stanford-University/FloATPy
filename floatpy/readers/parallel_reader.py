@@ -272,13 +272,14 @@ class ParallelDataReader():
         z_c = numpy.zeros( tuple(self._full_chunk_size), dtype=numpy.float64, order='F' )
         
         if self._dim == 1:
-            x_coords, y_coords, z_coords = self._serial_reader.readCoordinates()
+            x_coords = self._serial_reader.readCoordinates()
+            
             nx = x_coords.shape[0]
             x_coords = x_coords.reshape((nx, 1, 1), order='F')
             x_c[self._interior] = x_coords
         
         elif self._dim == 2:
-            x_coords, y_coords, z_coords = self._serial_reader.readCoordinates()
+            x_coords, y_coords = self._serial_reader.readCoordinates()
             
             nx = x_coords.shape[0]
             ny = x_coords.shape[1]
@@ -311,9 +312,9 @@ class ParallelDataReader():
                 self._grid_partition.fill_halo_z(z_c)
         
         if self._dim == 1:
-            return numpy.squeeze(x_c, (1, 2)), [], []
+            return numpy.squeeze(x_c, (1, 2))
         elif self._dim == 2:
-            return numpy.squeeze(x_c, 2), numpy.squeeze(y_c, 2), []
+            return numpy.squeeze(x_c, 2), numpy.squeeze(y_c, 2)
         else:
             return x_c, y_c, z_c
     
