@@ -20,7 +20,7 @@ class TestSamraiDataReader2D(unittest.TestCase):
         
         # Read full coordinates.
         
-        self.reader.sub_domain = (0,0), (self.reader.domain_size[0]-1, self.reader.domain_size[1]-1)
+        self.reader.sub_domain = (0, 0), (self.reader.domain_size[0]-1, self.reader.domain_size[1]-1)
         
         x, y = self.reader.readCoordinates()
         
@@ -31,18 +31,18 @@ class TestSamraiDataReader2D(unittest.TestCase):
         
         # Check that the coordinates in sub-domain are equal to the corresponding full coordinates.
         
-        x_err = numpy.absolute(x[ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1 ] - x_s).max()
-        y_err = numpy.absolute(y[ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1 ] - y_s).max()
+        x_err = numpy.absolute(x[self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1] - x_s).max()
+        y_err = numpy.absolute(y[self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1] - y_s).max()
         
-        self.assertEqual(x_err, 0., "Incorrect sub-domain coordinate data reader in x direction!")
-        self.assertEqual(y_err, 0., "Incorrect sub-domain coordinate data reader in y direction!")
+        self.assertEqual(x_err, 0.0, "Incorrect sub-domain coordinate data reader in x direction!")
+        self.assertEqual(y_err, 0.0, "Incorrect sub-domain coordinate data reader in y direction!")
     
     
     def testReadDataSubdomain(self):
         
         # Read full data.
         
-        self.reader.sub_domain = (0,0), (self.reader.domain_size[0]-1, self.reader.domain_size[1]-1)
+        self.reader.sub_domain = (0, 0), (self.reader.domain_size[0]-1, self.reader.domain_size[1]-1)
         
         rho, vel, p = self.reader.readData(('density', 'velocity', 'pressure'))
         
@@ -55,9 +55,9 @@ class TestSamraiDataReader2D(unittest.TestCase):
         vel_err = numpy.absolute(vel[self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, :] - vel_s).max()
         p_err   = numpy.absolute(p  [self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1   ] - p_s  ).max()
         
-        self.assertEqual(rho_err, 0., "Incorrect sub-domain variable data reader for density!")
-        self.assertEqual(vel_err, 0., "Incorrect sub-domain variable data reader for velocity!")
-        self.assertEqual(p_err,   0., "Incorrect sub-domain variable data reader for pressure!")
+        self.assertEqual(rho_err, 0.0, "Incorrect sub-domain variable data reader for density!")
+        self.assertEqual(vel_err, 0.0, "Incorrect sub-domain variable data reader for velocity!")
+        self.assertEqual(p_err,   0.0, "Incorrect sub-domain variable data reader for pressure!")
 
 
 if __name__ == '__main__':
