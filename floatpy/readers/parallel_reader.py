@@ -149,6 +149,15 @@ class ParallelDataReader():
     
     
     @property
+    def dimension(self):
+        """
+        Return the dimension of the domain.
+        """
+        
+        return self._dim
+    
+    
+    @property
     def domain_size(self):
         """
         Return a tuple containing the full domain size of this dataset.
