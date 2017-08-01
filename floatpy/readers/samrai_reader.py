@@ -510,6 +510,8 @@ class SamraiDataReader(BaseReader):
             x_coords = numpy.linspace(x_lo_level[0] + 0.5*dx[level_num][0], \
                 x_hi_level[0] - 0.5*dx[level_num][0], \
                 num = domain_shape[0])
+            
+            return x_coords
         
         elif dim == 2:
             x_coords = numpy.linspace(x_lo_level[0] + 0.5*dx[level_num][0], \
@@ -518,6 +520,8 @@ class SamraiDataReader(BaseReader):
             y_coords = numpy.linspace(x_lo_level[1] + 0.5*dx[level_num][1], \
                 x_hi_level[1] - 0.5*dx[level_num][1], \
                 num = domain_shape[1])
+            
+            return x_coords, y_coords
         
         elif dim == 3:
             x_coords = numpy.linspace(x_lo_level[0] + 0.5*dx[level_num][0], \
@@ -529,8 +533,8 @@ class SamraiDataReader(BaseReader):
             z_coords = numpy.linspace(x_lo_level[2] + 0.5*dx[level_num][2], \
                 x_hi_level[2] - 0.5*dx[level_num][2], \
                 num = domain_shape[2])
-        
-        return x_coords, y_coords, z_coords
+            
+            return x_coords, y_coords, z_coords
     
     
     def readDataAtOneLevel(self, \
@@ -826,6 +830,8 @@ class SamraiDataReader(BaseReader):
                 num = domain_shape_ghosts[0])
             
             x_coords = x_coords[lo_subdomain[0] + num_ghosts[0]:hi_subdomain[0] + 1 + num_ghosts[0]]
+            
+            return x_coords
         
         elif dim == 2:
             x_coords = numpy.linspace(x_lo_root_level[0] + (0.5 - num_ghosts[0])*dx[-1][0], \
@@ -837,6 +843,8 @@ class SamraiDataReader(BaseReader):
             
             x_coords = x_coords[lo_subdomain[0] + num_ghosts[0]:hi_subdomain[0] + 1 + num_ghosts[0]]
             y_coords = y_coords[lo_subdomain[1] + num_ghosts[1]:hi_subdomain[1] + 1 + num_ghosts[1]]
+            
+            return x_coords, y_coords
         
         elif dim == 3:
             x_coords = numpy.linspace(x_lo_root_level[0] + (0.5 - num_ghosts[0])*dx[-1][0], \
@@ -852,8 +860,8 @@ class SamraiDataReader(BaseReader):
             x_coords = x_coords[lo_subdomain[0] + num_ghosts[0]:hi_subdomain[0] + 1 + num_ghosts[0]]
             y_coords = y_coords[lo_subdomain[1] + num_ghosts[1]:hi_subdomain[1] + 1 + num_ghosts[1]]
             z_coords = z_coords[lo_subdomain[2] + num_ghosts[2]:hi_subdomain[2] + 1 + num_ghosts[2]]
-        
-        return x_coords, y_coords, z_coords
+            
+            return x_coords, y_coords, z_coords
     
     
     def readCombinedDataInSubdomainFromAllLevels(self, \
@@ -947,10 +955,18 @@ class SamraiDataReader(BaseReader):
         
         # Refine the the lower and upper indices of the domain to the highest level.
         
-        lo_root_level_refined = numpy.multiply(lo_root_level[0:dim], ratios_to_finest_level[0][0:dim])
-        hi_root_level_refined = numpy.multiply(hi_root_level[0:dim] + numpy.ones(dim, dtype = numpy.int), \
-            ratios_to_finest_level[0][0:dim]) \
-            - numpy.ones(dim, dtype = numpy.int)
+        lo_root_level_refined = []
+        hi_root_level_refined = []
+        
+        if num_levels == 1:
+            lo_root_level_refined = lo_root_level[0:dim]
+            hi_root_level_refined = hi_root_level[0:dim]
+        
+        else:
+            lo_root_level_refined = numpy.multiply(lo_root_level[0:dim], ratios_to_finest_level[0][0:dim])
+            hi_root_level_refined = numpy.multiply(hi_root_level[0:dim] + numpy.ones(dim, dtype = numpy.int), \
+                ratios_to_finest_level[0][0:dim]) \
+                - numpy.ones(dim, dtype = numpy.int)
         
         # Compute the shape of the domain refined to the highest level.
         
@@ -2927,23 +2943,28 @@ class SamraiDataReader(BaseReader):
         
         dim = self._basic_info['dim']
         
-        x_coords, y_coords, z_coords = self.getCombinedCoordinatesInSubdomainFromAllLevels()
-        
         x_c = []
         y_c = []
         z_c = []
         
         if dim == 1:
-            x_c = x_coords
+            return self.getCombinedCoordinatesInSubdomainFromAllLevels()
+        
         elif dim == 2:
+            x_coords, y_coords = self.getCombinedCoordinatesInSubdomainFromAllLevels()
+            
             if self._data_order == 'C':
                 x_c, y_c = numpy.meshgrid(x_coords, y_coords, indexing = 'ij', sparse = False, copy=True)
             else:
                 x_c, y_c = numpy.meshgrid(x_coords, y_coords, indexing = 'ij', sparse = False, copy=False)
                 x_c = numpy.asfortranarray(x_c)
                 y_c = numpy.asfortranarray(y_c)
+            
+            return x_c, y_c
         
         elif dim == 3:
+            x_coords, y_coords, z_coords = self.getCombinedCoordinatesInSubdomainFromAllLevels()
+            
             if self._data_order == 'C':
                 x_c, y_c, z_c = numpy.meshgrid(x_coords, y_coords, z_coords, indexing = 'ij', sparse = False, copy=True)
             else:
@@ -2951,8 +2972,8 @@ class SamraiDataReader(BaseReader):
                 x_c = numpy.asfortranarray(x_c)
                 y_c = numpy.asfortranarray(y_c)
                 z_c = numpy.asfortranarray(z_c)
-        
-        return x_c, y_c, z_c
+            
+            return x_c, y_c, z_c
     
     
     def readData(self, var_names, data=None):
@@ -2960,7 +2981,6 @@ class SamraiDataReader(BaseReader):
         Read the data of several variables in the stored sub-domain.
         Default to the full domain when the sub-domain is not set.
         """
-        
         if self._data_loaded == True:
             self.clearData()
         
@@ -2969,9 +2989,6 @@ class SamraiDataReader(BaseReader):
             var_names = (var_names,)
         
         self.readCombinedDataInSubdomainFromAllLevels(var_names)
-        
-        if len(var_names) == 1:
-            return self._data[var_names[0]]
         
         dim = self._basic_info['dim']
         

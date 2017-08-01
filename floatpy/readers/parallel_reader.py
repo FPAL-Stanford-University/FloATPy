@@ -4,9 +4,7 @@ import numpy
 import os
 import sys
 
-cwd = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, os.path.abspath(os.path.join(cwd, '../parallel/pyt3d')))
-import pyt3d
+from floatpy.parallel import _t3dmod
 
 class ParallelDataReader():
     """
@@ -64,12 +62,13 @@ class ParallelDataReader():
                 self._num_ghosts = numpy.asarray(num_ghosts, dtype=numpy.int32)
         
         if self._dim == 1:
-            self._periodic_dimensions = numpy.array([serial_reader.dimension[0], True, True])
+            self._periodic_dimensions = numpy.array([serial_reader.periodic_dimensions[0], True, True])
             self._domain_size = numpy.array([serial_reader.domain_size[0], 1, 1])
             self._num_ghosts[1:] = 0
         
         elif self._dim == 2:
-            self._periodic_dimensions = numpy.array([serial_reader.dimension[0], serial_reader.dimension[1] , True])
+            self._periodic_dimensions = numpy.array([serial_reader.periodic_dimensions[0], \
+                serial_reader.periodic_dimensions[1] , True])
             self._domain_size = numpy.array([serial_reader.domain_size[0], serial_reader.domain_size[1], 1])
             self._num_ghosts[2] = 0
         
@@ -103,7 +102,7 @@ class ParallelDataReader():
             self._subdomain_size = self._subdomain_hi - self._subdomain_lo + 1
         
         # Create the parallel grid partition object that handles all the communication stuff.
-        self.grid_partition = pyt3d.t3dmod.t3d(self._fcomm, \
+        self._grid_partition = _t3dmod.t3d(self._fcomm, \
                                                self._subdomain_size[0], self._subdomain_size[1], self._subdomain_size[2], \
                                                self._periodic_dimensions, nghosts=self._num_ghosts )
         
@@ -113,9 +112,9 @@ class ParallelDataReader():
         self._interior_chunk_lo = numpy.zeros(3, dtype=numpy.int32, order='F')
         self._interior_chunk_hi = numpy.zeros(3, dtype=numpy.int32, order='F')
         
-        self.grid_partition.get_sz3d(self._interior_chunk_size)
-        self.grid_partition.get_st3d(self._interior_chunk_lo)
-        self.grid_partition.get_en3d(self._interior_chunk_hi)
+        self._grid_partition.get_sz3d(self._interior_chunk_size)
+        self._grid_partition.get_st3d(self._interior_chunk_lo)
+        self._grid_partition.get_en3d(self._interior_chunk_hi)
         self._interior_chunk_lo = self._interior_chunk_lo - 1 # Convert to 0 based indexing
         self._interior_chunk_hi = self._interior_chunk_hi - 1 # Convert to 0 based indexing
         
@@ -125,9 +124,9 @@ class ParallelDataReader():
         self._full_chunk_lo = numpy.zeros(3, dtype=numpy.int32, order='F')
         self._full_chunk_hi = numpy.zeros(3, dtype=numpy.int32, order='F')
         
-        self.grid_partition.get_sz3dg(self._full_chunk_size)
-        self.grid_partition.get_st3dg(self._full_chunk_lo)
-        self.grid_partition.get_en3dg(self._full_chunk_hi)
+        self._grid_partition.get_sz3dg(self._full_chunk_size)
+        self._grid_partition.get_st3dg(self._full_chunk_lo)
+        self._grid_partition.get_en3dg(self._full_chunk_hi)
         self._full_chunk_lo = self._full_chunk_lo - 1 # Convert to 0 based indexing
         self._full_chunk_hi = self._full_chunk_hi - 1 # Convert to 0 based indexing
         
@@ -146,6 +145,15 @@ class ParallelDataReader():
         """
         
         return self._serial_reader
+    
+    
+    @property
+    def dimension(self):
+        """
+        Return the dimension of the domain.
+        """
+        
+        return self._dim
     
     
     @property
@@ -263,13 +271,14 @@ class ParallelDataReader():
         z_c = numpy.zeros( tuple(self._full_chunk_size), dtype=numpy.float64, order='F' )
         
         if self._dim == 1:
-            x_coords, y_coords, z_coords = self._serial_reader.readCoordinates()
+            x_coords = self._serial_reader.readCoordinates()
+            
             nx = x_coords.shape[0]
             x_coords = x_coords.reshape((nx, 1, 1), order='F')
             x_c[self._interior] = x_coords
         
         elif self._dim == 2:
-            x_coords, y_coords, z_coords = self._serial_reader.readCoordinates()
+            x_coords, y_coords = self._serial_reader.readCoordinates()
             
             nx = x_coords.shape[0]
             ny = x_coords.shape[1]
@@ -285,26 +294,26 @@ class ParallelDataReader():
         
         # Communicate to get the coordinates in the ghost cell regions.
         if communicate:
-            self.grid_partition.fill_halo_x(x_c)
+            self._grid_partition.fill_halo_x(x_c)
             
             if self._dim > 1:
-                self.grid_partition.fill_halo_y(x_c)
+                self._grid_partition.fill_halo_y(x_c)
                 
-                self.grid_partition.fill_halo_x(y_c)
-                self.grid_partition.fill_halo_y(y_c)
+                self._grid_partition.fill_halo_x(y_c)
+                self._grid_partition.fill_halo_y(y_c)
             
             if self._dim > 2:
-                self.grid_partition.fill_halo_z(x_c)
-                self.grid_partition.fill_halo_z(y_c)
+                self._grid_partition.fill_halo_z(x_c)
+                self._grid_partition.fill_halo_z(y_c)
                 
-                self.grid_partition.fill_halo_x(z_c)
-                self.grid_partition.fill_halo_y(z_c)
-                self.grid_partition.fill_halo_z(z_c)
+                self._grid_partition.fill_halo_x(z_c)
+                self._grid_partition.fill_halo_y(z_c)
+                self._grid_partition.fill_halo_z(z_c)
         
         if self._dim == 1:
-            return numpy.squeeze(x_c, (1, 2)), [], []
+            return numpy.squeeze(x_c, (1, 2))
         elif self._dim == 2:
-            return numpy.squeeze(x_c, 2), numpy.squeeze(y_c, 2), []
+            return numpy.squeeze(x_c, 2), numpy.squeeze(y_c, 2)
         else:
             return x_c, y_c, z_c
     
@@ -350,29 +359,29 @@ class ParallelDataReader():
                 for ic in range(0, num_components):
                     if self._dim == 1:
                         if num_components == 1:
-                            data_to_communicate = numpy.reshape(data_vars[i][:], shape_modified)
+                            data_to_communicate = numpy.reshape(data_vars[i][:], shape_modified, order='F')
                         else:
-                            data_to_communicate = numpy.reshape(data_vars[i][:, ic], shape_modified)
-		        
-                        self.grid_partition.fill_halo_x(data_to_communicate)
+                            data_to_communicate = numpy.reshape(data_vars[i][:, ic], shape_modified, order='F')
+                        
+                        self._grid_partition.fill_halo_x(data_to_communicate)
                     
                     elif self._dim == 2:
                         if num_components == 1:
-                            data_to_communicate = numpy.reshape(data_vars[i][:, :], shape_modified)
+                            data_to_communicate = numpy.reshape(data_vars[i][:, :], shape_modified, order='F')
                         else:
-                            data_to_communicate = numpy.reshape(data_vars[i][:, :, ic], shape_modified)
-		        
-                        self.grid_partition.fill_halo_x(data_to_communicate)
-                        self.grid_partition.fill_halo_y(data_to_communicate)
+                            data_to_communicate = numpy.reshape(data_vars[i][:, :, ic], shape_modified, order='F')
+                        
+                        self._grid_partition.fill_halo_x(data_to_communicate)
+                        self._grid_partition.fill_halo_y(data_to_communicate)
                     
                     else:
                         if num_components == 1:
                             data_to_communicate = data_vars[i]
                         else:
                             data_to_communicate = data_vars[i][:, :, :, ic]
-		        
-                        self.grid_partition.fill_halo_x(data_to_communicate)
-                        self.grid_partition.fill_halo_y(data_to_communicate)
-                        self.grid_partition.fill_halo_z(data_to_communicate)
+                        
+                        self._grid_partition.fill_halo_x(data_to_communicate)
+                        self._grid_partition.fill_halo_y(data_to_communicate)
+                        self._grid_partition.fill_halo_z(data_to_communicate)
         
         return tuple(data_vars)
