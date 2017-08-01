@@ -1,3 +1,5 @@
+import numpy
+
 from floatpy.readers.parallel_reader import ParallelDataReader
 
 class Transpose():
@@ -87,8 +89,8 @@ class Transpose():
             else:
                 data_out = numpy.empty((size[0], size[1], size[2]), dtype=data.dtype, order='F')
             
-            data_3D = numpy.reshape(data, shape_3D)
-            data_transposed = numpy.reshape(data_out, size)
+            data_3D = numpy.reshape(data, shape_3D, order='F')
+            data_transposed = numpy.reshape(data_out, size, order='F')
             
             if direction == 0:
                 gp.transpose_3d_to_x(data_3D, data_transposed)
@@ -108,8 +110,8 @@ class Transpose():
                 data_transposed = []
                 
                 if dim == 2:
-                    data_3D = numpy.reshape(data[:, :, ic], shape_3D)
-                    data_transposed = numpy.reshape(data_out[:, :, ic], size)
+                    data_3D = numpy.reshape(data[:, :, ic], shape_3D, order='F')
+                    data_transposed = numpy.reshape(data_out[:, :, ic], size, order='F')
                 else:
                     data_3D = data[:, :, :, ic]
                     data_transposed = data_out[:, :, :, ic]

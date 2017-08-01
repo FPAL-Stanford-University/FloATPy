@@ -4,9 +4,7 @@ import numpy
 import os
 import sys
 
-cwd = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, os.path.abspath(os.path.join(cwd, '../parallel/pyt3d')))
-import pyt3d
+from floatpy.parallel import _t3dmod
 
 class ParallelDataReader():
     """
@@ -64,12 +62,13 @@ class ParallelDataReader():
                 self._num_ghosts = numpy.asarray(num_ghosts, dtype=numpy.int32)
         
         if self._dim == 1:
-            self._periodic_dimensions = numpy.array([serial_reader.dimension[0], True, True])
+            self._periodic_dimensions = numpy.array([serial_reader.periodic_dimensions[0], True, True])
             self._domain_size = numpy.array([serial_reader.domain_size[0], 1, 1])
             self._num_ghosts[1:] = 0
         
         elif self._dim == 2:
-            self._periodic_dimensions = numpy.array([serial_reader.dimension[0], serial_reader.dimension[1] , True])
+            self._periodic_dimensions = numpy.array([serial_reader.periodic_dimensions[0], \
+                serial_reader.periodic_dimensions[1] , True])
             self._domain_size = numpy.array([serial_reader.domain_size[0], serial_reader.domain_size[1], 1])
             self._num_ghosts[2] = 0
         
@@ -103,7 +102,7 @@ class ParallelDataReader():
             self._subdomain_size = self._subdomain_hi - self._subdomain_lo + 1
         
         # Create the parallel grid partition object that handles all the communication stuff.
-        self._grid_partition = pyt3d.t3dmod.t3d(self._fcomm, \
+        self._grid_partition = _t3dmod.t3d(self._fcomm, \
                                                self._subdomain_size[0], self._subdomain_size[1], self._subdomain_size[2], \
                                                self._periodic_dimensions, nghosts=self._num_ghosts )
         
@@ -360,17 +359,17 @@ class ParallelDataReader():
                 for ic in range(0, num_components):
                     if self._dim == 1:
                         if num_components == 1:
-                            data_to_communicate = numpy.reshape(data_vars[i][:], shape_modified)
+                            data_to_communicate = numpy.reshape(data_vars[i][:], shape_modified, order='F')
                         else:
-                            data_to_communicate = numpy.reshape(data_vars[i][:, ic], shape_modified)
+                            data_to_communicate = numpy.reshape(data_vars[i][:, ic], shape_modified, order='F')
                         
                         self._grid_partition.fill_halo_x(data_to_communicate)
                     
                     elif self._dim == 2:
                         if num_components == 1:
-                            data_to_communicate = numpy.reshape(data_vars[i][:, :], shape_modified)
+                            data_to_communicate = numpy.reshape(data_vars[i][:, :], shape_modified, order='F')
                         else:
-                            data_to_communicate = numpy.reshape(data_vars[i][:, :, ic], shape_modified)
+                            data_to_communicate = numpy.reshape(data_vars[i][:, :, ic], shape_modified, order='F')
                         
                         self._grid_partition.fill_halo_x(data_to_communicate)
                         self._grid_partition.fill_halo_y(data_to_communicate)

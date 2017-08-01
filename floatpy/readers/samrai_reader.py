@@ -2981,7 +2981,6 @@ class SamraiDataReader(BaseReader):
         Read the data of several variables in the stored sub-domain.
         Default to the full domain when the sub-domain is not set.
         """
-        
         if self._data_loaded == True:
             self.clearData()
         
@@ -2990,9 +2989,6 @@ class SamraiDataReader(BaseReader):
             var_names = (var_names,)
         
         self.readCombinedDataInSubdomainFromAllLevels(var_names)
-        
-        if len(var_names) == 1:
-            return self._data[var_names[0]]
         
         dim = self._basic_info['dim']
         
