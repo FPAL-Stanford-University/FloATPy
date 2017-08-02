@@ -2,7 +2,7 @@ import numpy
 
 from floatpy.readers.parallel_reader import ParallelDataReader
 
-class Transpose():
+class TransposeWrapper():
     """
     Class to transpose data with parallel communication.
     """
