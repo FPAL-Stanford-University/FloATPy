@@ -183,6 +183,15 @@ class ParallelDataReader():
         return self._serial_reader.time
     
     
+    @property
+    def steps(self):
+        """
+        Return all of the steps.
+        """
+        
+        return self._serial_reader.steps
+    
+    
     def setStep(self, step):
         """
         Update the metadata from the summary file in the data directory at a new time step.
@@ -191,7 +200,7 @@ class ParallelDataReader():
         self._serial_reader.step = step
     
     
-    def getStep(self, step):
+    def getStep(self):
         """
         Return the time step that is currently set.
         """
