@@ -3,10 +3,10 @@ import numpy
 import os
 import unittest
 
-from floatpy.parallel import transpose
+from floatpy.parallel import transpose_wrapper
 from floatpy.readers import samrai_reader, parallel_reader
 
-class TestTranspose2D(unittest.TestCase):
+class TestTransposeWrapper2D(unittest.TestCase):
     
     def setUp(self):
         self.directory_name = os.path.join(os.path.dirname(__file__), 'test_data_samrai_3D')
@@ -35,7 +35,7 @@ class TestTranspose2D(unittest.TestCase):
         
         rho_p, vel_p = self.reader.readData(('density', 'velocity'))
         
-        transpose_obj = transpose.Transpose(self.reader)
+        transpose_obj = transpose_wrapper.TransposeWrapper(self.reader)
         
         rho_t, lo_rho, hi_rho = transpose_obj.transpose(rho_p, direction=0)
         rho_err = numpy.absolute(rho[lo_rho[0]:hi_rho[0]+1, lo_rho[1]:hi_rho[1]+1, lo_rho[2]:hi_rho[2]+1] - rho_t).max()
@@ -61,7 +61,7 @@ class TestTranspose2D(unittest.TestCase):
         
         rho_p, vel_p = self.reader.readData(('density', 'velocity'))
         
-        transpose_obj = transpose.Transpose(self.reader)
+        transpose_obj = transpose_wrapper.TransposeWrapper(self.reader)
         
         rho_t, lo_rho, hi_rho = transpose_obj.transpose(rho_p, direction=1)
         rho_err = numpy.absolute(rho[lo_rho[0]:hi_rho[0]+1, lo_rho[1]:hi_rho[1]+1, lo_rho[2]:hi_rho[2]+1] - rho_t).max()
@@ -87,7 +87,7 @@ class TestTranspose2D(unittest.TestCase):
         
         rho_p, vel_p = self.reader.readData(('density', 'velocity'))
         
-        transpose_obj = transpose.Transpose(self.reader)
+        transpose_obj = transpose_wrapper.TransposeWrapper(self.reader)
         
         rho_t, lo_rho, hi_rho = transpose_obj.transpose(rho_p, direction=2)
         rho_err = numpy.absolute(rho[lo_rho[0]:hi_rho[0]+1, lo_rho[1]:hi_rho[1]+1, lo_rho[2]:hi_rho[2]+1] - rho_t).max()
