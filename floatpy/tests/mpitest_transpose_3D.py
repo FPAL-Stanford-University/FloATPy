@@ -3,7 +3,7 @@ import numpy
 import os
 import unittest
 
-from floatpy.parallel import transpose
+from floatpy.parallel import transpose_wrapper
 from floatpy.readers import samrai_reader, parallel_reader
 
 class TestTranspose2D(unittest.TestCase):
@@ -35,13 +35,13 @@ class TestTranspose2D(unittest.TestCase):
         
         rho_p, vel_p = self.reader.readData(('density', 'velocity'))
         
-        transpose_obj = transpose.Transpose(self.reader)
+        tw = transpose_wrapper.TransposeWrapper(self.reader)
         
-        rho_t, lo_rho, hi_rho = transpose_obj.transpose(rho_p, direction=0)
+        rho_t, lo_rho, hi_rho = tw.transpose(rho_p, direction=0)
         rho_err = numpy.absolute(rho[lo_rho[0]:hi_rho[0]+1, lo_rho[1]:hi_rho[1]+1, lo_rho[2]:hi_rho[2]+1] - rho_t).max()
         self.assertEqual(rho_err, 0.0, "Incorrect transposed data in x-direction for scalar!")
         
-        vel_t, lo_vel, hi_vel = transpose_obj.transpose(vel_p, direction=0)
+        vel_t, lo_vel, hi_vel = tw.transpose(vel_p, direction=0)
         vel_err = numpy.absolute(vel[lo_vel[0]:hi_vel[0]+1, lo_vel[1]:hi_vel[1]+1, lo_vel[2]:hi_vel[2]+1, :] - vel_t).max()
         self.assertEqual(vel_err, 0.0, "Incorrect transposed data in x-direction for vector!")
     
@@ -61,13 +61,13 @@ class TestTranspose2D(unittest.TestCase):
         
         rho_p, vel_p = self.reader.readData(('density', 'velocity'))
         
-        transpose_obj = transpose.Transpose(self.reader)
+        tw = transpose_wrapper.TransposeWrapper(self.reader)
         
-        rho_t, lo_rho, hi_rho = transpose_obj.transpose(rho_p, direction=1)
+        rho_t, lo_rho, hi_rho = tw.transpose(rho_p, direction=1)
         rho_err = numpy.absolute(rho[lo_rho[0]:hi_rho[0]+1, lo_rho[1]:hi_rho[1]+1, lo_rho[2]:hi_rho[2]+1] - rho_t).max()
         self.assertEqual(rho_err, 0.0, "Incorrect transposed data in y-direction for scalar!")
         
-        vel_t, lo_vel, hi_vel = transpose_obj.transpose(vel_p, direction=1)
+        vel_t, lo_vel, hi_vel = tw.transpose(vel_p, direction=1)
         vel_err = numpy.absolute(vel[lo_vel[0]:hi_vel[0]+1, lo_vel[1]:hi_vel[1]+1, lo_vel[2]:hi_vel[2]+1, :] - vel_t).max()
         self.assertEqual(vel_err, 0.0, "Incorrect transposed data in y-direction for vector!")
     
@@ -87,13 +87,13 @@ class TestTranspose2D(unittest.TestCase):
         
         rho_p, vel_p = self.reader.readData(('density', 'velocity'))
         
-        transpose_obj = transpose.Transpose(self.reader)
+        tw = transpose_wrapper.TransposeWrapper(self.reader)
         
-        rho_t, lo_rho, hi_rho = transpose_obj.transpose(rho_p, direction=2)
+        rho_t, lo_rho, hi_rho = tw.transpose(rho_p, direction=2)
         rho_err = numpy.absolute(rho[lo_rho[0]:hi_rho[0]+1, lo_rho[1]:hi_rho[1]+1, lo_rho[2]:hi_rho[2]+1] - rho_t).max()
         self.assertEqual(rho_err, 0.0, "Incorrect transposed data in z-direction for scalar!")
         
-        vel_t, lo_vel, hi_vel = transpose_obj.transpose(vel_p, direction=2)
+        vel_t, lo_vel, hi_vel = tw.transpose(vel_p, direction=2)
         vel_err = numpy.absolute(vel[lo_vel[0]:hi_vel[0]+1, lo_vel[1]:hi_vel[1]+1, lo_vel[2]:hi_vel[2]+1, :] - vel_t).max()
         self.assertEqual(vel_err, 0.0, "Incorrect transposed data in z-direction for vector!")
 
