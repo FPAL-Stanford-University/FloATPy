@@ -2,7 +2,7 @@ import numpy
 
 from floatpy.readers.parallel_reader import ParallelDataReader
 
-class Transpose():
+class TransposeWrapper():
     """
     Class to transpose data with parallel communication.
     """
@@ -51,7 +51,7 @@ class Transpose():
         lo   = numpy.empty(3, dtype=numpy.int32)
         hi   = numpy.empty(3, dtype=numpy.int32)
         
-        gp = self._parallel_reader._grid_partition
+        gp = self._parallel_reader.grid_partition
         
         if direction == 0:
             gp.get_szx(size)
