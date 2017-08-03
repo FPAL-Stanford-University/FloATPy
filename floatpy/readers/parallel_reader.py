@@ -17,7 +17,7 @@ class ParallelDataReader():
         
         comm : mpi4py communicator object
         serial_reader : a concrete object that extends BaseReader (Do not use this outside of this class)
-        sub_domain : Iterable of size 2 with the first entry being lo and second entry being hi
+        sub_domain : iterable of size 2 with the first entry being lo and second entry being hi
         num_ghosts : numpy integer array of size 3 with the no. of ghost values in the x, y and z directions respectively
         """
         

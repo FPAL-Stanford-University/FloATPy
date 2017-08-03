@@ -25,9 +25,9 @@ class TestDerivativesSecond(unittest.TestCase):
         error_4 = numpy.linalg.norm(y_prime_exact[0, :] - y_prime_4[:])
         error_6 = numpy.linalg.norm(y_prime_exact[0, :] - y_prime_6[:])
         
-        self.assertLess(error_2, 1.0e-2, "Incorrect derivative in first direction for second order finite difference")
-        self.assertLess(error_4, 1.0e-5, "Incorrect derivative in first direction for fourth order finite difference")
-        self.assertLess(error_6, 1.0e-7, "Incorrect derivative in first direction for sixth order finite difference")
+        self.assertLess(error_2, 1.0e-2, "Incorrect derivative in first direction for second order finite difference!")
+        self.assertLess(error_4, 1.0e-5, "Incorrect derivative in first direction for fourth order finite difference!")
+        self.assertLess(error_6, 1.0e-7, "Incorrect derivative in first direction for sixth order finite difference!")
     
     
     def testSecondDirection(self):
@@ -50,9 +50,9 @@ class TestDerivativesSecond(unittest.TestCase):
         error_4 = numpy.linalg.norm(y_prime_exact[0, 0, :] - y_prime_4[0, :])
         error_6 = numpy.linalg.norm(y_prime_exact[0, 0, :] - y_prime_6[0, :])
         
-        self.assertLess(error_2, 1.0e-2, "Incorrect derivative in second direction for second order finite difference")
-        self.assertLess(error_4, 1.0e-5, "Incorrect derivative in second direction for fourth order finite difference")
-        self.assertLess(error_6, 1.0e-7, "Incorrect derivative in second direction for sixth order finite difference")
+        self.assertLess(error_2, 1.0e-2, "Incorrect derivative in second direction for second order finite difference!")
+        self.assertLess(error_4, 1.0e-5, "Incorrect derivative in second direction for fourth order finite difference!")
+        self.assertLess(error_6, 1.0e-7, "Incorrect derivative in second direction for sixth order finite difference!")
     
     
     def testThirdDirection(self):
