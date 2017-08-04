@@ -51,7 +51,7 @@ class TransposeWrapper():
         lo   = numpy.empty(3, dtype=numpy.int32)
         hi   = numpy.empty(3, dtype=numpy.int32)
         
-        gp = self._parallel_reader._grid_partition
+        gp = self._parallel_reader.grid_partition
         
         if direction == 0:
             gp.get_szx(size)
