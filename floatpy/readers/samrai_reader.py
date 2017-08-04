@@ -7,7 +7,7 @@ import h5py
 import numpy
 import re
 
-from floatpy.upsampling import upsampling
+from floatpy.upsampling import Lagrange_upsampler
 
 from base_reader import BaseReader
 
@@ -79,9 +79,19 @@ class SamraiDataReader(BaseReader):
             
             self._periodic_dimensions = (periodic_dimensions[0], periodic_dimensions[1], periodic_dimensions[2])
         
-        # Set the upsampling method.
+        # Set up the upsampling class.
         
-        self._upsampling_method = upsampling_method
+        self._upsampler = []
+        if upsampling_method == 'constant':
+            self._upsampler = Lagrange_upsampler.LagrangeUpsampler('constant', data_order=self._data_order)
+        elif upsampling_method == 'second_order_Lagrange':
+            self._upsampler = Lagrange_upsampler.LagrangeUpsampler('second_order', data_order=self._data_order)
+        elif upsampling_method == 'fourth_order_Lagrange':
+            self._upsampler = Lagrange_upsampler.LagrangeUpsampler('fourth_order', data_order=self._data_order)
+        elif upsampling_method == 'sixth_order_Lagrange':
+            self._upsampler = Lagrange_upsampler.LagrangeUpsampler('sixth_order', data_order=self._data_order)
+        else:
+            raise RuntimeError("Unknown method '" + upsampling_method + "' for upsampling!")
         
         # Initialize subdomain.
         
@@ -877,8 +887,6 @@ class SamraiDataReader(BaseReader):
         
         periodic_dimensions = self._periodic_dimensions
         
-        upsampling_method = self._upsampling_method
-        
         # Get the number of file clusters.
         
         num_file_clusters = self._basic_info['num_file_clusters']
@@ -995,8 +1003,7 @@ class SamraiDataReader(BaseReader):
         
         # Get the number of ghost cells required for upsampling.
         
-        num_ghosts_upsampling = upsampling.getNumberOfGhostCellsUpsampling(upsampling_method) \
-            *numpy.ones(dim, dtype = num_ghosts.dtype)
+        num_ghosts_upsampling = self._upsampler.getNumberOfGhostCells()*numpy.ones(dim, dtype = num_ghosts.dtype)
         
         # Compute the lower and upper indices of the sub-domain coarsen to any level.
         # (including ghost cells requested by user and those for upsampling)
@@ -2609,9 +2616,9 @@ class SamraiDataReader(BaseReader):
                 x_end_idx = data_shape[0] + x_start_idx
                 
                 for component_idx in range(0, var_num_components[var_name]):
-                    root_data_component = upsampling.upsample(level_data[var_name][0], \
+                    root_data_component = self._upsampler.upsample(level_data[var_name][0], \
                         ratios_to_finest_level[0], \
-                        component_idx, method = 'constant')
+                        component_idx)
                     
                     if self._data_order == 'C':
                         root_data_component = root_data_component[x_start_idx:x_end_idx]
@@ -2633,9 +2640,9 @@ class SamraiDataReader(BaseReader):
                     
                     for component_idx in range(0, var_num_components[var_name]):
                         if level_num != num_levels - 1:
-                            level_data_component = upsampling.upsample(level_data[var_name][level_num], \
+                            level_data_component = self._upsampler.upsample(level_data[var_name][level_num], \
                                 ratios_to_finest_level[level_num], \
-                                component_idx, method = upsampling_method)
+                                component_idx)
                         else:
                             if self._data_order == 'C':
                                 level_data_component = level_data[var_name][level_num][component_idx, :]
@@ -2665,9 +2672,9 @@ class SamraiDataReader(BaseReader):
                 y_end_idx = data_shape[1] + y_start_idx
                 
                 for component_idx in range(0, var_num_components[var_name]):
-                    root_data_component = upsampling.upsample(level_data[var_name][0], \
+                    root_data_component = self._upsampler.upsample(level_data[var_name][0], \
                         ratios_to_finest_level[0], \
-                        component_idx, method = 'constant')
+                        component_idx)
                     
                     if self._data_order == 'C':
                         root_data_component = root_data_component[x_start_idx:x_end_idx, y_start_idx:y_end_idx]
@@ -2693,9 +2700,9 @@ class SamraiDataReader(BaseReader):
                     
                     for component_idx in range(0, var_num_components[var_name]):
                         if level_num != num_levels - 1:
-                            level_data_component = upsampling.upsample(level_data[var_name][level_num], \
+                            level_data_component = self._upsampler.upsample(level_data[var_name][level_num], \
                                 ratios_to_finest_level[level_num], \
-                                component_idx, method = upsampling_method)
+                                component_idx)
                         else:
                             if self._data_order == 'C':
                                 level_data_component = level_data[var_name][level_num][component_idx, :, :]
@@ -2729,9 +2736,9 @@ class SamraiDataReader(BaseReader):
                 z_end_idx = data_shape[2] + z_start_idx
                 
                 for component_idx in range(0, var_num_components[var_name]):
-                    root_data_component = upsampling.upsample(level_data[var_name][0], \
+                    root_data_component = self._upsampler.upsample(level_data[var_name][0], \
                         ratios_to_finest_level[0], \
-                        component_idx, method = 'constant')
+                        component_idx)
                     
                     if self._data_order == 'C':
                         root_data_component = \
@@ -2763,9 +2770,9 @@ class SamraiDataReader(BaseReader):
                     
                     for component_idx in range(0, var_num_components[var_name]):
                         if level_num != num_levels - 1:
-                            level_data_component = upsampling.upsample(level_data[var_name][level_num], \
+                            level_data_component = self._upsampler.upsample(level_data[var_name][level_num], \
                                 ratios_to_finest_level[level_num], \
-                                component_idx, method = upsampling_method)
+                                component_idx)
                         else:
                             if self._data_order == 'C':
                                 level_data_component = level_data[var_name][level_num][component_idx, :, :, :]

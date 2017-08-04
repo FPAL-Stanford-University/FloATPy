@@ -4,14 +4,14 @@ from floatpy.readers.parallel_reader import ParallelDataReader
 
 class TransposeWrapper():
     """
-    Class to transpose data with parallel communication.
+    Class to transpose data with parallel communication. Only data in Fortran order can be used.
     """
     
     def __init__(self, parallel_reader):
         """
         Constructor of the class.
         
-        parallel_reader: a concrete object of ParallelDataReader
+        parallel_reader : a concrete object of ParallelDataReader
         """
         
         if not isinstance(parallel_reader, ParallelDataReader):
@@ -27,15 +27,12 @@ class TransposeWrapper():
         """
         Transpose data.
         
-        data:      data to transpose
-        direction: direction to take transpose
+        data : data to transpose
+        direction : direction to take transpose
         """
         
         if not numpy.all(numpy.isreal(data)):
             raise ValueError("The given data is complex! Only real data can be transposed.")
-        
-        if not numpy.isfortran(data):
-            raise RuntimeError("The given data is not in Fortran order! Only data in Fortran order can be transposed.")
         
         if direction < 0 or direction > 2:
             raise RuntimeError('Direction < 0 or > 2 is invalid!')
@@ -51,7 +48,7 @@ class TransposeWrapper():
         lo   = numpy.empty(3, dtype=numpy.int32)
         hi   = numpy.empty(3, dtype=numpy.int32)
         
-        gp = self._parallel_reader._grid_partition
+        gp = self._parallel_reader.grid_partition
         
         if direction == 0:
             gp.get_szx(size)
