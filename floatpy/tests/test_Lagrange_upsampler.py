@@ -15,7 +15,7 @@ class TestLagrangeUnsampler(unittest.TestCase):
         x_constant = numpy.linspace(0, 1.0, 2)
         y_constant = numpy.ones([2])
         
-        upsampler_constant = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='constant')
+        upsampler_constant = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='constant', data_order='C')
         y_upsampled_constant = upsampler_constant.upsample(y_constant, r)
         
         error_constant = numpy.absolute(y_upsampled_constant - 1.0).max()
@@ -25,7 +25,7 @@ class TestLagrangeUnsampler(unittest.TestCase):
         x_second = numpy.linspace(0.0, 2.0, 3)
         y_second = x_second
         
-        upsampler_second = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='second_order')
+        upsampler_second = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='second_order', data_order='C')
         y_upsampled_second = upsampler_second.upsample(y_second, r)
         
         n_ghosts_second = upsampler_second.getNumberOfGhostCells()
@@ -39,7 +39,7 @@ class TestLagrangeUnsampler(unittest.TestCase):
         x_fourth = numpy.linspace(0.0, 4.0, 5)
         y_fourth = x_fourth*x_fourth*x_fourth
         
-        upsampler_fourth = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='fourth_order')
+        upsampler_fourth = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='fourth_order', data_order='C')
         y_upsampled_fourth = upsampler_fourth.upsample(y_fourth, r)
         
         n_ghosts_fourth = upsampler_fourth.getNumberOfGhostCells()
@@ -53,7 +53,7 @@ class TestLagrangeUnsampler(unittest.TestCase):
         x_sixth = numpy.linspace(0.0, 6.0, 7)
         y_sixth = x_sixth*x_sixth*x_sixth*x_sixth*x_sixth
         
-        upsampler_sixth = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='sixth_order')
+        upsampler_sixth = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='sixth_order', data_order='C')
         y_upsampled_sixth = upsampler_sixth.upsample(y_sixth, r)
         
         n_ghosts_sixth = upsampler_sixth.getNumberOfGhostCells()
@@ -77,7 +77,7 @@ class TestLagrangeUnsampler(unittest.TestCase):
         x_constant = numpy.repeat(x_constant, 2, axis=0)
         y_constant = numpy.ones(x_constant.shape)
         
-        upsampler_constant = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='constant')
+        upsampler_constant = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='constant', data_order='C')
         y_upsampled_constant = upsampler_constant.upsample(y_constant, r)
         
         error_constant = numpy.absolute(y_upsampled_constant - 1.0).max()
@@ -88,7 +88,7 @@ class TestLagrangeUnsampler(unittest.TestCase):
         x_second = numpy.repeat(x_second, 3, axis=0)
         y_second = x_second
         
-        upsampler_second = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='second_order')
+        upsampler_second = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='second_order', data_order='C')
         y_upsampled_second = upsampler_second.upsample(y_second, r)
         
         n_ghosts_second = upsampler_second.getNumberOfGhostCells()
@@ -106,7 +106,7 @@ class TestLagrangeUnsampler(unittest.TestCase):
         x_fourth = numpy.repeat(x_fourth, 5, axis=0)
         y_fourth = x_fourth*x_fourth*x_fourth
         
-        upsampler_fourth = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='fourth_order')
+        upsampler_fourth = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='fourth_order', data_order='C')
         y_upsampled_fourth = upsampler_fourth.upsample(y_fourth, r)
         
         n_ghosts_fourth = upsampler_fourth.getNumberOfGhostCells()
@@ -124,7 +124,7 @@ class TestLagrangeUnsampler(unittest.TestCase):
         x_sixth = numpy.repeat(x_sixth, 7, axis=0)
         y_sixth = x_sixth*x_sixth*x_sixth*x_sixth*x_sixth
         
-        upsampler_sixth = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='sixth_order')
+        upsampler_sixth = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='sixth_order', data_order='C')
         y_upsampled_sixth = upsampler_sixth.upsample(y_sixth, r)
         
         n_ghosts_sixth = upsampler_sixth.getNumberOfGhostCells()
@@ -151,7 +151,7 @@ class TestLagrangeUnsampler(unittest.TestCase):
         x_constant = numpy.repeat(x_constant, 2, axis=1)
         y_constant = numpy.ones(x_constant.shape)
         
-        upsampler_constant = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='constant')
+        upsampler_constant = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='constant', data_order='C')
         y_upsampled_constant = upsampler_constant.upsample(y_constant, r)
         
         error_constant = numpy.absolute(y_upsampled_constant - 1.0).max()
@@ -163,7 +163,7 @@ class TestLagrangeUnsampler(unittest.TestCase):
         x_second = numpy.repeat(x_second, 3, axis=1)
         y_second = x_second
         
-        upsampler_second = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='second_order')
+        upsampler_second = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='second_order', data_order='C')
         y_upsampled_second = upsampler_second.upsample(y_second, r)
         
         n_ghosts_second = upsampler_second.getNumberOfGhostCells()
@@ -183,7 +183,7 @@ class TestLagrangeUnsampler(unittest.TestCase):
         x_fourth = numpy.repeat(x_fourth, 5, axis=1)
         y_fourth = x_fourth*x_fourth*x_fourth
         
-        upsampler_fourth = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='fourth_order')
+        upsampler_fourth = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='fourth_order', data_order='C')
         y_upsampled_fourth = upsampler_fourth.upsample(y_fourth, r)
         
         n_ghosts_fourth = upsampler_fourth.getNumberOfGhostCells()
@@ -203,7 +203,7 @@ class TestLagrangeUnsampler(unittest.TestCase):
         x_sixth = numpy.repeat(x_sixth, 7, axis=1)
         y_sixth = x_sixth*x_sixth*x_sixth*x_sixth*x_sixth
         
-        upsampler_sixth = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='sixth_order')
+        upsampler_sixth = floatpy.upsampling.Lagrange_upsampler.LagrangeUpsampler(method='sixth_order', data_order='C')
         y_upsampled_sixth = upsampler_sixth.upsample(y_sixth, r)
         
         n_ghosts_sixth = upsampler_sixth.getNumberOfGhostCells()

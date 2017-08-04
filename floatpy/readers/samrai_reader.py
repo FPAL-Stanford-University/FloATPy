@@ -83,13 +83,13 @@ class SamraiDataReader(BaseReader):
         
         self._upsampler = []
         if upsampling_method == 'constant':
-            self._upsampler = Lagrange_upsampler.LagrangeUpsampler('constant')
+            self._upsampler = Lagrange_upsampler.LagrangeUpsampler('constant', data_order=self._data_order)
         elif upsampling_method == 'second_order_Lagrange':
-            self._upsampler = Lagrange_upsampler.LagrangeUpsampler('second_order')
+            self._upsampler = Lagrange_upsampler.LagrangeUpsampler('second_order', data_order=self._data_order)
         elif upsampling_method == 'fourth_order_Lagrange':
-            self._upsampler = Lagrange_upsampler.LagrangeUpsampler('fourth_order')
+            self._upsampler = Lagrange_upsampler.LagrangeUpsampler('fourth_order', data_order=self._data_order)
         elif upsampling_method == 'sixth_order_Lagrange':
-            self._upsampler = Lagrange_upsampler.LagrangeUpsampler('sixth_order')
+            self._upsampler = Lagrange_upsampler.LagrangeUpsampler('sixth_order', data_order=self._data_order)
         else:
             raise RuntimeError("Unknown method '" + upsampling_method + "' for upsampling!")
         

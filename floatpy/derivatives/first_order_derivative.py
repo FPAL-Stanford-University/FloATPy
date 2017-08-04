@@ -9,12 +9,14 @@ class FirstOrderDerivative():
     Class to take first order derivative with explicit finite differencing.
     """
     
-    def __init__(self, method='second_order', direction=0):
+    def __init__(self, method='second_order', direction=0, data_order='F'):
         """
         Constructor of the class.
         
         method: a string {'second_order', 'fourth_order', 'sixth_order'} to describe the explicit finite difference method 
                 to use
+        data_order : a strring {'F', 'C'} to describe whether the multi-dimensional data is stored in row-major (C-style) or
+                    column-major (Fortran-style) order in memory
         """
         
         if method != 'second_order' and \
@@ -28,6 +30,12 @@ class FirstOrderDerivative():
             raise RuntimeError('Direction < 0 or > 2 is invalid!')
         
         self._direction = direction
+        
+        if data_order != 'C' and \
+           data_order != 'F':
+            raise RuntimeError("Invalid data order! Data order can only be 'C' or 'F'.")
+        
+        self._data_order = data_order
     
     
     def getNumberOfGhostCells(self):
@@ -61,11 +69,7 @@ class FirstOrderDerivative():
         Compute first order derivative using explicit second order finite differencing.
         """
         
-        # Get the order and shape of data.
-        
-        data_order = 'C'
-        if numpy.isfortran(data):
-            data_order = 'F'
+        # Get the shape of data.
         
         data_shape = numpy.array(data.shape)
         
@@ -86,7 +90,7 @@ class FirstOrderDerivative():
             
             # Check whether the component_idx is valid and get the shape of the component's data.
             
-            if data_order == 'C':
+            if self._data_order == 'C':
                 if component_idx >= data.shape[0] or component_idx < 0:
                     raise RuntimeError('Component index is invalid!')
                 
@@ -129,7 +133,7 @@ class FirstOrderDerivative():
         if component_idx is None:
             data_component = data
         else:
-            if data_order == 'C':
+            if self._data_order == 'C':
                 if dim == 1:
                     data_component = data[component_idx, :]
                 elif dim == 2:
@@ -253,11 +257,7 @@ class FirstOrderDerivative():
         Compute first order derivative using explicit fourth order finite differencing.
         """
         
-        # Get the order and shape of data.
-        
-        data_order = 'C'
-        if numpy.isfortran(data):
-            data_order = 'F'
+        # Get the shape of data.
         
         data_shape = numpy.array(data.shape)
         
@@ -278,7 +278,7 @@ class FirstOrderDerivative():
             
             # Check whether the component_idx is valid and get the shape of the component's data.
             
-            if data_order == 'C':
+            if self._data_order == 'C':
                 if component_idx >= data.shape[0] or component_idx < 0:
                     raise RuntimeError('Component index is invalid!')
                 
@@ -321,7 +321,7 @@ class FirstOrderDerivative():
         if component_idx is None:
             data_component = data
         else:
-            if data_order == 'C':
+            if self._data_order == 'C':
                 if dim == 1:
                     data_component = data[component_idx, :]
                 elif dim == 2:
@@ -510,11 +510,7 @@ class FirstOrderDerivative():
         Compute first order derivative using explicit sixth order finite differencing.
         """
         
-        # Get the order and shape of data.
-        
-        data_order = 'C'
-        if numpy.isfortran(data):
-            data_order = 'F'
+        # Get the shape of data.
         
         data_shape = numpy.array(data.shape)
         
@@ -535,7 +531,7 @@ class FirstOrderDerivative():
             
             # Check whether the component_idx is valid and get the shape of the component's data.
             
-            if data_order == 'C':
+            if self._data_order == 'C':
                 if component_idx >= data.shape[0] or component_idx < 0:
                     raise RuntimeError('Component index is invalid!')
                 
@@ -578,7 +574,7 @@ class FirstOrderDerivative():
         if component_idx is None:
             data_component = data
         else:
-            if data_order == 'C':
+            if self._data_order == 'C':
                 if dim == 1:
                     data_component = data[component_idx, :]
                 elif dim == 2:
