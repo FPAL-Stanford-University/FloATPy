@@ -17,7 +17,7 @@ class TestReaderWchrAscii(unittest.TestCase):
         self.num_ghosts = (1, 1, 1)
         self.reader = pdr.ParallelDataReader( MPI.COMM_WORLD, war.WchrAsciiReader(self.filename_prefix), num_ghosts=self.num_ghosts )
         self.reader.step = 0
-
+        
         self.lo, self.hi = self.reader.interior_chunk
     
     
@@ -60,7 +60,7 @@ class TestReaderWchrAscii(unittest.TestCase):
         indices_ghost_y = range(self.lo[1]-self.num_ghosts[1], self.hi[1]+self.num_ghosts[1]+1)
         indices_ghost_z = range(self.lo[2]-self.num_ghosts[2], self.hi[2]+self.num_ghosts[2]+1)
         
-	# Create the correct coordinates in domain with ghost cells.
+        # Create the correct coordinates in domain with ghost cells.
         
         x_ghost = x.take(indices_ghost_x, axis=0, mode='wrap')
         x_ghost = x_ghost.take(indices_ghost_y, axis=1, mode='wrap')
@@ -96,7 +96,6 @@ class TestReaderWchrAscii(unittest.TestCase):
         
         # Read in chunked data.
         
-        self.reader.sub_domain = self.lo, self.hi
         rho_c,        = self.reader.readData('rho')
         u_c, v_c, w_c = self.reader.readData(('u','v','w'))
         p_c,          = self.reader.readData('p')
@@ -125,7 +124,6 @@ class TestReaderWchrAscii(unittest.TestCase):
         
         # Read in chunked data.
         
-        self.reader.sub_domain = self.lo, self.hi
         rho_c,        = self.reader.readData('rho', communicate=True)
         u_c, v_c, w_c = self.reader.readData(('u','v','w'), communicate=True)
         p_c,          = self.reader.readData('p', communicate=True)
@@ -136,7 +134,7 @@ class TestReaderWchrAscii(unittest.TestCase):
         indices_ghost_y = range(self.lo[1]-self.num_ghosts[1], self.hi[1]+self.num_ghosts[1]+1)
         indices_ghost_z = range(self.lo[2]-self.num_ghosts[2], self.hi[2]+self.num_ghosts[2]+1)
         
-	# Create the correct data in domain with ghost cells.
+        # Create the correct data in domain with ghost cells.
         
         rho_ghost = rho.take(indices_ghost_x, axis=0, mode='wrap')
         rho_ghost = rho_ghost.take(indices_ghost_y, axis=1, mode='wrap')

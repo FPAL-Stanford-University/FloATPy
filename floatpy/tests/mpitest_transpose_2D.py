@@ -30,8 +30,6 @@ class TestTranspose2D(unittest.TestCase):
         
         # Read data in parallel region.
         
-        self.reader.sub_domain = self.lo, self.hi
-        
         rho_p, vel_p = self.reader.readData(('density', 'velocity'))
         
         tw = transpose_wrapper.TransposeWrapper(self.reader)
@@ -54,8 +52,6 @@ class TestTranspose2D(unittest.TestCase):
         rho, vel = self.serial_reader.readData(('density', 'velocity'))
         
         # Read data in parallel region.
-        
-        self.reader.sub_domain = self.lo, self.hi
         
         rho_p, vel_p = self.reader.readData(('density', 'velocity'))
         
