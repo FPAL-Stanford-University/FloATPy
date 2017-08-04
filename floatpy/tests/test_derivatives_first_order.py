@@ -1,13 +1,13 @@
 import numpy
 import unittest
 
-import floatpy.derivatives.second
+import floatpy.derivatives.first_order_derivative
 
-class TestDerivativesSecond(unittest.TestCase):
+class TestDerivativesFirst(unittest.TestCase):
     
     def testFirstDirection(self):
         """
-        Test the second derivatives in the first direction.
+        Test the first derivatives in the first direction.
         """
         
         x = numpy.empty([1, 100])
@@ -15,11 +15,15 @@ class TestDerivativesSecond(unittest.TestCase):
         dx = x[0, 1] - x[0, 0]
         
         y = numpy.sin(x)
-        y_prime_exact = -numpy.sin(x)
+        y_prime_exact = numpy.cos(x)
         
-        y_prime_2 = floatpy.derivatives.second.computeSecondDerivative(y, dx, 0, 0, method = 'second_order')
-        y_prime_4 = floatpy.derivatives.second.computeSecondDerivative(y, dx, 0, 0, method = 'fourth_order')
-        y_prime_6 = floatpy.derivatives.second.computeSecondDerivative(y, dx, 0, 0, method = 'sixth_order')
+        dydx_2 = floatpy.derivatives.first_order_derivative.FirstOrderDerivative('second_order', direction=0)
+        dydx_4 = floatpy.derivatives.first_order_derivative.FirstOrderDerivative('fourth_order', direction=0)
+        dydx_6 = floatpy.derivatives.first_order_derivative.FirstOrderDerivative('sixth_order', direction=0)
+        
+        y_prime_2 = dydx_2.differentiate(y, dx, 0, True)
+        y_prime_4 = dydx_4.differentiate(y, dx, 0, True)
+        y_prime_6 = dydx_6.differentiate(y, dx, 0, True)
         
         error_2 = numpy.linalg.norm(y_prime_exact[0, :] - y_prime_2[:])
         error_4 = numpy.linalg.norm(y_prime_exact[0, :] - y_prime_4[:])
@@ -32,7 +36,7 @@ class TestDerivativesSecond(unittest.TestCase):
     
     def testSecondDirection(self):
         """
-        Test the second derivatives in the second direction.
+        Test the first derivatives in the second direction.
         """
         
         x = numpy.empty([1, 1, 100])
@@ -40,11 +44,15 @@ class TestDerivativesSecond(unittest.TestCase):
         dx = x[0, 0, 1] - x[0, 0, 0]
         
         y = numpy.sin(x)
-        y_prime_exact = -numpy.sin(x)
+        y_prime_exact = numpy.cos(x)
         
-        y_prime_2 = floatpy.derivatives.second.computeSecondDerivative(y, dx, 1, 0, method = 'second_order')
-        y_prime_4 = floatpy.derivatives.second.computeSecondDerivative(y, dx, 1, 0, method = 'fourth_order')
-        y_prime_6 = floatpy.derivatives.second.computeSecondDerivative(y, dx, 1, 0, method = 'sixth_order')
+        dydx_2 = floatpy.derivatives.first_order_derivative.FirstOrderDerivative('second_order', direction=1)
+        dydx_4 = floatpy.derivatives.first_order_derivative.FirstOrderDerivative('fourth_order', direction=1)
+        dydx_6 = floatpy.derivatives.first_order_derivative.FirstOrderDerivative('sixth_order', direction=1)
+        
+        y_prime_2 = dydx_2.differentiate(y, dx, 0, True)
+        y_prime_4 = dydx_4.differentiate(y, dx, 0, True)
+        y_prime_6 = dydx_6.differentiate(y, dx, 0, True)
         
         error_2 = numpy.linalg.norm(y_prime_exact[0, 0, :] - y_prime_2[0, :])
         error_4 = numpy.linalg.norm(y_prime_exact[0, 0, :] - y_prime_4[0, :])
@@ -57,7 +65,7 @@ class TestDerivativesSecond(unittest.TestCase):
     
     def testThirdDirection(self):
         """
-        Test the second derivatives in the thrid direction.
+        Test the first derivatives in the thrid direction.
         """
         
         x = numpy.empty([1, 1, 1, 100])
@@ -65,11 +73,15 @@ class TestDerivativesSecond(unittest.TestCase):
         dx = x[0, 0, 0, 1] - x[0, 0, 0, 0]
         
         y = numpy.sin(x)
-        y_prime_exact = -numpy.sin(x)
+        y_prime_exact = numpy.cos(x)
         
-        y_prime_2 = floatpy.derivatives.second.computeSecondDerivative(y, dx, 2, 0, method = 'second_order')
-        y_prime_4 = floatpy.derivatives.second.computeSecondDerivative(y, dx, 2, 0, method = 'fourth_order')
-        y_prime_6 = floatpy.derivatives.second.computeSecondDerivative(y, dx, 2, 0, method = 'sixth_order')
+        dydx_2 = floatpy.derivatives.first_order_derivative.FirstOrderDerivative('second_order', direction=2)
+        dydx_4 = floatpy.derivatives.first_order_derivative.FirstOrderDerivative('fourth_order', direction=2)
+        dydx_6 = floatpy.derivatives.first_order_derivative.FirstOrderDerivative('sixth_order', direction=2)
+        
+        y_prime_2 = dydx_2.differentiate(y, dx, 0, True)
+        y_prime_4 = dydx_4.differentiate(y, dx, 0, True)
+        y_prime_6 = dydx_6.differentiate(y, dx, 0, True)
         
         error_2 = numpy.linalg.norm(y_prime_exact[0, 0, 0, :] - y_prime_2[0, 0, :])
         error_4 = numpy.linalg.norm(y_prime_exact[0, 0, 0, :] - y_prime_4[0, 0, :])
