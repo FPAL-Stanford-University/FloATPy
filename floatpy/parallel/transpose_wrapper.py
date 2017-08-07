@@ -12,6 +12,7 @@ class TransposeWrapper(object):
         Constructor of the class.
         
         parallel_reader : a concrete object of ParallelDataReader
+        direction : direction to take transpose
         """
         
         if not isinstance(parallel_reader, ParallelDataReader):
@@ -79,12 +80,11 @@ class TransposeWrapper(object):
         return tuple(self._size[0:self._dim])
     
     
-    def transpose(self, data, direction=0):
+    def transpose(self, data):
         """
         Transpose data.
         
         data : data to transpose
-        direction : direction to take transpose
         """
         
         if not numpy.all(numpy.isreal(data)):
@@ -110,9 +110,9 @@ class TransposeWrapper(object):
             data_3D = numpy.reshape(data, shape_3D, order='F')
             data_transposed = numpy.reshape(data_out, self._size, order='F')
             
-            if direction == 0:
+            if self._direction == 0:
                 self._grid_partition.transpose_3d_to_x(data_3D, data_transposed)
-            elif direction == 1:
+            elif self._direction == 1:
                 self._grid_partition.transpose_3d_to_y(data_3D, data_transposed)
             else:
                 self._grid_partition.transpose_3d_to_z(data_3D, data_transposed)
@@ -134,9 +134,9 @@ class TransposeWrapper(object):
                     data_3D = data[:, :, :, ic]
                     data_transposed = data_out[:, :, :, ic]
                 
-                if direction == 0:
+                if self._direction == 0:
                     self._grid_partition.transpose_3d_to_x(data_3D, data_transposed)
-                elif direction == 1:
+                elif self._direction == 1:
                     self._grid_partition.transpose_3d_to_y(data_3D, data_transposed)
                 else:
                     self._grid_partition.transpose_3d_to_z(data_3D, data_transposed)
