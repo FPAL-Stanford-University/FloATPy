@@ -4,7 +4,7 @@ Module for computing first order deriatives with explicit finite differencing.
 
 import numpy
 
-class FirstOrderDerivative():
+class FirstOrderDerivative(object):
     """
     Class to take first order derivative with explicit finite differencing.
     """
@@ -51,6 +51,15 @@ class FirstOrderDerivative():
             return 3
     
     
+    @property
+    def num_ghosts(self):
+        """
+        Return the number of ghost cells needed for the finite difference method.
+        """
+        
+        return self.getNumberOfGhostCells()
+    
+    
     def differentiate(self, data, dx, component_idx=None, use_one_sided=False):
         """
         Compute first order derivative.
@@ -64,7 +73,7 @@ class FirstOrderDerivative():
             return self._differentiateSixthOrderFiniteDifference(data, dx, self._direction, component_idx, use_one_sided)
     
     
-    def _differentiateSecondOrderFiniteDifference(self, data, dx, direction=0, component_idx=None, use_one_sided=True):
+    def _differentiateSecondOrderFiniteDifference(self, data, dx, direction, component_idx, use_one_sided):
         """
         Compute first order derivative using explicit second order finite differencing.
         """
@@ -123,7 +132,7 @@ class FirstOrderDerivative():
         # Initialize container to store the derivatives. The elements in the container
         # are initialized as NAN values.
         
-        diff_data = numpy.empty(data_shape, dtype = data.dtype)
+        diff_data = numpy.empty(data_shape, dtype=data.dtype, order=self._data_order)
         diff_data[:] = numpy.NAN
         
         # Get the component's data.
@@ -252,7 +261,7 @@ class FirstOrderDerivative():
         return diff_data
     
     
-    def _differentiateFourthOrderFiniteDifference(self, data, dx, direction=0, component_idx=None, use_one_sided=False):
+    def _differentiateFourthOrderFiniteDifference(self, data, dx, direction, component_idx, use_one_sided):
         """
         Compute first order derivative using explicit fourth order finite differencing.
         """
@@ -311,7 +320,7 @@ class FirstOrderDerivative():
         # Initialize container to store the derivatives. The elements in the container
         # are initialized as NAN values.
         
-        diff_data = numpy.empty(data_shape)
+        diff_data = numpy.empty(data_shape, dtype=data.dtype, order=self._data_order)
         diff_data[:] = numpy.NAN
         
         # Get the component's data.
@@ -505,7 +514,7 @@ class FirstOrderDerivative():
         return diff_data
     
     
-    def _differentiateSixthOrderFiniteDifference(self, data, dx, direction=0, component_idx=None, use_one_sided=True):
+    def _differentiateSixthOrderFiniteDifference(self, data, dx, direction, component_idx, use_one_sided):
         """
         Compute first order derivative using explicit sixth order finite differencing.
         """
@@ -564,7 +573,7 @@ class FirstOrderDerivative():
         # Initialize container to store the derivatives. The elements in the container
         # are initialized as NAN values.
         
-        diff_data = numpy.empty(data_shape, dtype = data.dtype)
+        diff_data = numpy.empty(data_shape, dtype=data.dtype, order=self._data_order)
         diff_data[:] = numpy.NAN
         
         # Get the component's data.
