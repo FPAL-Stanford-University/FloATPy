@@ -79,7 +79,7 @@ class SamraiDataReader(BaseReader):
             
             self._periodic_dimensions = (periodic_dimensions[0], periodic_dimensions[1], periodic_dimensions[2])
         
-        # Set up the upsampling class.
+        # Set up the upsampling classes.
         
         self._upsampler = []
         if upsampling_method == 'constant':
@@ -92,6 +92,8 @@ class SamraiDataReader(BaseReader):
             self._upsampler = Lagrange_upsampler.LagrangeUpsampler('sixth_order', data_order=self._data_order)
         else:
             raise RuntimeError("Unknown method '" + upsampling_method + "' for upsampling!")
+        
+        self._upsampler_constant = Lagrange_upsampler.LagrangeUpsampler('constant', data_order=self._data_order)
         
         # Initialize subdomain.
         
@@ -2616,7 +2618,7 @@ class SamraiDataReader(BaseReader):
                 x_end_idx = data_shape[0] + x_start_idx
                 
                 for component_idx in range(0, var_num_components[var_name]):
-                    root_data_component = self._upsampler.upsample(level_data[var_name][0], \
+                    root_data_component = self._upsampler_constant.upsample(level_data[var_name][0], \
                         ratios_to_finest_level[0], \
                         component_idx)
                     
@@ -2672,7 +2674,7 @@ class SamraiDataReader(BaseReader):
                 y_end_idx = data_shape[1] + y_start_idx
                 
                 for component_idx in range(0, var_num_components[var_name]):
-                    root_data_component = self._upsampler.upsample(level_data[var_name][0], \
+                    root_data_component = self._upsampler_constant.upsample(level_data[var_name][0], \
                         ratios_to_finest_level[0], \
                         component_idx)
                     
@@ -2736,7 +2738,7 @@ class SamraiDataReader(BaseReader):
                 z_end_idx = data_shape[2] + z_start_idx
                 
                 for component_idx in range(0, var_num_components[var_name]):
-                    root_data_component = self._upsampler.upsample(level_data[var_name][0], \
+                    root_data_component = self._upsampler_constant.upsample(level_data[var_name][0], \
                         ratios_to_finest_level[0], \
                         component_idx)
                     

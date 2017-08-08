@@ -133,9 +133,13 @@ class ParallelDataReader(object):
         # Set the sub domain to read in using the serial data reader.
         self._serial_reader.sub_domain = ( tuple(self._interior_chunk_lo), tuple(self._interior_chunk_hi) )
         
-        self._interior = ( slice(self._num_ghosts[0],self._full_chunk_size[0] - self._num_ghosts[0]),
-                           slice(self._num_ghosts[1],self._full_chunk_size[1] - self._num_ghosts[1]),
-                           slice(self._num_ghosts[2],self._full_chunk_size[2] - self._num_ghosts[2]) )
+        self._interior = (
+            slice(self._interior_chunk_lo[0] - self._full_chunk_lo[0],
+                  self._full_chunk_size[0] - (self._full_chunk_hi[0] - self._interior_chunk_hi[0])),
+            slice(self._interior_chunk_lo[1] - self._full_chunk_lo[1],
+                  self._full_chunk_size[1] - (self._full_chunk_hi[1] - self._interior_chunk_hi[1])),
+            slice(self._interior_chunk_lo[2] - self._full_chunk_lo[2],
+                  self._full_chunk_size[2] - (self._full_chunk_hi[2] - self._interior_chunk_hi[2])) )
     
     
     @property
