@@ -129,7 +129,7 @@ class FirstOrderDerivative():
         # Get the component's data.
         
         data_component = None
-        
+       
         if component_idx is None:
             data_component = data
         else:
@@ -144,7 +144,7 @@ class FirstOrderDerivative():
                 if dim == 1:
                     data_component = data[:, component_idx]
                 elif dim == 2:
-                    data_componenat = data[:, :, component_idx]
+                    data_component = data[:, :, component_idx]
                 elif dim == 3:
                     data_component = data[:, :, :, component_idx]
         
