@@ -48,6 +48,7 @@ class LagrangeUpsampler(object):
         elif self._method == 'sixth_order':
             return 3
     
+    
     @property
     def num_ghosts(self):
         """
