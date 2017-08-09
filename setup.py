@@ -35,6 +35,15 @@ ext_compact_6th_order = Extension('_pycd06',
                                     extra_objects = obj_compact_6th_order,
                                     f2py_options = [])
 
+obj_compact_10th_order = BuildFortranObjects(['floatpy/derivatives/compact/kind_parameters.F90',
+                                              'floatpy/derivatives/compact/constants.F90',
+                                              'floatpy/derivatives/compact/cd10.F90'])
+
+ext_compact_10th_order = Extension('_pycd10',
+                                     sources = ['floatpy/derivatives/compact/f90wrap_cd10.f90'],
+                                     extra_objects = obj_compact_10th_order,
+                                     f2py_options = [])
+
 obj_pyt3d = BuildFortranObjects(['floatpy/parallel/pyt3d/kind_parameters.F90',
                                  'floatpy/parallel/pyt3d/constants.F90',
                                  'floatpy/parallel/pyt3d/exits.F90',
@@ -53,6 +62,8 @@ ext_pyt3d = Extension('_pyt3d',
 modules = ['floatpy.parallel',
            'floatpy.parallel.pyt3d',
            'floatpy.derivatives',
+           'floatpy.derivatives.explicit',
+           'floatpy.derivatives.compact',
            'floatpy.upsampling',
            'floatpy.readers']
 
@@ -61,6 +72,6 @@ setup(name = 'FloATPy',
       description = 'Postprocessing utilities for codes in FPAL',
       author = 'Flow Physics and Aeroacoustics Laboratory of Stanford University',
       author_email = 'wongml@stanford.edu, akshays@stanford.edu',
-      ext_modules = [ext_compact_6th_order, ext_pyt3d],
+      ext_modules = [ext_compact_6th_order, ext_compact_10th_order, ext_pyt3d],
       packages = ['floatpy'] + modules,
       )
