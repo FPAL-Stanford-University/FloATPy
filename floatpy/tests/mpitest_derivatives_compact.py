@@ -42,14 +42,19 @@ class TestDerivativesCompact(unittest.TestCase):
         self.z = numpy.asfortranarray(self.z)
 
         self.f = numpy.sin(self.omega*self.x) * numpy.cos(self.omega*self.y) * numpy.cos(self.omega*self.z)
+
         self.dfdx_exact =  self.omega * numpy.cos(self.omega*self.x) * numpy.cos(self.omega*self.y) * numpy.cos(self.omega*self.z)
         self.dfdy_exact = -self.omega * numpy.sin(self.omega*self.x) * numpy.sin(self.omega*self.y) * numpy.cos(self.omega*self.z)
         self.dfdz_exact = -self.omega * numpy.sin(self.omega*self.x) * numpy.cos(self.omega*self.y) * numpy.sin(self.omega*self.z)
 
+        self.d2fdx2_exact = -self.omega**2 * numpy.sin(self.omega*self.x) * numpy.cos(self.omega*self.y) * numpy.cos(self.omega*self.z)
+        self.d2fdy2_exact = -self.omega**2 * numpy.sin(self.omega*self.x) * numpy.cos(self.omega*self.y) * numpy.cos(self.omega*self.z)
+        self.d2fdz2_exact = -self.omega**2 * numpy.sin(self.omega*self.x) * numpy.cos(self.omega*self.y) * numpy.cos(self.omega*self.z)
 
-    def testDerivativeX(self):
+
+    def testFirstDerivativeX(self):
         """
-        Test the first derivatives in the X direction.
+        Test the first derivative in the X direction.
         """
 
         dfdx = numpy.empty( self.chunk_3d_size, dtype=numpy.float64, order='F' )
@@ -62,9 +67,9 @@ class TestDerivativesCompact(unittest.TestCase):
         self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in X!")
 
 
-    def testDerivativeY(self):
+    def testFirstDerivativeY(self):
         """
-        Test the first derivatives in the Y direction.
+        Test the first derivative in the Y direction.
         """
 
         dfdy = numpy.empty( self.chunk_3d_size, dtype=numpy.float64, order='F' )
@@ -77,9 +82,9 @@ class TestDerivativesCompact(unittest.TestCase):
         self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in Y!")
 
 
-    def testDerivativeZ(self):
+    def testFirstDerivativeZ(self):
         """
-        Test the first derivatives in the Z direction.
+        Test the first derivative in the Z direction.
         """
 
         dfdz = numpy.empty( self.chunk_3d_size, dtype=numpy.float64, order='F' )
@@ -91,6 +96,51 @@ class TestDerivativesCompact(unittest.TestCase):
 
         self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in Z!")
     
+
+    def testSecondDerivativeX(self):
+        """
+        Test the second derivative in the X direction.
+        """
+
+        d2fdx2 = numpy.empty( self.chunk_3d_size, dtype=numpy.float64, order='F' )
+        self.der.d2dx2(self.f, d2fdx2)
+
+        myerror = numpy.array([ numpy.absolute(self.d2fdx2_exact - d2fdx2).max() ])
+        error = numpy.array([ myerror[0] ])
+        self.comm.Allreduce(myerror, error, op=MPI.MAX)
+
+        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in X!")
+
+
+    def testSecondDerivativeY(self):
+        """
+        Test the second derivative in the Y direction.
+        """
+
+        d2fdy2 = numpy.empty( self.chunk_3d_size, dtype=numpy.float64, order='F' )
+        self.der.d2dy2(self.f, d2fdy2)
+
+        myerror = numpy.array([ numpy.absolute(self.d2fdy2_exact - d2fdy2).max() ])
+        error = numpy.array([ myerror[0] ])
+        self.comm.Allreduce(myerror, error, op=MPI.MAX)
+
+        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in X!")
+
+
+    def testSecondDerivativeZ(self):
+        """
+        Test the second derivative in the Z direction.
+        """
+
+        d2fdz2 = numpy.empty( self.chunk_3d_size, dtype=numpy.float64, order='F' )
+        self.der.d2dz2(self.f, d2fdz2)
+
+        myerror = numpy.array([ numpy.absolute(self.d2fdz2_exact - d2fdz2).max() ])
+        error = numpy.array([ myerror[0] ])
+        self.comm.Allreduce(myerror, error, op=MPI.MAX)
+
+        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in X!")
+
 
 if __name__ == '__main__':
     unittest.main()

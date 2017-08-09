@@ -117,6 +117,7 @@ class CompactDerivative(object):
             self._xder.dd1(f_x, dfdx_x, self._chunk_x_size[1], self._chunk_x_size[2], bc1_=bc[0], bcn_=bc[1])
         self._grid_partition.transpose_x_to_3d( dfdx_x, dfdx )
 
+
     def ddy(self, f, dfdy, bc=(0,0)):
         """
         Function to compute the Y derivative of f
@@ -136,11 +137,12 @@ class CompactDerivative(object):
         dfdy_y = numpy.empty( self._chunk_y_size, dtype=numpy.float64, order='F' )
 
         self._grid_partition.transpose_3d_to_y( f, f_y )
-        if self._order[0] == 6:
+        if self._order[1] == 6:
             self._yder.dd2(f_y, dfdy_y, self._chunk_y_size[0], self._chunk_y_size[2]) # symmetry BC only supported in 10th order for now
-        elif self._order[0] == 10:
+        elif self._order[1] == 10:
             self._yder.dd2(f_y, dfdy_y, self._chunk_y_size[0], self._chunk_y_size[2], bc1_=bc[0], bcn_=bc[1])
         self._grid_partition.transpose_y_to_3d( dfdy_y, dfdy )
+
 
     def ddz(self, f, dfdz, bc=(0,0)):
         """
@@ -161,9 +163,87 @@ class CompactDerivative(object):
         dfdz_z = numpy.empty( self._chunk_z_size, dtype=numpy.float64, order='F' )
 
         self._grid_partition.transpose_3d_to_z( f, f_z )
-        if self._order[0] == 6:
+        if self._order[2] == 6:
             self._zder.dd3(f_z, dfdz_z, self._chunk_z_size[0], self._chunk_z_size[1]) # symmetry BC only supported in 10th order for now
-        elif self._order[0] == 10:
+        elif self._order[2] == 10:
             self._zder.dd3(f_z, dfdz_z, self._chunk_z_size[0], self._chunk_z_size[1], bc1_=bc[0], bcn_=bc[1])
         self._grid_partition.transpose_z_to_3d( dfdz_z, dfdz )
+
+
+    def d2dx2(self, f, d2fdx2, bc=(0,0)):
+        """
+        Function to compute the X second derivative of f
+
+        f : input 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
+            This array must be in the 3D decomposition
+        d2fdx2 : output 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
+               This array is in the 3D decomposition
+        bc : integer tuple of size 2 with the boundary condition at the left and right.
+             0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
+        """
+
+        if (f.shape[0] != self._chunk_3d_size[0]) or (f.shape[1] != self._chunk_3d_size[1]) or (f.shape[2] != self._chunk_3d_size[2]):
+            raise RuntimeError("Make sure f is of the same size as in grid_partition!")
+
+        f_x      = numpy.empty( self._chunk_x_size, dtype=numpy.float64, order='F' )
+        d2fdx2_x = numpy.empty( self._chunk_x_size, dtype=numpy.float64, order='F' )
+
+        self._grid_partition.transpose_3d_to_x( f, f_x )
+        if self._order[0] == 6:
+            raise NotImplementedError("6th order 2nd derivatives are not implemented yet. Sorry!")
+        elif self._order[0] == 10:
+            self._xder.d2d1(f_x, d2fdx2_x, self._chunk_x_size[1], self._chunk_x_size[2], bc1_=bc[0], bcn_=bc[1])
+        self._grid_partition.transpose_x_to_3d( d2fdx2_x, d2fdx2 )
+
+
+    def d2dy2(self, f, d2fdy2, bc=(0,0)):
+        """
+        Function to compute the Y second derivative of f
+
+        f : input 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
+            This array must be in the 3D decomposition
+        d2fdy2 : output 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
+               This array is in the 3D decomposition
+        bc : integer tuple of size 2 with the boundary condition at the left and right.
+             0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
+        """
+
+        if (f.shape[0] != self._chunk_3d_size[0]) or (f.shape[1] != self._chunk_3d_size[1]) or (f.shape[2] != self._chunk_3d_size[2]):
+            raise RuntimeError("Make sure f is of the same size as in grid_partition!")
+
+        f_y      = numpy.empty( self._chunk_y_size, dtype=numpy.float64, order='F' )
+        d2fdy2_y = numpy.empty( self._chunk_y_size, dtype=numpy.float64, order='F' )
+
+        self._grid_partition.transpose_3d_to_y( f, f_y )
+        if self._order[1] == 6:
+            raise NotImplementedError("6th order 2nd derivatives are not implemented yet. Sorry!")
+        elif self._order[1] == 10:
+            self._yder.d2d2(f_y, d2fdy2_y, self._chunk_y_size[0], self._chunk_y_size[2], bc1_=bc[0], bcn_=bc[1])
+        self._grid_partition.transpose_y_to_3d( d2fdy2_y, d2fdy2 )
+
+
+    def d2dz2(self, f, d2fdz2, bc=(0,0)):
+        """
+        Function to compute the Z second derivative of f
+
+        f : input 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
+            This array must be in the 3D decomposition
+        d2fdz2 : output 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
+               This array is in the 3D decomposition
+        bc : integer tuple of size 2 with the boundary condition at the left and right.
+             0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
+        """
+
+        if (f.shape[0] != self._chunk_3d_size[0]) or (f.shape[1] != self._chunk_3d_size[1]) or (f.shape[2] != self._chunk_3d_size[2]):
+            raise RuntimeError("Make sure f is of the same size as in grid_partition!")
+
+        f_z      = numpy.empty( self._chunk_z_size, dtype=numpy.float64, order='F' )
+        d2fdz2_z = numpy.empty( self._chunk_z_size, dtype=numpy.float64, order='F' )
+
+        self._grid_partition.transpose_3d_to_z( f, f_z )
+        if self._order[2] == 6:
+            raise NotImplementedError("6th order 2nd derivatives are not implemented yet. Sorry!")
+        elif self._order[2] == 10:
+            self._zder.d2d3(f_z, d2fdz2_z, self._chunk_z_size[0], self._chunk_z_size[1], bc1_=bc[0], bcn_=bc[1])
+        self._grid_partition.transpose_z_to_3d( d2fdz2_z, d2fdz2 )
 
