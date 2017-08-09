@@ -4,7 +4,7 @@ Module for upsampling data.
 
 import numpy
 
-class LagrangeUpsampler():
+class LagrangeUpsampler(object):
     """
     Class to upsample data with Lagrange interpolation.
     """
@@ -47,6 +47,15 @@ class LagrangeUpsampler():
             return 2
         elif self._method == 'sixth_order':
             return 3
+    
+    
+    @property
+    def num_ghosts(self):
+        """
+        Return the number of ghost cells needed for upsampling in the interior of domain.
+        """
+        
+        return self.getNumberOfGhostCells()
     
     
     def upsample(self, data, refine_ratio, component_idx=None):
