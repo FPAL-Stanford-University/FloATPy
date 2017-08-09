@@ -18,4 +18,7 @@ done
 
 for testfile in ${DIR}/mpitest_*.py; do
     ${MPIEXEC} -n 4 python ${testfile}
+    if [ $? -ne 0 ]; then
+        exit 1
+    fi
 done
