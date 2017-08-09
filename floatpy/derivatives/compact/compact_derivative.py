@@ -293,3 +293,26 @@ class CompactDerivative(object):
 
         return (dudx + dvdy + dwdz)
 
+
+    def laplacian(self, f, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0)):
+        """
+        Function to compute the laplacian of f
+
+        f : input 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
+            These arrays must be in the 3D decomposition
+        laplacian : output 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
+                    This array is in the 3D decomposition
+        *_bc : integer tuple of size 2 with the boundary condition at the left and right.
+               0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
+        """
+
+        d2fdx2 = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+        d2fdy2 = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+        d2fdz2 = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+
+        self.d2dx2(f, d2fdx2, bc=x_bc)
+        self.d2dy2(f, d2fdy2, bc=y_bc)
+        self.d2dz2(f, d2fdz2, bc=z_bc)
+
+        return (d2fdx2 + d2fdy2 + d2fdz2)
+

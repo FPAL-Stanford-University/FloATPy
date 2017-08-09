@@ -174,7 +174,24 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.zeros(1)
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        self.assertLess(error[0], 5.0e-14, "Incorrect gradient!")
+        self.assertLess(error[0], 5.0e-14, "Incorrect divergence!")
+
+
+    def testLaplacian(self):
+        """
+        Test the laplacian function
+        """
+
+        laplacian = self.der.laplacian(self.f)
+
+        myerror = numpy.zeros(1)
+        myerror[0] = numpy.absolute(self.d2fdx2_exact + self.d2fdy2_exact + self.d2fdx2_exact - laplacian).max()
+
+        error = numpy.zeros(1)
+        self.comm.Allreduce(myerror, error, op=MPI.MAX)
+
+        print "error: ", myerror[0], error[0]
+        self.assertLess(error[0], 5.0e-12, "Incorrect laplacian!")
 
 
 if __name__ == '__main__':
