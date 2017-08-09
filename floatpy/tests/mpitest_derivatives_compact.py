@@ -142,5 +142,40 @@ class TestDerivativesCompact(unittest.TestCase):
         self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in X!")
 
 
+    def testGradient(self):
+        """
+        Test the gradient function
+        """
+
+        dfdx, dfdy, dfdz = self.der.gradient(self.f)
+
+        myerror = numpy.zeros(3)
+        myerror[0] = numpy.absolute(self.dfdx_exact - dfdx).max()
+        myerror[1] = numpy.absolute(self.dfdy_exact - dfdy).max()
+        myerror[2] = numpy.absolute(self.dfdz_exact - dfdz).max()
+
+        error = numpy.zeros(3)
+        self.comm.Allreduce(myerror, error, op=MPI.MAX)
+
+        for i in range(3):
+            self.assertLess(error[i], 5.0e-14, "Incorrect gradient!")
+
+
+    def testDivergence(self):
+        """
+        Test the divergence function
+        """
+
+        laplacian = self.der.divergence(self.dfdx_exact, self.dfdy_exact, self.dfdz_exact)
+
+        myerror = numpy.zeros(1)
+        myerror[0] = numpy.absolute(self.d2fdx2_exact + self.d2fdy2_exact + self.d2fdx2_exact - laplacian).max()
+
+        error = numpy.zeros(1)
+        self.comm.Allreduce(myerror, error, op=MPI.MAX)
+
+        self.assertLess(error[0], 5.0e-14, "Incorrect gradient!")
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -247,3 +247,49 @@ class CompactDerivative(object):
             self._zder.d2d3(f_z, d2fdz2_z, self._chunk_z_size[0], self._chunk_z_size[1], bc1_=bc[0], bcn_=bc[1])
         self._grid_partition.transpose_z_to_3d( d2fdz2_z, d2fdz2 )
 
+
+    def gradient(self, f, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0)):
+        """
+        Function to compute the gradient of f
+
+        f : input 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
+            This array must be in the 3D decomposition
+        dfd* : output 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
+               This array is in the 3D decomposition
+        *_bc : integer tuple of size 2 with the boundary condition at the left and right.
+               0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
+        """
+
+        dfdx = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+        dfdy = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+        dfdz = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+
+        self.ddx(f, dfdx, bc=x_bc)
+        self.ddy(f, dfdy, bc=y_bc)
+        self.ddz(f, dfdz, bc=z_bc)
+
+        return dfdx, dfdy, dfdz
+
+
+    def divergence(self, u, v, w, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0)):
+        """
+        Function to compute the gradient of a vector (u,v,w)
+
+        u, v, w : input 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
+                  These arrays must be in the 3D decomposition
+        divergence : output 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
+                     This array is in the 3D decomposition
+        *_bc : integer tuple of size 2 with the boundary condition at the left and right.
+               0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
+        """
+
+        dudx = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+        dvdy = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+        dwdz = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+
+        self.ddx(u, dudx, bc=x_bc)
+        self.ddy(v, dvdy, bc=y_bc)
+        self.ddz(w, dwdz, bc=z_bc)
+
+        return (dudx + dvdy + dwdz)
+
