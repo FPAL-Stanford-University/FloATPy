@@ -44,6 +44,24 @@ ext_compact_10th_order = Extension('_pycd10',
                                      extra_objects = obj_compact_10th_order,
                                      f2py_options = [])
 
+obj_filter_cf90 = BuildFortranObjects(['floatpy/filters/kind_parameters.F90',
+                                       'floatpy/filters/constants.F90',
+                                       'floatpy/filters/cf90.F90'])
+
+ext_filter_cf90 = Extension('_pycf90',
+                              sources = ['floatpy/filters/f90wrap_cf90.f90'],
+                              extra_objects = obj_filter_cf90,
+                              f2py_options = [])
+
+obj_filter_gaussian = BuildFortranObjects(['floatpy/filters/kind_parameters.F90',
+                                           'floatpy/filters/constants.F90',
+                                           'floatpy/filters/gaussian.F90'])
+
+ext_filter_gaussian = Extension('_pygaussian',
+                                  sources = ['floatpy/filters/f90wrap_gaussian.f90'],
+                                  extra_objects = obj_filter_gaussian,
+                                  f2py_options = [])
+
 obj_pyt3d = BuildFortranObjects(['floatpy/parallel/pyt3d/kind_parameters.F90',
                                  'floatpy/parallel/pyt3d/constants.F90',
                                  'floatpy/parallel/pyt3d/exits.F90',
@@ -64,6 +82,7 @@ modules = ['floatpy.parallel',
            'floatpy.derivatives',
            'floatpy.derivatives.explicit',
            'floatpy.derivatives.compact',
+           'floatpy.filters',
            'floatpy.upsampling',
            'floatpy.readers']
 
@@ -72,6 +91,8 @@ setup(name = 'FloATPy',
       description = 'Postprocessing utilities for codes in FPAL',
       author = 'Flow Physics and Aeroacoustics Laboratory of Stanford University',
       author_email = 'wongml@stanford.edu, akshays@stanford.edu',
-      ext_modules = [ext_compact_6th_order, ext_compact_10th_order, ext_pyt3d],
+      ext_modules = [ext_compact_6th_order, ext_compact_10th_order,
+                     ext_filter_cf90, ext_filter_gaussian,
+                     ext_pyt3d],
       packages = ['floatpy'] + modules,
       )
