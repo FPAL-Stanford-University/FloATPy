@@ -27,7 +27,7 @@ class CompactDerivative(object):
             if order[i] not in [6,10]:
                 raise RuntimeError("order[%d] has to be one of {6,10}" %i)
 
-        self._order = order
+        self._order = tuple(order)
         self._grid_partition = grid_partition
 
         self._periodic = tuple(periodic)

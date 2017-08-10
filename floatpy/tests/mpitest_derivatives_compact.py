@@ -190,7 +190,6 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.zeros(1)
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        print "error: ", myerror[0], error[0]
         self.assertLess(error[0], 5.0e-12, "Incorrect laplacian!")
 
 
