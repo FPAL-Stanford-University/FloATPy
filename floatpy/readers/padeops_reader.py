@@ -14,7 +14,7 @@ class PadeopsReader(BaseReader):
         """
         
         self.filename = filename
-        vizfile = h5py.File(self.filename)
+        vizfile = h5py.File(self.filename, 'r')
         
         self._steps = steps = []
         for item in vizfile.items():
@@ -49,7 +49,7 @@ class PadeopsReader(BaseReader):
         assert (step in self._steps), "Step to read in is not available in the dataset."
         self._step = step
 
-        vizfile = h5py.File(self.filename)
+        vizfile = h5py.File(self.filename, 'r')
         self._time = (vizfile['%04d' %step].attrs)['Time'][0]
         vizfile.close()
     
@@ -161,7 +161,7 @@ class PadeopsReader(BaseReader):
         
         chunk_size = (self.chunk[0][1]-self.chunk[0][0], self.chunk[1][1]-self.chunk[1][0], self.chunk[2][1]-self.chunk[2][0])
 
-        vizfile = h5py.File(self.filename)
+        vizfile = h5py.File(self.filename, 'r')
 
         # Read data in C contiguous order using h5py
         x_c = vizfile['coords']['X'][self.chunk[2][0]:self.chunk[2][1],\
@@ -203,7 +203,7 @@ class PadeopsReader(BaseReader):
         else:
             _data = data
         
-        vizfile = h5py.File(self.filename)
+        vizfile = h5py.File(self.filename, 'r')
         
         for i in range(len(var_names)):
             var = var_names[i]

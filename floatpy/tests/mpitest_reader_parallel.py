@@ -3,19 +3,19 @@ import numpy
 import os
 import unittest
 
-import floatpy.readers.wchr_ascii_reader as war
+import floatpy.readers.padeops_reader as por
 import floatpy.readers.parallel_reader as pdr
 
-class TestReaderWchrAscii(unittest.TestCase):
+class TestReaderParallel(unittest.TestCase):
     
     def setUp(self):
-        self.filename_prefix = os.path.join(os.path.dirname(__file__), 'test_data_wchr_ascii/WCHR_')
-        self.serial_reader = war.WchrAsciiReader(self.filename_prefix)
+        self.filename = os.path.join(os.path.dirname(__file__), 'test_data_padeops/taylorgreen.h5')
+        self.serial_reader = por.PadeopsReader(self.filename, periodic_dimensions=(True,True,True))
         self.serial_reader.step = 0
         
         self.comm = MPI.COMM_WORLD
         self.num_ghosts = (1, 1, 1)
-        self.reader = pdr.ParallelDataReader( MPI.COMM_WORLD, war.WchrAsciiReader(self.filename_prefix), num_ghosts=self.num_ghosts )
+        self.reader = pdr.ParallelDataReader( MPI.COMM_WORLD, por.PadeopsReader(self.filename, periodic_dimensions=(True,True,True)), num_ghosts=self.num_ghosts )
         self.reader.step = 0
         
         self.lo, self.hi = self.reader.interior_chunk
