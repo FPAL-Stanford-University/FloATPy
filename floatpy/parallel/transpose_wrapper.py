@@ -7,7 +7,7 @@ class TransposeWrapper(object):
     Class to transpose data to/from pencil with parallel communication. Only data in Fortran order can be used.
     """
     
-    def __init__(self, grid_partition, direction=0, dim=3):
+    def __init__(self, grid_partition, direction, dim=3):
         """
         Constructor of the class.
         
@@ -142,7 +142,7 @@ class TransposeWrapper(object):
                 
                 if self._dim == 2:
                     data_3d = numpy.reshape(data[:, :, ic], shape_3d, order='F')
-                    data_to_transpose = numpy.reshape(data_out[:, :, ic], self._size, order='F')
+                    data_to_transpose = numpy.reshape(data_out[:, :, ic], self._pencil_size, order='F')
                 else:
                     data_3d = data[:, :, :, ic]
                     data_to_transpose = data_out[:, :, :, ic]
@@ -153,5 +153,72 @@ class TransposeWrapper(object):
                     self._grid_partition.transpose_3d_to_y(data_3d, data_to_transpose)
                 else:
                     self._grid_partition.transpose_3d_to_z(data_3d, data_to_transpose)
+        
+        return data_out
+    
+    
+    def transposeFromPencil(self, data):
+        """
+        Transpose data from pencil.
+        
+        data : data to transpose
+        """
+        
+        if not numpy.all(numpy.isreal(data)):
+            raise ValueError("The given data is complex! Only real data can be transposed.")
+        
+        num_components = 1
+        if data.ndim == self._dim + 1:
+            num_components = data.shape[self._dim]
+        
+        shape_3d = data.shape[0:self._dim]
+            
+        if self._dim == 2:
+            shape_3d = numpy.append(shape_3d, 1)
+        
+        data_out = []
+        
+        if num_components == 1:
+            if self._dim == 2:
+                data_out = numpy.empty((self._3d_size[0], self._3d_size[1]), dtype=data.dtype, order='F')
+            else:
+                data_out = numpy.empty((self._3d_size[0], self._3d_size[1], self._3d_size[2]), \
+                                       dtype=data.dtype, order='F')
+            
+            data_3d = numpy.reshape(data, shape_3d, order='F')
+            data_to_transpose = numpy.reshape(data_out, self._3d_size, order='F')
+            
+            if self._direction == 0:
+                self._grid_partition.transpose_x_to_3d(data_3d, data_to_transpose)
+            elif self._direction == 1:
+                self._grid_partition.transpose_y_to_3d(data_3d, data_to_transpose)
+            else:
+                self._grid_partition.transpose_z_to_3d(data_3d, data_to_transpose)
+        
+        else:
+            if self._dim == 2:
+                data_out = numpy.empty((self._3d_size[0], self._3d_size[1], num_components), dtype=data.dtype, \
+                                       order='F')
+            else:
+                data_out = numpy.empty((self._3d_size[0], self._3d_size[1], self._3d_size[2], num_components), \
+                                       dtype=data.dtype, order='F')
+            
+            for ic in range(num_components):
+                data_3d = []
+                data_to_transpose = []
+                
+                if self._dim == 2:
+                    data_3d = numpy.reshape(data[:, :, ic], shape_3d, order='F')
+                    data_to_transpose = numpy.reshape(data_out[:, :, ic], self._3d_size, order='F')
+                else:
+                    data_3d = data[:, :, :, ic]
+                    data_to_transpose = data_out[:, :, :, ic]
+                
+                if self._direction == 0:
+                    self._grid_partition.transpose_x_to_3d(data_3d, data_to_transpose)
+                elif self._direction == 1:
+                    self._grid_partition.transpose_y_to_3d(data_3d, data_to_transpose)
+                else:
+                    self._grid_partition.transpose_z_to_3d(data_3d, data_to_transpose)
         
         return data_out
