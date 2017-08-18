@@ -6,7 +6,7 @@ import unittest
 from floatpy.parallel import transpose_wrapper
 from floatpy.readers import samrai_reader, parallel_reader
 
-class TestTranspose2D(unittest.TestCase):
+class TestTranspose3D(unittest.TestCase):
     
     def setUp(self):
         self.directory_name = os.path.join(os.path.dirname(__file__), 'test_data_samrai_3D')
@@ -33,7 +33,7 @@ class TestTranspose2D(unittest.TestCase):
         
         rho_c, vel_c = self.reader.readData(('density', 'velocity'))
         
-        tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=0, dim=3)
+        tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=0, dimension=3)
         lo_p, hi_p = tw.full_pencil
         
         rho_p = tw.transposeToPencil(rho_c)
@@ -68,7 +68,7 @@ class TestTranspose2D(unittest.TestCase):
         
         rho_c, vel_c = self.reader.readData(('density', 'velocity'))
         
-        tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=1, dim=3)
+        tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=1, dimension=3)
         lo_p, hi_p = tw.full_pencil
         
         rho_p = tw.transposeToPencil(rho_c)
@@ -103,7 +103,7 @@ class TestTranspose2D(unittest.TestCase):
         
         rho_c, vel_c = self.reader.readData(('density', 'velocity'))
         
-        tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=2, dim=3)
+        tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=2, dimension=3)
         lo_p, hi_p = tw.full_pencil
         
         rho_p = tw.transposeToPencil(rho_c)
