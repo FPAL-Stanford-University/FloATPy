@@ -4,7 +4,7 @@ Module for computing first order deriatives with explicit finite differencing.
 
 import numpy
 
-class FirstOrderDerivative(object):
+class FirstOrderDifferentiator(object):
     """
     Class to take first order derivative with explicit finite differencing.
     """
@@ -60,20 +60,20 @@ class FirstOrderDerivative(object):
         return self.getNumberOfGhostCells()
     
     
-    def differentiate(self, data, dx, component_idx=None, use_one_sided=False):
+    def diff(self, data, dx, component_idx=None, use_one_sided=False):
         """
         Compute first order derivative.
         """
 
         if self._method == 'second_order':
-            return self._differentiateSecondOrderFiniteDifference(data, dx, self._direction, component_idx, use_one_sided)
+            return self._diffSecondOrderFiniteDifference(data, dx, self._direction, component_idx, use_one_sided)
         elif self._method == 'fourth_order':
-            return self._differentiateFourthOrderFiniteDifference(data, dx, self._direction, component_idx, use_one_sided)
+            return self._diffFourthOrderFiniteDifference(data, dx, self._direction, component_idx, use_one_sided)
         elif self._method == 'sixth_order':
-            return self._differentiateSixthOrderFiniteDifference(data, dx, self._direction, component_idx, use_one_sided)
+            return self._diffSixthOrderFiniteDifference(data, dx, self._direction, component_idx, use_one_sided)
     
     
-    def _differentiateSecondOrderFiniteDifference(self, data, dx, direction, component_idx, use_one_sided):
+    def _diffSecondOrderFiniteDifference(self, data, dx, direction, component_idx, use_one_sided):
         """
         Compute first order derivative using explicit second order finite differencing.
         """
@@ -261,7 +261,7 @@ class FirstOrderDerivative(object):
         return diff_data
     
     
-    def _differentiateFourthOrderFiniteDifference(self, data, dx, direction, component_idx, use_one_sided):
+    def _diffFourthOrderFiniteDifference(self, data, dx, direction, component_idx, use_one_sided):
         """
         Compute first order derivative using explicit fourth order finite differencing.
         """
@@ -514,7 +514,7 @@ class FirstOrderDerivative(object):
         return diff_data
     
     
-    def _differentiateSixthOrderFiniteDifference(self, data, dx, direction, component_idx, use_one_sided):
+    def _diffSixthOrderFiniteDifference(self, data, dx, direction, component_idx, use_one_sided):
         """
         Compute first order derivative using explicit sixth order finite differencing.
         """

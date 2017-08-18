@@ -29,18 +29,28 @@ class TestTranspose2D(unittest.TestCase):
         
         # Read data in parallel region.
         
-        rho_p, vel_p = self.reader.readData(('density', 'velocity'))
+        lo_c, hi_c = self.reader.full_chunk
         
-        tw = transpose_wrapper.TransposeWrapper(self.reader, direction=0)
-        lo_t, hi_t = tw.full_chunk
+        rho_c, vel_c = self.reader.readData(('density', 'velocity'))
         
-        rho_t = tw.transpose(rho_p)
-        rho_err = numpy.absolute(rho[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1, lo_t[2]:hi_t[2]+1] - rho_t).max()
-        self.assertEqual(rho_err, 0.0, "Incorrect transposed data in x-direction for scalar!")
+        tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=0, dim=3)
+        lo_p, hi_p = tw.full_pencil
         
-        vel_t = tw.transpose(vel_p)
-        vel_err = numpy.absolute(vel[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1, lo_t[2]:hi_t[2]+1, :] - vel_t).max()
-        self.assertEqual(vel_err, 0.0, "Incorrect transposed data in x-direction for vector!")
+        rho_p = tw.transposeToPencil(rho_c)
+        rho_err = numpy.absolute(rho[lo_p[0]:hi_p[0]+1, lo_p[1]:hi_p[1]+1, lo_p[2]:hi_p[2]+1] - rho_p).max()
+        self.assertEqual(rho_err, 0.0, "Incorrect transposed data to pencil in x-direction for scalar!")
+        
+        vel_p = tw.transposeToPencil(vel_c)
+        vel_err = numpy.absolute(vel[lo_p[0]:hi_p[0]+1, lo_p[1]:hi_p[1]+1, lo_p[2]:hi_p[2]+1, :] - vel_p).max()
+        self.assertEqual(vel_err, 0.0, "Incorrect transposed data to pencil in x-direction for vector!")
+        
+        rho_c = tw.transposeFromPencil(rho_p)
+        rho_err = numpy.absolute(rho[lo_c[0]:hi_c[0]+1, lo_c[1]:hi_c[1]+1, lo_c[2]:hi_c[2]+1] - rho_c).max()
+        self.assertEqual(rho_err, 0.0, "Incorrect transposed data to pencil in x-direction for scalar!")
+        
+        vel_c = tw.transposeFromPencil(vel_p)
+        vel_err = numpy.absolute(vel[lo_c[0]:hi_c[0]+1, lo_c[1]:hi_c[1]+1, lo_c[2]:hi_c[2]+1, :] - vel_c).max()
+        self.assertEqual(vel_err, 0.0, "Incorrect transposed data to pencil in x-direction for vector!")
     
     
     def testTransposeInY(self):
@@ -54,18 +64,28 @@ class TestTranspose2D(unittest.TestCase):
         
         # Read data in parallel region.
         
-        rho_p, vel_p = self.reader.readData(('density', 'velocity'))
+        lo_c, hi_c = self.reader.full_chunk
         
-        tw = transpose_wrapper.TransposeWrapper(self.reader, direction=1)
-        lo_t, hi_t = tw.full_chunk
+        rho_c, vel_c = self.reader.readData(('density', 'velocity'))
         
-        rho_t = tw.transpose(rho_p)
-        rho_err = numpy.absolute(rho[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1, lo_t[2]:hi_t[2]+1] - rho_t).max()
-        self.assertEqual(rho_err, 0.0, "Incorrect transposed data in y-direction for scalar!")
+        tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=1, dim=3)
+        lo_p, hi_p = tw.full_pencil
         
-        vel_t = tw.transpose(vel_p)
-        vel_err = numpy.absolute(vel[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1, lo_t[2]:hi_t[2]+1, :] - vel_t).max()
-        self.assertEqual(vel_err, 0.0, "Incorrect transposed data in y-direction for vector!")
+        rho_p = tw.transposeToPencil(rho_c)
+        rho_err = numpy.absolute(rho[lo_p[0]:hi_p[0]+1, lo_p[1]:hi_p[1]+1, lo_p[2]:hi_p[2]+1] - rho_p).max()
+        self.assertEqual(rho_err, 0.0, "Incorrect transposed data to pencil in y-direction for scalar!")
+        
+        vel_p = tw.transposeToPencil(vel_c)
+        vel_err = numpy.absolute(vel[lo_p[0]:hi_p[0]+1, lo_p[1]:hi_p[1]+1, lo_p[2]:hi_p[2]+1, :] - vel_p).max()
+        self.assertEqual(vel_err, 0.0, "Incorrect transposed data to pencil in y-direction for vector!")
+        
+        rho_c = tw.transposeFromPencil(rho_p)
+        rho_err = numpy.absolute(rho[lo_c[0]:hi_c[0]+1, lo_c[1]:hi_c[1]+1, lo_c[2]:hi_c[2]+1] - rho_c).max()
+        self.assertEqual(rho_err, 0.0, "Incorrect transposed data to pencil in y-direction for scalar!")
+        
+        vel_c = tw.transposeFromPencil(vel_p)
+        vel_err = numpy.absolute(vel[lo_c[0]:hi_c[0]+1, lo_c[1]:hi_c[1]+1, lo_c[2]:hi_c[2]+1, :] - vel_c).max()
+        self.assertEqual(vel_err, 0.0, "Incorrect transposed data to pencil in y-direction for vector!")
     
     
     def testTransposeInZ(self):
@@ -79,18 +99,28 @@ class TestTranspose2D(unittest.TestCase):
         
         # Read data in parallel region.
         
-        rho_p, vel_p = self.reader.readData(('density', 'velocity'))
+        lo_c, hi_c = self.reader.full_chunk
         
-        tw = transpose_wrapper.TransposeWrapper(self.reader, direction=2)
-        lo_t, hi_t = tw.full_chunk
+        rho_c, vel_c = self.reader.readData(('density', 'velocity'))
         
-        rho_t = tw.transpose(rho_p)
-        rho_err = numpy.absolute(rho[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1, lo_t[2]:hi_t[2]+1] - rho_t).max()
-        self.assertEqual(rho_err, 0.0, "Incorrect transposed data in z-direction for scalar!")
+        tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=2, dim=3)
+        lo_p, hi_p = tw.full_pencil
         
-        vel_t = tw.transpose(vel_p)
-        vel_err = numpy.absolute(vel[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1, lo_t[2]:hi_t[2]+1, :] - vel_t).max()
-        self.assertEqual(vel_err, 0.0, "Incorrect transposed data in z-direction for vector!")
+        rho_p = tw.transposeToPencil(rho_c)
+        rho_err = numpy.absolute(rho[lo_p[0]:hi_p[0]+1, lo_p[1]:hi_p[1]+1, lo_p[2]:hi_p[2]+1] - rho_p).max()
+        self.assertEqual(rho_err, 0.0, "Incorrect transposed data to pencil in z-direction for scalar!")
+        
+        vel_p = tw.transposeToPencil(vel_c)
+        vel_err = numpy.absolute(vel[lo_p[0]:hi_p[0]+1, lo_p[1]:hi_p[1]+1, lo_p[2]:hi_p[2]+1, :] - vel_p).max()
+        self.assertEqual(vel_err, 0.0, "Incorrect transposed data to pencil in z-direction for vector!")
+        
+        rho_c = tw.transposeFromPencil(rho_p)
+        rho_err = numpy.absolute(rho[lo_c[0]:hi_c[0]+1, lo_c[1]:hi_c[1]+1, lo_c[2]:hi_c[2]+1] - rho_c).max()
+        self.assertEqual(rho_err, 0.0, "Incorrect transposed data to pencil in z-direction for scalar!")
+        
+        vel_c = tw.transposeFromPencil(vel_p)
+        vel_err = numpy.absolute(vel[lo_c[0]:hi_c[0]+1, lo_c[1]:hi_c[1]+1, lo_c[2]:hi_c[2]+1, :] - vel_c).max()
+        self.assertEqual(vel_err, 0.0, "Incorrect transposed data to pencil in z-direction for vector!")
 
 
 if __name__ == '__main__':
