@@ -1,7 +1,7 @@
 import numpy
 import unittest
 
-import floatpy.derivatives.explicit.second_order_derivative
+import floatpy.derivatives.explicit.second_order_differentiator
 
 class TestDerivativesSecond(unittest.TestCase):
     
@@ -17,16 +17,16 @@ class TestDerivativesSecond(unittest.TestCase):
         y = numpy.sin(x)
         y_prime_exact = -numpy.sin(x)
         
-        d2ydx2_2 = floatpy.derivatives.explicit.second_order_derivative.SecondOrderDerivative('second_order', direction=0, \
+        d2ydx2_2 = floatpy.derivatives.explicit.second_order_differentiator.SecondOrderDifferentiator('second_order', direction=0, \
                                                                                                data_order='C')
-        d2ydx2_4 = floatpy.derivatives.explicit.second_order_derivative.SecondOrderDerivative('fourth_order', direction=0, \
+        d2ydx2_4 = floatpy.derivatives.explicit.second_order_differentiator.SecondOrderDifferentiator('fourth_order', direction=0, \
                                                                                                data_order='C')
-        d2ydx2_6 = floatpy.derivatives.explicit.second_order_derivative.SecondOrderDerivative('sixth_order', direction=0, \
+        d2ydx2_6 = floatpy.derivatives.explicit.second_order_differentiator.SecondOrderDifferentiator('sixth_order', direction=0, \
                                                                                                data_order='C')
         
-        y_prime_2 = d2ydx2_2.differentiate(y, dx, 0, True)
-        y_prime_4 = d2ydx2_4.differentiate(y, dx, 0, True)
-        y_prime_6 = d2ydx2_6.differentiate(y, dx, 0, True)
+        y_prime_2 = d2ydx2_2.diff(y, dx, 0, True)
+        y_prime_4 = d2ydx2_4.diff(y, dx, 0, True)
+        y_prime_6 = d2ydx2_6.diff(y, dx, 0, True)
         
         error_2 = numpy.linalg.norm(y_prime_exact[0, :] - y_prime_2[:])
         error_4 = numpy.linalg.norm(y_prime_exact[0, :] - y_prime_4[:])
@@ -49,16 +49,16 @@ class TestDerivativesSecond(unittest.TestCase):
         y = numpy.sin(x)
         y_prime_exact = -numpy.sin(x)
         
-        d2ydx2_2 = floatpy.derivatives.explicit.second_order_derivative.SecondOrderDerivative('second_order', direction=1, \
+        d2ydx2_2 = floatpy.derivatives.explicit.second_order_differentiator.SecondOrderDifferentiator('second_order', direction=1, \
                                                                                                data_order='C')
-        d2ydx2_4 = floatpy.derivatives.explicit.second_order_derivative.SecondOrderDerivative('fourth_order', direction=1, \
+        d2ydx2_4 = floatpy.derivatives.explicit.second_order_differentiator.SecondOrderDifferentiator('fourth_order', direction=1, \
                                                                                                data_order='C')
-        d2ydx2_6 = floatpy.derivatives.explicit.second_order_derivative.SecondOrderDerivative('sixth_order', direction=1, \
+        d2ydx2_6 = floatpy.derivatives.explicit.second_order_differentiator.SecondOrderDifferentiator('sixth_order', direction=1, \
                                                                                                data_order='C')
         
-        y_prime_2 = d2ydx2_2.differentiate(y, dx, 0, True)
-        y_prime_4 = d2ydx2_4.differentiate(y, dx, 0, True)
-        y_prime_6 = d2ydx2_6.differentiate(y, dx, 0, True)
+        y_prime_2 = d2ydx2_2.diff(y, dx, 0, True)
+        y_prime_4 = d2ydx2_4.diff(y, dx, 0, True)
+        y_prime_6 = d2ydx2_6.diff(y, dx, 0, True)
         
         error_2 = numpy.linalg.norm(y_prime_exact[0, 0, :] - y_prime_2[0, :])
         error_4 = numpy.linalg.norm(y_prime_exact[0, 0, :] - y_prime_4[0, :])
@@ -81,16 +81,16 @@ class TestDerivativesSecond(unittest.TestCase):
         y = numpy.sin(x)
         y_prime_exact = -numpy.sin(x)
         
-        d2ydx2_2 = floatpy.derivatives.explicit.second_order_derivative.SecondOrderDerivative('second_order', direction=2, \
+        d2ydx2_2 = floatpy.derivatives.explicit.second_order_differentiator.SecondOrderDifferentiator('second_order', direction=2, \
                                                                                                data_order='C')
-        d2ydx2_4 = floatpy.derivatives.explicit.second_order_derivative.SecondOrderDerivative('fourth_order', direction=2, \
+        d2ydx2_4 = floatpy.derivatives.explicit.second_order_differentiator.SecondOrderDifferentiator('fourth_order', direction=2, \
                                                                                                data_order='C')
-        d2ydx2_6 = floatpy.derivatives.explicit.second_order_derivative.SecondOrderDerivative('sixth_order', direction=2, \
+        d2ydx2_6 = floatpy.derivatives.explicit.second_order_differentiator.SecondOrderDifferentiator('sixth_order', direction=2, \
                                                                                                data_order='C')
         
-        y_prime_2 = d2ydx2_2.differentiate(y, dx, 0, True)
-        y_prime_4 = d2ydx2_4.differentiate(y, dx, 0, True)
-        y_prime_6 = d2ydx2_6.differentiate(y, dx, 0, True)
+        y_prime_2 = d2ydx2_2.diff(y, dx, 0, True)
+        y_prime_4 = d2ydx2_4.diff(y, dx, 0, True)
+        y_prime_6 = d2ydx2_6.diff(y, dx, 0, True)
         
         error_2 = numpy.linalg.norm(y_prime_exact[0, 0, 0, :] - y_prime_2[0, 0, :])
         error_4 = numpy.linalg.norm(y_prime_exact[0, 0, 0, :] - y_prime_4[0, 0, :])
