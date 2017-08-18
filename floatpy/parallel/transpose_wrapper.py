@@ -7,7 +7,7 @@ class TransposeWrapper(object):
     Class to transpose data to/from pencil with parallel communication. Only data in Fortran order can be used.
     """
     
-    def __init__(self, grid_partition, direction, dim=3):
+    def __init__(self, grid_partition, direction, dimension=3):
         """
         Constructor of the class.
         
@@ -23,11 +23,11 @@ class TransposeWrapper(object):
         if direction < 0 or direction > 2:
             raise RuntimeError('Direction < 0 or > 2 is invalid!')
         
-        if dim < 2 or dim > 3:
+        if dimension < 2 or dimension > 3:
             raise RuntimeError('Only data with dimension of 2 or 3 can be transposed!')
         
         # Get the dimension of data.
-        self._dim = dim
+        self._dim = dimension
         
         if direction >= self._dim:
             raise RuntimeError('Direction to transpose is not allowed with the dimensinality of data!')
@@ -131,10 +131,10 @@ class TransposeWrapper(object):
         
         else:
             data_to_transpose = numpy.empty(numpy.append(shape_3d, num_components), dtype=data.dtype, order='F')
+            print data_to_transpose.shape
             
             for ic in range(num_components):
                 data_3d = []
-                
                 if self._dim == 2:
                     data_3d = numpy.reshape(data[:, :, ic], shape_3d, order='F')
                 else:
