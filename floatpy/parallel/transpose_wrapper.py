@@ -4,30 +4,25 @@ from floatpy.readers.parallel_reader import ParallelDataReader
 
 class TransposeWrapper(object):
     """
-    Class to transpose data with parallel communication. Only data in Fortran order can be used.
+    Class to transpose data to/from pencil with parallel communication. Only data in Fortran order can be used.
     """
     
-    def __init__(self, parallel_reader, direction):
+    def __init__(self, grid_partition, direction=0, dim=3):
         """
         Constructor of the class.
         
-        parallel_reader : a concrete object of ParallelDataReader
-        direction : direction to take transpose
+        grid_partition : t3d object or the grid_partition property of the parallel data reader class
+        direction : direction of pencil
         """
-        
-        if not isinstance(parallel_reader, ParallelDataReader):
-            raise RuntimeError("The given data reader is not instance of the parallel data reader!")
-        
-        self._parallel_reader = parallel_reader
-        
-        if self._parallel_reader.dimension < 2:
-            raise RuntimeError('Only data with dimension greater than 1 can be transposed!.')
         
         if direction < 0 or direction > 2:
             raise RuntimeError('Direction < 0 or > 2 is invalid!')
         
+        if dim < 2:
+            raise RuntimeError('Only data with dimension greater than 1 can be transposed!.')
+        
         # Get the dimension of data.
-        self._dim = self._parallel_reader.dimension
+        self._dim = dim
         
         if direction >= self._dim:
             raise RuntimeError('Direction to transpose is not allowed with the dimensinality of data!')
@@ -39,7 +34,7 @@ class TransposeWrapper(object):
         self._lo   = numpy.empty(3, dtype=numpy.int32)
         self._hi   = numpy.empty(3, dtype=numpy.int32)
         
-        self._grid_partition = self._parallel_reader.grid_partition
+        self._grid_partition = grid_partition
         
         if direction == 0:
             self._grid_partition.get_szx(self._size)
@@ -64,7 +59,7 @@ class TransposeWrapper(object):
     @property
     def full_chunk(self):
         """
-        Return two tuples containing the full chunk of sub-domain after transpose used in the parallel reader as
+        Return two tuples containing the full chunk of pencil after transpose used in the parallel reader as
         a lower bound (lo) and an upper bound (hi).
         """
         
@@ -74,15 +69,15 @@ class TransposeWrapper(object):
     @property
     def full_chunk_size(self):
         """
-        Return a tuple containing the size of the full chunk of sub-domain after transpose used in the parallel reader.
+        Return a tuple containing the size of the full chunk of pencil after transpose used in the parallel reader.
         """
         
         return tuple(self._size[0:self._dim])
     
     
-    def transpose(self, data):
+    def transposeToPencil(self, data):
         """
-        Transpose data.
+        Transpose data to pencil.
         
         data : data to transpose
         """
