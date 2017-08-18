@@ -1,6 +1,6 @@
 import numpy
 
-from floatpy.readers.parallel_reader import ParallelDataReader
+from floatpy.parallel import _t3dmod
 
 class TransposeWrapper(object):
     """
@@ -14,6 +14,11 @@ class TransposeWrapper(object):
         grid_partition : t3d object or the grid_partition property of the parallel data reader class
         direction : direction of pencil
         """
+        
+        if not isinstance(grid_partition, _t3dmod.t3d):
+            raise RuntimeError("The given grid partition object is not an instance of the t3d class!")
+        
+        self._grid_partition = grid_partition
         
         if direction < 0 or direction > 2:
             raise RuntimeError('Direction < 0 or > 2 is invalid!')
@@ -29,50 +34,60 @@ class TransposeWrapper(object):
         
         self._direction = direction
         
-        # Get size of sub-domain of this processor and lo and hi of the sub-domain.
-        self._size = numpy.empty(3, dtype=numpy.int32)
-        self._lo   = numpy.empty(3, dtype=numpy.int32)
-        self._hi   = numpy.empty(3, dtype=numpy.int32)
+        # Get size of chunk from all-direction domain decomposition of this processor and lo and hi of the chunk.
+        self._3d_size = numpy.empty(3, dtype=numpy.int32)
+        self._3d_lo   = numpy.empty(3, dtype=numpy.int32)
+        self._3d_hi   = numpy.empty(3, dtype=numpy.int32)
         
-        self._grid_partition = grid_partition
-        
-        if direction == 0:
-            self._grid_partition.get_szx(self._size)
-            self._grid_partition.get_stx(self._lo)
-            self._grid_partition.get_enx(self._hi)
-        
-        elif direction == 1:
-            self._grid_partition.get_szy(self._size)
-            self._grid_partition.get_sty(self._lo)
-            self._grid_partition.get_eny(self._hi)
-        
-        else:
-            self._grid_partition.get_szz(self._size)
-            self._grid_partition.get_stz(self._lo)
-            self._grid_partition.get_enz(self._hi)
+        self._grid_partition.get_sz3d(self._3d_size)
+        self._grid_partition.get_st3d(self._3d_lo)
+        self._grid_partition.get_en3d(self._3d_hi)
         
         # Convert to 0 based indexing.
-        self._lo = self._lo - 1
-        self._hi = self._hi - 1
+        self._3d_lo = self._3d_lo - 1
+        self._3d_hi = self._3d_hi - 1
+        
+        # Get size of pencil of this processor and lo and hi of the pencil.
+        self._pencil_size = numpy.empty(3, dtype=numpy.int32)
+        self._pencil_lo   = numpy.empty(3, dtype=numpy.int32)
+        self._pencil_hi   = numpy.empty(3, dtype=numpy.int32)
+        
+        if direction == 0:
+            self._grid_partition.get_szx(self._pencil_size)
+            self._grid_partition.get_stx(self._pencil_lo)
+            self._grid_partition.get_enx(self._pencil_hi)
+        
+        elif direction == 1:
+            self._grid_partition.get_szy(self._pencil_size)
+            self._grid_partition.get_sty(self._pencil_lo)
+            self._grid_partition.get_eny(self._pencil_hi)
+        
+        else:
+            self._grid_partition.get_szz(self._pencil_size)
+            self._grid_partition.get_stz(self._pencil_lo)
+            self._grid_partition.get_enz(self._pencil_hi)
+        
+        # Convert to 0 based indexing.
+        self._pencil_lo = self._pencil_lo - 1
+        self._pencil_hi = self._pencil_hi - 1
     
     
     @property
-    def full_chunk(self):
+    def full_pencil(self):
         """
-        Return two tuples containing the full chunk of pencil after transpose used in the parallel reader as
-        a lower bound (lo) and an upper bound (hi).
+        Return two tuples containing the full chunk of pencil as a lower bound (lo) and an upper bound (hi).
         """
         
-        return tuple(self._lo[0:self._dim]), tuple(self._hi[0:self._dim])
+        return tuple(self._pencil_lo[0:self._dim]), tuple(self._pencil_hi[0:self._dim])
     
     
     @property
-    def full_chunk_size(self):
+    def full_pencil_size(self):
         """
-        Return a tuple containing the size of the full chunk of pencil after transpose used in the parallel reader.
+        Return a tuple containing the size of the full chunk of pencil.
         """
         
-        return tuple(self._size[0:self._dim])
+        return tuple(self._pencil_size[0:self._dim])
     
     
     def transposeToPencil(self, data):
@@ -89,51 +104,54 @@ class TransposeWrapper(object):
         if data.ndim == self._dim + 1:
             num_components = data.shape[self._dim]
         
-        shape_3D = data.shape[0:self._dim]
+        shape_3d = data.shape[0:self._dim]
             
         if self._dim == 2:
-            shape_3D = numpy.append(shape_3D, 1)
+            shape_3d = numpy.append(shape_3d, 1)
         
         data_out = []
         
         if num_components == 1:
             if self._dim == 2:
-                data_out = numpy.empty((self._size[0], self._size[1]), dtype=data.dtype, order='F')
+                data_out = numpy.empty((self._pencil_size[0], self._pencil_size[1]), dtype=data.dtype, order='F')
             else:
-                data_out = numpy.empty((self._size[0], self._size[1], self._size[2]), dtype=data.dtype, order='F')
+                data_out = numpy.empty((self._pencil_size[0], self._pencil_size[1], self._pencil_size[2]), \
+                                       dtype=data.dtype, order='F')
             
-            data_3D = numpy.reshape(data, shape_3D, order='F')
-            data_transposed = numpy.reshape(data_out, self._size, order='F')
+            data_3d = numpy.reshape(data, shape_3d, order='F')
+            data_to_transpose = numpy.reshape(data_out, self._pencil_size, order='F')
             
             if self._direction == 0:
-                self._grid_partition.transpose_3d_to_x(data_3D, data_transposed)
+                self._grid_partition.transpose_3d_to_x(data_3d, data_to_transpose)
             elif self._direction == 1:
-                self._grid_partition.transpose_3d_to_y(data_3D, data_transposed)
+                self._grid_partition.transpose_3d_to_y(data_3d, data_to_transpose)
             else:
-                self._grid_partition.transpose_3d_to_z(data_3D, data_transposed)
+                self._grid_partition.transpose_3d_to_z(data_3d, data_to_transpose)
         
         else:
             if self._dim == 2:
-                data_out = numpy.empty((self._size[0], self._size[1], num_components), dtype=data.dtype, order='F')
+                data_out = numpy.empty((self._pencil_size[0], self._pencil_size[1], num_components), dtype=data.dtype, \
+                                       order='F')
             else:
-                data_out = numpy.empty((self._size[0], self._size[1], self._size[2], num_components), dtype=data.dtype, order='F')
+                data_out = numpy.empty((self._pencil_size[0], self._pencil_size[1], self._pencil_size[2], num_components), \
+                                       dtype=data.dtype, order='F')
             
             for ic in range(num_components):
-                data_3D = []
-                data_transposed = []
+                data_3d = []
+                data_to_transpose = []
                 
                 if self._dim == 2:
-                    data_3D = numpy.reshape(data[:, :, ic], shape_3D, order='F')
-                    data_transposed = numpy.reshape(data_out[:, :, ic], self._size, order='F')
+                    data_3d = numpy.reshape(data[:, :, ic], shape_3d, order='F')
+                    data_to_transpose = numpy.reshape(data_out[:, :, ic], self._size, order='F')
                 else:
-                    data_3D = data[:, :, :, ic]
-                    data_transposed = data_out[:, :, :, ic]
+                    data_3d = data[:, :, :, ic]
+                    data_to_transpose = data_out[:, :, :, ic]
                 
                 if self._direction == 0:
-                    self._grid_partition.transpose_3d_to_x(data_3D, data_transposed)
+                    self._grid_partition.transpose_3d_to_x(data_3d, data_to_transpose)
                 elif self._direction == 1:
-                    self._grid_partition.transpose_3d_to_y(data_3D, data_transposed)
+                    self._grid_partition.transpose_3d_to_y(data_3d, data_to_transpose)
                 else:
-                    self._grid_partition.transpose_3d_to_z(data_3D, data_transposed)
+                    self._grid_partition.transpose_3d_to_z(data_3d, data_to_transpose)
         
         return data_out

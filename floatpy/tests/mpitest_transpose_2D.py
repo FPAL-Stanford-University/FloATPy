@@ -28,17 +28,17 @@ class TestTranspose2D(unittest.TestCase):
         
         # Read data in parallel region.
         
-        rho_p, vel_p = self.reader.readData(('density', 'velocity'))
+        rho_c, vel_c = self.reader.readData(('density', 'velocity'))
         
         tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=0, dim=2)
-        lo_t, hi_t = tw.full_chunk
+        lo_p, hi_p = tw.full_pencil
         
-        rho_t = tw.transposeToPencil(rho_p)
-        rho_err = numpy.absolute(rho[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1] - rho_t).max()
+        rho_p = tw.transpose(rho_c)
+        rho_err = numpy.absolute(rho[lo_p[0]:hi_p[0]+1, lo_p[1]:hi_p[1]+1] - rho_p).max()
         self.assertEqual(rho_err, 0.0, "Incorrect transposed data in x-direction for scalar!")
         
-        vel_t = tw.transposeToPencil(vel_p)
-        vel_err = numpy.absolute(vel[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1, :] - vel_t).max()
+        vel_p = tw.transpose(vel_c)
+        vel_err = numpy.absolute(vel[lo_p[0]:hi_p[0]+1, lo_p[1]:hi_p[1]+1, :] - vel_p).max()
         self.assertEqual(vel_err, 0.0, "Incorrect transposed data in x-direction for vector!")
     
     
@@ -52,17 +52,17 @@ class TestTranspose2D(unittest.TestCase):
         
         # Read data in parallel region.
         
-        rho_p, vel_p = self.reader.readData(('density', 'velocity'))
+        rho_c, vel_c = self.reader.readData(('density', 'velocity'))
         
         tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=1, dim=2)
-        lo_t, hi_t = tw.full_chunk
+        lo_p, hi_p = tw.full_pencil
         
-        rho_t = tw.transposeToPencil(rho_p)
-        rho_err = numpy.absolute(rho[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1] - rho_t).max()
+        rho_p = tw.transpose(rho_c)
+        rho_err = numpy.absolute(rho[lo_p[0]:hi_p[0]+1, lo_p[1]:hi_p[1]+1] - rho_p).max()
         self.assertEqual(rho_err, 0.0, "Incorrect transposed data in y-direction for scalar!")
         
-        vel_t = tw.transposeToPencil(vel_p)
-        vel_err = numpy.absolute(vel[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1, :] - vel_t).max()
+        vel_p = tw.transpose(vel_c)
+        vel_err = numpy.absolute(vel[lo_p[0]:hi_p[0]+1, lo_p[1]:hi_p[1]+1, :] - vel_p).max()
         self.assertEqual(vel_err, 0.0, "Incorrect transposed data in y-direction for vector!")
 
 
