@@ -33,11 +33,11 @@ class TestTranspose2D(unittest.TestCase):
         tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=0, dim=2)
         lo_t, hi_t = tw.full_chunk
         
-        rho_t = tw.transpose(rho_p)
+        rho_t = tw.transposeToPencil(rho_p)
         rho_err = numpy.absolute(rho[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1] - rho_t).max()
         self.assertEqual(rho_err, 0.0, "Incorrect transposed data in x-direction for scalar!")
         
-        vel_t = tw.transpose(vel_p)
+        vel_t = tw.transposeToPencil(vel_p)
         vel_err = numpy.absolute(vel[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1, :] - vel_t).max()
         self.assertEqual(vel_err, 0.0, "Incorrect transposed data in x-direction for vector!")
     
@@ -57,11 +57,11 @@ class TestTranspose2D(unittest.TestCase):
         tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=1, dim=2)
         lo_t, hi_t = tw.full_chunk
         
-        rho_t = tw.transpose(rho_p)
+        rho_t = tw.transposeToPencil(rho_p)
         rho_err = numpy.absolute(rho[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1] - rho_t).max()
         self.assertEqual(rho_err, 0.0, "Incorrect transposed data in y-direction for scalar!")
         
-        vel_t = tw.transpose(vel_p)
+        vel_t = tw.transposeToPencil(vel_p)
         vel_err = numpy.absolute(vel[lo_t[0]:hi_t[0]+1, lo_t[1]:hi_t[1]+1, :] - vel_t).max()
         self.assertEqual(vel_err, 0.0, "Incorrect transposed data in y-direction for vector!")
 
