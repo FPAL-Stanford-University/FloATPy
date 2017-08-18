@@ -189,9 +189,9 @@ class TransposeWrapper(object):
                 self._grid_partition.transpose_z_to_3d(data_pencil, data_to_transpose)
             
             if self._dim == 2:
-                data_out = numpy.reshape(data_3d, (self._3d_size[0], self._3d_size[1]), order='F')
+                data_out = numpy.reshape(data_to_transpose, (self._3d_size[0], self._3d_size[1]), order='F')
             else:
-                data_out = data_3d
+                data_out = data_to_transpose
         
         else:
             data_to_transpose = numpy.empty(numpy.append(self._3d_size, num_components), dtype=data.dtype, order='F')
@@ -213,7 +213,7 @@ class TransposeWrapper(object):
             
             if self._dim == 2:
                 data_out = numpy.reshape(data_to_transpose, (self._3d_size[0], self._3d_size[1], num_components), \
-                                         dtype=data.dtype, order='F')
+                                         order='F')
             else:
                 data_out = data_to_transpose
         
