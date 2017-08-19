@@ -1,6 +1,6 @@
 import numpy
-import compact.pycd06
-import compact.pycd10
+import compact.pycd06 as pycd06
+import compact.pycd10 as pycd10
 
 from floatpy.parallel import _t3dmod
 from floatpy.utilities import data_reshaper
@@ -141,22 +141,22 @@ class CompactDifferentiator(object):
         if component_idx is not None:
             data_shape = data_shape[0:-1]
         
-        if self._dim == 1 and data_shape.ndim != 1:
-            raise RuntimeError("Make sure data is 1D!")
-        else:
+        if self._dim == 1:
+            if len(data_shape) != 1:
+                raise RuntimeError("Make sure data is 1D!")
             if data_shape[0] != self._chunk_3d_size[0]:
                 raise RuntimeError("Make sure data is of the same size as in grid_partition!")
         
-        if self._dim == 2 and data_shape.ndim != 2:
-            raise RuntimeError("Make sure data is 2D!")
-        else:
+        elif self._dim == 2:
+            if len(data_shape) != 2:
+                raise RuntimeError("Make sure data is 2D!")
             if data_shape[0] != self._chunk_3d_size[0] or \
                data_shape[1] != self._chunk_3d_size[1]:
                 raise RuntimeError("Make sure data is of the same size as in grid_partition!")
         
-        if self._dim == 3 and data_shape.ndim != 3:
-            raise RuntimeError("Make sure data is 3D!")
         else:
+            if len(data_shape) != 3:
+                raise RuntimeError("Make sure data is 3D!")
             if data_shape[0] != self._chunk_3d_size[0] or \
                data_shape[1] != self._chunk_3d_size[1] or \
                data_shape[2] != self._chunk_3d_size[2]:
@@ -164,7 +164,7 @@ class CompactDifferentiator(object):
         
         return_der = True
         if der is None:
-            der = numpy.empty(self._chunk_3d_size, dtype=numpy.float64, order='F')
+            der = numpy.empty(self._chunk_3d_size[0:self._dim], dtype=numpy.float64, order='F')
         else:
             return_der = False
         
@@ -179,14 +179,16 @@ class CompactDifferentiator(object):
         
         self._grid_partition.transpose_3d_to_x(data_3d, data_x)
         
+        der_3d = self._data_reshaper.reshapeTo3d(der)
+        
         if self._order[0] == 6:
             # symmetry BC only supported in 10th order for now
             self._der_x.dd1(data_x, der_x, self._chunk_x_size[1], self._chunk_x_size[2])
         elif self._order[0] == 10:
             self._der_x.dd1(data_x, der_x, self._chunk_x_size[1], self._chunk_x_size[2], bc1_=bc[0], bcn_=bc[1])
         
-        self._grid_partition.transpose_x_to_3d(der_x, der)
-        der = self._data_reshaper.reshapeFrom3d(der)
+        self._grid_partition.transpose_x_to_3d(der_x, der_3d)
+        der = self._data_reshaper.reshapeFrom3d(der_3d)
         
         if return_der:
             return der
@@ -211,22 +213,19 @@ class CompactDifferentiator(object):
         if component_idx is not None:
             data_shape = data_shape[0:-1]
         
-        if self._dim == 1 and data_shape.ndim != 1:
-            raise RuntimeError("Make sure data is 1D!")
-        else:
-            if data_shape[0] != self._chunk_3d_size[0]:
-                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+        if self._dim == 1:
+            raise RuntimeError("There is no ddy for 1D problem!")
         
-        if self._dim == 2 and data_shape.ndim != 2:
-            raise RuntimeError("Make sure data is 2D!")
-        else:
+        elif self._dim == 2:
+            if len(data_shape) != 2:
+                raise RuntimeError("Make sure data is 2D!")
             if data_shape[0] != self._chunk_3d_size[0] or \
                data_shape[1] != self._chunk_3d_size[1]:
                 raise RuntimeError("Make sure data is of the same size as in grid_partition!")
         
-        if self._dim == 3 and data_shape.ndim != 3:
-            raise RuntimeError("Make sure data is 3D!")
         else:
+            if len(data_shape) != 3:
+                raise RuntimeError("Make sure data is 3D!")
             if data_shape[0] != self._chunk_3d_size[0] or \
                data_shape[1] != self._chunk_3d_size[1] or \
                data_shape[2] != self._chunk_3d_size[2]:
@@ -234,7 +233,7 @@ class CompactDifferentiator(object):
         
         return_der = True
         if der is None:
-            der = numpy.empty(self._chunk_3d_size, dtype=numpy.float64, order='F')
+            der = numpy.empty(self._chunk_3d_size[0:self._dim], dtype=numpy.float64, order='F')
         else:
             return_der = False
         
@@ -249,14 +248,16 @@ class CompactDifferentiator(object):
         
         self._grid_partition.transpose_3d_to_y(data_3d, data_y)
         
+        der_3d = self._data_reshaper.reshapeTo3d(der)
+        
         if self._order[0] == 6:
             # symmetry BC only supported in 10th order for now
-            self._der_y.dd2(data_y, der_y, self._chunk_y_size[1], self._chunk_y_size[2])
+            self._der_y.dd2(data_y, der_y, self._chunk_y_size[0], self._chunk_y_size[2])
         elif self._order[0] == 10:
-            self._der_y.dd2(data_y, der_y, self._chunk_y_size[1], self._chunk_y_size[2], bc1_=bc[0], bcn_=bc[1])
+            self._der_y.dd2(data_y, der_y, self._chunk_y_size[0], self._chunk_y_size[2], bc1_=bc[0], bcn_=bc[1])
         
-        self._grid_partition.transpose_y_to_3d(der_y, der)
-        der = self._data_reshaper.reshapeFrom3d(der)
+        self._grid_partition.transpose_y_to_3d(der_y, der_3d)
+        der = self._data_reshaper.reshapeFrom3d(der_3d)
         
         if return_der:
             return der
@@ -281,22 +282,15 @@ class CompactDifferentiator(object):
         if component_idx is not None:
             data_shape = data_shape[0:-1]
         
-        if self._dim == 1 and data_shape.ndim != 1:
-            raise RuntimeError("Make sure data is 1D!")
-        else:
-            if data_shape[0] != self._chunk_3d_size[0]:
-                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+        if self._dim == 1:
+            raise RuntimeError("There is no ddz for 1D problem!")
         
-        if self._dim == 2 and data_shape.ndim != 2:
-            raise RuntimeError("Make sure data is 2D!")
-        else:
-            if data_shape[0] != self._chunk_3d_size[0] or \
-               data_shape[1] != self._chunk_3d_size[1]:
-                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+        elif self._dim == 2:
+            raise RuntimeError("There is no ddz for 2D problem!")
         
-        if self._dim == 3 and data_shape.ndim != 3:
-            raise RuntimeError("Make sure data is 3D!")
         else:
+            if len(data_shape) != 3:
+                raise RuntimeError("Make sure data is 3D!")
             if data_shape[0] != self._chunk_3d_size[0] or \
                data_shape[1] != self._chunk_3d_size[1] or \
                data_shape[2] != self._chunk_3d_size[2]:
@@ -313,20 +307,19 @@ class CompactDifferentiator(object):
         
         data_3d = []
         if component_idx is None:
-            data_3d = self._data_reshaper.reshapeTo3d(data)
+            data_3d = data
         else:
-            data_3d = self._data_reshaper.reshapeTo3d(data, component_idx)
+            data_3d = data[:, :, :, component_idx]
         
         self._grid_partition.transpose_3d_to_z(data_3d, data_z)
         
         if self._order[0] == 6:
             # symmetry BC only supported in 10th order for now
-            self._der_z.dd3(data_z, der_z, self._chunk_z_size[1], self._chunk_z_size[2])
+            self._der_z.dd3(data_z, der_z, self._chunk_z_size[0], self._chunk_z_size[1])
         elif self._order[0] == 10:
-            self._der_z.dd3(data_z, der_z, self._chunk_z_size[1], self._chunk_z_size[2], bc1_=bc[0], bcn_=bc[1])
+            self._der_z.dd3(data_z, der_z, self._chunk_z_size[0], self._chunk_z_size[1], bc1_=bc[0], bcn_=bc[1])
         
         self._grid_partition.transpose_z_to_3d(der_z, der)
-        der = self._data_reshaper.reshapeFrom3d(der)
         
         if return_der:
             return der
@@ -351,22 +344,22 @@ class CompactDifferentiator(object):
         if component_idx is not None:
             data_shape = data_shape[0:-1]
         
-        if self._dim == 1 and data_shape.ndim != 1:
-            raise RuntimeError("Make sure data is 1D!")
-        else:
+        if self._dim == 1:
+            if len(data_shape) != 1:
+                raise RuntimeError("Make sure data is 1D!")
             if data_shape[0] != self._chunk_3d_size[0]:
                 raise RuntimeError("Make sure data is of the same size as in grid_partition!")
         
-        if self._dim == 2 and data_shape.ndim != 2:
-            raise RuntimeError("Make sure data is 2D!")
-        else:
+        elif self._dim == 2:
+            if len(data_shape) != 2:
+                raise RuntimeError("Make sure data is 2D!")
             if data_shape[0] != self._chunk_3d_size[0] or \
                data_shape[1] != self._chunk_3d_size[1]:
                 raise RuntimeError("Make sure data is of the same size as in grid_partition!")
         
-        if self._dim == 3 and data_shape.ndim != 3:
-            raise RuntimeError("Make sure data is 3D!")
         else:
+            if len(data_shape) != 3:
+                raise RuntimeError("Make sure data is 3D!")
             if data_shape[0] != self._chunk_3d_size[0] or \
                data_shape[1] != self._chunk_3d_size[1] or \
                data_shape[2] != self._chunk_3d_size[2]:
@@ -374,7 +367,7 @@ class CompactDifferentiator(object):
         
         return_der = True
         if der is None:
-            der = numpy.empty(self._chunk_3d_size, dtype=numpy.float64, order='F')
+            der = numpy.empty(self._chunk_3d_size[0:self._dim], dtype=numpy.float64, order='F')
         else:
             return_der = False
         
@@ -389,13 +382,15 @@ class CompactDifferentiator(object):
         
         self._grid_partition.transpose_3d_to_x(data_3d, data_x)
         
+        der_3d = self._data_reshaper.reshapeTo3d(der)
+        
         if self._order[0] == 6:
             raise NotImplementedError("6th order 2nd derivatives are not implemented yet. Sorry!")
         elif self._order[0] == 10:
             self._der_x.d2d1(data_x, der_x, self._chunk_x_size[1], self._chunk_x_size[2], bc1_=bc[0], bcn_=bc[1])
         
-        self._grid_partition.transpose_x_to_3d(der_x, der)
-        der = self._data_reshaper.reshapeFrom3d(der)
+        self._grid_partition.transpose_x_to_3d(der_x, der_3d)
+        der = self._data_reshaper.reshapeFrom3d(der_3d)
         
         if return_der:
             return der
@@ -420,22 +415,19 @@ class CompactDifferentiator(object):
         if component_idx is not None:
             data_shape = data_shape[0:-1]
         
-        if self._dim == 1 and data_shape.ndim != 1:
-            raise RuntimeError("Make sure data is 1D!")
-        else:
-            if data_shape[0] != self._chunk_3d_size[0]:
-                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+        if self._dim == 1:
+            raise RuntimeError("There is no d2dy2 for 1D problem!")
         
-        if self._dim == 2 and data_shape.ndim != 2:
-            raise RuntimeError("Make sure data is 2D!")
-        else:
+        elif self._dim == 2:
+            if len(data_shape) != 2:
+                raise RuntimeError("Make sure data is 2D!")
             if data_shape[0] != self._chunk_3d_size[0] or \
                data_shape[1] != self._chunk_3d_size[1]:
                 raise RuntimeError("Make sure data is of the same size as in grid_partition!")
         
-        if self._dim == 3 and data_shape.ndim != 3:
-            raise RuntimeError("Make sure data is 3D!")
         else:
+            if len(data_shape) != 3:
+                raise RuntimeError("Make sure data is 3D!")
             if data_shape[0] != self._chunk_3d_size[0] or \
                data_shape[1] != self._chunk_3d_size[1] or \
                data_shape[2] != self._chunk_3d_size[2]:
@@ -443,7 +435,7 @@ class CompactDifferentiator(object):
         
         return_der = True
         if der is None:
-            der = numpy.empty(self._chunk_3d_size, dtype=numpy.float64, order='F')
+            der = numpy.empty(self._chunk_3d_size[0:self._dim], dtype=numpy.float64, order='F')
         else:
             return_der = False
         
@@ -458,13 +450,15 @@ class CompactDifferentiator(object):
         
         self._grid_partition.transpose_3d_to_y(data_3d, data_y)
         
+        der_3d = self._data_reshaper.reshapeTo3d(der)
+        
         if self._order[0] == 6:
             raise NotImplementedError("6th order 2nd derivatives are not implemented yet. Sorry!")
         elif self._order[0] == 10:
-            self._der_y.d2d2(data_y, der_y, self._chunk_y_size[1], self._chunk_y_size[2], bc1_=bc[0], bcn_=bc[1])
+            self._der_y.d2d2(data_y, der_y, self._chunk_y_size[0], self._chunk_y_size[2], bc1_=bc[0], bcn_=bc[1])
         
-        self._grid_partition.transpose_y_to_3d(der_y, der)
-        der = self._data_reshaper.reshapeFrom3d(der)
+        self._grid_partition.transpose_y_to_3d(der_y, der_3d)
+        der = self._data_reshaper.reshapeFrom3d(der_3d)
         
         if return_der:
             return der
@@ -489,22 +483,15 @@ class CompactDifferentiator(object):
         if component_idx is not None:
             data_shape = data_shape[0:-1]
         
-        if self._dim == 1 and data_shape.ndim != 1:
-            raise RuntimeError("Make sure data is 1D!")
-        else:
-            if data_shape[0] != self._chunk_3d_size[0]:
-                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+        if self._dim == 1:
+            raise RuntimeError("There is no d2dz2 for 1D problem!")
         
-        if self._dim == 2 and data_shape.ndim != 2:
-            raise RuntimeError("Make sure data is 2D!")
-        else:
-            if data_shape[0] != self._chunk_3d_size[0] or \
-               data_shape[1] != self._chunk_3d_size[1]:
-                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+        elif self._dim == 2:
+            raise RuntimeError("There is no d2dz2 for 1D problem!")
         
-        if self._dim == 3 and data_shape.ndim != 3:
-            raise RuntimeError("Make sure data is 3D!")
         else:
+            if len(data_shape) != 3:
+                raise RuntimeError("Make sure data is 3D!")
             if data_shape[0] != self._chunk_3d_size[0] or \
                data_shape[1] != self._chunk_3d_size[1] or \
                data_shape[2] != self._chunk_3d_size[2]:
@@ -521,19 +508,18 @@ class CompactDifferentiator(object):
         
         data_3d = []
         if component_idx is None:
-            data_3d = self._data_reshaper.reshapeTo3d(data)
+            data_3d = data
         else:
-            data_3d = self._data_reshaper.reshapeTo3d(data, component_idx)
+            data_3d = data[:, :, :, component_idx]
         
         self._grid_partition.transpose_3d_to_z(data_3d, data_z)
         
         if self._order[0] == 6:
             raise NotImplementedError("6th order 2nd derivatives are not implemented yet. Sorry!")
         elif self._order[0] == 10:
-            self._der_z.d2d3(data_z, der_z, self._chunk_z_size[1], self._chunk_z_size[2], bc1_=bc[0], bcn_=bc[1])
+            self._der_z.d2d3(data_z, der_z, self._chunk_z_size[0], self._chunk_z_size[1], bc1_=bc[0], bcn_=bc[1])
         
         self._grid_partition.transpose_z_to_3d(der_z, der)
-        der = self._data_reshaper.reshapeFrom3d(der)
         
         if return_der:
             return der
@@ -580,13 +566,13 @@ class CompactDifferentiator(object):
         
         data_shape = data.shape
         
-        if self._dim == 1 and data_shape.ndim != 2:
+        if self._dim == 1 and len(data_shape) != 2:
             raise RuntimeError("Make sure data is 1D and has enough number of components!")
         
-        if self._dim == 2 and data_shape.ndim != 3:
+        if self._dim == 2 and len(data_shape) != 3:
             raise RuntimeError("Make sure data is 2D and has enough number of components!")
         
-        if self._dim == 3 and data_shape.ndim != 4:
+        if self._dim == 3 and len(data_shape) != 4:
             raise RuntimeError("Make sure data is 3D and has enough number of components!")
         
         divergence = None
