@@ -84,6 +84,7 @@ modules = ['floatpy.parallel',
            'floatpy.derivatives.compact',
            'floatpy.filters',
            'floatpy.upsampling',
+           'floatpy.utilities',
            'floatpy.readers']
 
 setup(name = 'FloATPy',

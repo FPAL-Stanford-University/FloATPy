@@ -32,7 +32,7 @@ class TestTranspose2D(unittest.TestCase):
         
         rho_c, vel_c = self.reader.readData(('density', 'velocity'))
         
-        tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=0, dim=2)
+        tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=0, dimension=2)
         lo_p, hi_p = tw.full_pencil
         
         rho_p = tw.transposeToPencil(rho_c)
@@ -66,7 +66,7 @@ class TestTranspose2D(unittest.TestCase):
         
         rho_c, vel_c = self.reader.readData(('density', 'velocity'))
         
-        tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=1, dim=2)
+        tw = transpose_wrapper.TransposeWrapper(self.reader.grid_partition, direction=1, dimension=2)
         lo_p, hi_p = tw.full_pencil
         
         rho_p = tw.transposeToPencil(rho_c)
