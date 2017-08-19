@@ -56,7 +56,7 @@ class DataReshaper(object):
                 
                 data_shape = numpy.array(data_shape[:-1])
         
-        shape_3d = numpy.ones(3)
+        shape_3d = numpy.ones(3, dtype=numpy.int64)
         shape_3d[:self._dim] = data_shape
         
         # Get the component's data.
