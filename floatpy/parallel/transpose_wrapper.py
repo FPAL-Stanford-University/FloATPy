@@ -73,7 +73,7 @@ class TransposeWrapper(object):
         self._pencil_hi = self._pencil_hi - 1
         
         # Initialize the data reshaper.
-        self._data_reshpaer = data_reshaper.DataReshaper(self._dim, data_order='F')
+        self._data_reshaper = data_reshaper.DataReshaper(self._dim, data_order='F')
     
     
     @property
