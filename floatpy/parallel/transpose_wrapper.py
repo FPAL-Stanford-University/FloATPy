@@ -1,6 +1,7 @@
 import numpy
 
 from floatpy.parallel import _t3dmod
+from floatpy.utilities import data_reshaper
 
 class TransposeWrapper(object):
     """
@@ -70,6 +71,9 @@ class TransposeWrapper(object):
         # Convert to 0 based indexing.
         self._pencil_lo = self._pencil_lo - 1
         self._pencil_hi = self._pencil_hi - 1
+        
+        # Initialize the data reshaper.
+        self._data_reshpaer = data_reshaper.DataReshaper(self._dim, data_order='F')
     
     
     @property
@@ -114,7 +118,7 @@ class TransposeWrapper(object):
         if num_components == 1:
             data_to_transpose = numpy.empty(self._pencil_size, dtype=data.dtype, order='F')
             
-            data_3d = numpy.reshape(data, shape_3d, order='F')
+            data_3d = self._data_reshaper.reshapeTo3d(data)
             
             if self._direction == 0:
                 self._grid_partition.transpose_3d_to_x(data_3d, data_to_transpose)
@@ -123,21 +127,13 @@ class TransposeWrapper(object):
             else:
                 self._grid_partition.transpose_3d_to_z(data_3d, data_to_transpose)
             
-            if self._dim == 2:
-                data_out = numpy.reshape(data_to_transpose, (self._pencil_size[0], self._pencil_size[1]), order='F')
-            else:
-                data_out = data_to_transpose
-        
+            data_out = self._data_reshaper.reshapeFrom3d(data_to_transpose)
         
         else:
             data_to_transpose = numpy.empty(numpy.append(self._pencil_size, num_components), dtype=data.dtype, order='F')
             
             for ic in range(num_components):
-                data_3d = []
-                if self._dim == 2:
-                    data_3d = numpy.reshape(data[:, :, ic], shape_3d, order='F')
-                else:
-                    data_3d = data[:, :, :, ic]
+                data_3d = self._data_reshaper.reshapeTo3d(data, component_idx=ic)
                 
                 if self._direction == 0:
                     self._grid_partition.transpose_3d_to_x(data_3d, data_to_transpose[:, :, :, ic])
@@ -146,11 +142,7 @@ class TransposeWrapper(object):
                 else:
                     self._grid_partition.transpose_3d_to_z(data_3d, data_to_transpose[:, :, :, ic])
             
-            if self._dim == 2:
-                data_out = numpy.reshape(data_to_transpose, (self._pencil_size[0], self._pencil_size[1], num_components), \
-                                         order='F')
-            else:
-                data_out = data_to_transpose
+            data_out = self._data_reshaper.reshapeFrom3d(data_to_transpose)
         
         return data_out
     
@@ -179,7 +171,7 @@ class TransposeWrapper(object):
         if num_components == 1:
             data_to_transpose = numpy.empty(self._3d_size, dtype=data.dtype, order='F')
             
-            data_pencil = numpy.reshape(data, shape_pencil, order='F')
+            data_pencil = self._data_reshaper.reshapeTo3d(data)
             
             if self._direction == 0:
                 self._grid_partition.transpose_x_to_3d(data_pencil, data_to_transpose)
@@ -188,21 +180,13 @@ class TransposeWrapper(object):
             else:
                 self._grid_partition.transpose_z_to_3d(data_pencil, data_to_transpose)
             
-            if self._dim == 2:
-                data_out = numpy.reshape(data_to_transpose, (self._3d_size[0], self._3d_size[1]), order='F')
-            else:
-                data_out = data_to_transpose
+            data_out = self._data_reshaper.reshapeFrom3d(data_to_transpose)
         
         else:
             data_to_transpose = numpy.empty(numpy.append(self._3d_size, num_components), dtype=data.dtype, order='F')
             
             for ic in range(num_components):
-                data_pencil = []
-                
-                if self._dim == 2:
-                    data_pencil = numpy.reshape(data[:, :, ic], shape_pencil, order='F')
-                else:
-                    data_pencil = data[:, :, :, ic]
+                data_pencil = self._data_reshaper.reshapeTo3d(data, component_idx=ic)
                 
                 if self._direction == 0:
                     self._grid_partition.transpose_x_to_3d(data_pencil, data_to_transpose[:, :, :, ic])
@@ -211,10 +195,6 @@ class TransposeWrapper(object):
                 else:
                     self._grid_partition.transpose_z_to_3d(data_pencil, data_to_transpose[:, :, :, ic])
             
-            if self._dim == 2:
-                data_out = numpy.reshape(data_to_transpose, (self._3d_size[0], self._3d_size[1], num_components), \
-                                         order='F')
-            else:
-                data_out = data_to_transpose
+            data_out = self._data_reshaper.reshapeFrom3d(data_to_transpose)
         
         return data_out

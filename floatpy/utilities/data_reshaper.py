@@ -22,7 +22,7 @@ class DataReshaper(object):
         
         data : numpy data to reshape
         component_idx : integer representing component index of data to reshape. None if there is only one component
-        data_output : optional output numpy array. This method will return data_output if it is not given
+        data_output : optional numpy array ouput. This method will return data_output if it is not given
         """
         
         # Get the shape of data.
@@ -92,7 +92,7 @@ class DataReshaper(object):
         Reshape data into low dimension from 3D.
         
         data : numpy data to reshape
-        data_output : optional output numpy array. This method will return data_output if it is not given
+        data_output : optional numpy array output. This method will return data_output if it is not given
         """
         
         # Get the shape of data.
