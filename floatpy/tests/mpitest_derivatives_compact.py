@@ -177,6 +177,25 @@ class TestDerivativesCompact(unittest.TestCase):
         self.assertLess(error[0], 5.0e-14, "Incorrect divergence!")
 
 
+    def testCurl(self):
+        """
+        Test the curl function
+        """
+
+        curl = self.der.curl(self.dfdx_exact, self.dfdy_exact, self.dfdz_exact)
+
+        myerror = numpy.zeros(3)
+        myerror[0] = numpy.absolute(curl[:,:,:,0]).max()
+        myerror[1] = numpy.absolute(curl[:,:,:,1]).max()
+        myerror[2] = numpy.absolute(curl[:,:,:,2]).max()
+
+        error = numpy.zeros(3)
+        self.comm.Allreduce(myerror, error, op=MPI.MAX)
+
+        for i in range(3):
+            self.assertLess(error[i], 5.0e-14, "Incorrect curl!")
+
+
     def testLaplacian(self):
         """
         Test the laplacian function
