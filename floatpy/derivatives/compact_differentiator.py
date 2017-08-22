@@ -7,7 +7,7 @@ from floatpy.utilities import data_reshaper
 
 class CompactDifferentiator(object):
     """
-    Class to perform parallel compact finite difference routines.
+    Class to perform derivatives with compact finite difference schemes.
     """
     
     def __init__(self, grid_partition, grid_spacing, order, dimension=3, periodic_dimensions=(False, False, False)):
@@ -40,8 +40,8 @@ class CompactDifferentiator(object):
             raise RuntimeError("Size of 'periodic_dimensions' is smaller than problem dimension!")
         
         for i in range(self._dim):
-            if order[i] not in [6,10]:
-                raise RuntimeError("order[%d] has to be one of {6,10}" %i)
+            if order[i] not in [6, 10]:
+                raise RuntimeError("order[%d] has to be one of {6, 10}" %i)
         
         self._order = tuple(order)
         self._grid_partition = grid_partition
@@ -124,13 +124,13 @@ class CompactDifferentiator(object):
     
     def ddx(self, data, der=None, component_idx=None, bc=(0,0)):
         """
-        Function to compute the first order derivative of data in first direction.
+        Method to compute the first order derivative of data in first direction.
         
         data : input numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
                and the problem dimension
         der : optional output numpy array in Fortran contiguous layout. This array must be consistent with the 3D
               decomposition and the problem dimension. This method will return der if der is None
-        component_idx : index of component in data to for taking derivative. None if there is only one component in the
+        component_idx : index of component in data for taking derivative. None if there is only one component in the
                         data
         bc : integer iterable of size 2 with the boundary condition at the left and right.
              0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
@@ -196,13 +196,13 @@ class CompactDifferentiator(object):
     
     def ddy(self, data, der=None, component_idx=None, bc=(0,0)):
         """
-        Function to compute the first order derivative of data in second direction.
+        Method to compute the first order derivative of data in second direction.
         
         data : input numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
                and the problem dimension
         der : optional output numpy array in Fortran contiguous layout. This array must be consistent with the 3D
               decomposition and the problem dimension. This method will return der if der is None
-        component_idx : index of component in data to for taking derivative. None if there is only one component in the
+        component_idx : index of component in data for taking derivative. None if there is only one component in the
                         data
         bc : integer iterable of size 2 with the boundary condition at the left and right.
              0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
@@ -250,10 +250,10 @@ class CompactDifferentiator(object):
         
         der_3d = self._data_reshaper.reshapeTo3d(der)
         
-        if self._order[0] == 6:
+        if self._order[1] == 6:
             # symmetry BC only supported in 10th order for now
             self._der_y.dd2(data_y, der_y, self._chunk_y_size[0], self._chunk_y_size[2])
-        elif self._order[0] == 10:
+        elif self._order[1] == 10:
             self._der_y.dd2(data_y, der_y, self._chunk_y_size[0], self._chunk_y_size[2], bc1_=bc[0], bcn_=bc[1])
         
         self._grid_partition.transpose_y_to_3d(der_y, der_3d)
@@ -265,13 +265,13 @@ class CompactDifferentiator(object):
     
     def ddz(self, data, der=None, component_idx=None, bc=(0,0)):
         """
-        Function to compute the first order derivative of data in third direction.
+        Method to compute the first order derivative of data in third direction.
         
         data : input numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
                and the problem dimension
         der : optional output numpy array in Fortran contiguous layout. This array must be consistent with the 3D
               decomposition and the problem dimension. This method will return der if der is None
-        component_idx : index of component in data to for taking derivative. None if there is only one component in the
+        component_idx : index of component in data for taking derivative. None if there is only one component in the
                         data
         bc : integer iterable of size 2 with the boundary condition at the left and right.
              0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
@@ -313,10 +313,10 @@ class CompactDifferentiator(object):
         
         self._grid_partition.transpose_3d_to_z(data_3d, data_z)
         
-        if self._order[0] == 6:
+        if self._order[2] == 6:
             # symmetry BC only supported in 10th order for now
             self._der_z.dd3(data_z, der_z, self._chunk_z_size[0], self._chunk_z_size[1])
-        elif self._order[0] == 10:
+        elif self._order[2] == 10:
             self._der_z.dd3(data_z, der_z, self._chunk_z_size[0], self._chunk_z_size[1], bc1_=bc[0], bcn_=bc[1])
         
         self._grid_partition.transpose_z_to_3d(der_z, der)
@@ -327,13 +327,13 @@ class CompactDifferentiator(object):
     
     def d2dx2(self, data, der=None, component_idx=None, bc=(0,0)):
         """
-        Function to compute the second order derivative of data in first direction.
+        Method to compute the second order derivative of data in first direction.
         
         data : input numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
                and the problem dimension
         der : optional output numpy array in Fortran contiguous layout. This array must be consistent with the 3D
               decomposition and the problem dimension. This method will return der if der is None
-        component_idx : index of component in data to for taking derivative. None if there is only one component in the
+        component_idx : index of component in data for taking derivative. None if there is only one component in the
                         data
         bc : integer iterable of size 2 with the boundary condition at the left and right.
              0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
@@ -398,13 +398,13 @@ class CompactDifferentiator(object):
     
     def d2dy2(self, data, der=None, component_idx=None, bc=(0,0)):
         """
-        Function to compute the second order derivative of data in second direction.
+        Method to compute the second order derivative of data in second direction.
         
         data : input numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
                and the problem dimension
         der : optional output numpy array in Fortran contiguous layout. This array must be consistent with the 3D
               decomposition and the problem dimension. This method will return der if der is None
-        component_idx : index of component in data to for taking derivative. None if there is only one component in the
+        component_idx : index of component in data for taking derivative. None if there is only one component in the
                         data
         bc : integer iterable of size 2 with the boundary condition at the left and right.
              0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
@@ -452,9 +452,9 @@ class CompactDifferentiator(object):
         
         der_3d = self._data_reshaper.reshapeTo3d(der)
         
-        if self._order[0] == 6:
+        if self._order[1] == 6:
             raise NotImplementedError("6th order 2nd derivatives are not implemented yet. Sorry!")
-        elif self._order[0] == 10:
+        elif self._order[1] == 10:
             self._der_y.d2d2(data_y, der_y, self._chunk_y_size[0], self._chunk_y_size[2], bc1_=bc[0], bcn_=bc[1])
         
         self._grid_partition.transpose_y_to_3d(der_y, der_3d)
@@ -466,13 +466,13 @@ class CompactDifferentiator(object):
     
     def d2dz2(self, data, der=None, component_idx=None, bc=(0,0)):
         """
-        Function to compute the second order derivative of data in third direction.
+        Method to compute the second order derivative of data in third direction.
         
         data : input numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
                and the problem dimension
         der : optional output numpy array in Fortran contiguous layout. This array must be consistent with the 3D
               decomposition and the problem dimension. This method will return der if der is None
-        component_idx : index of component in data to for taking derivative. None if there is only one component in the
+        component_idx : index of component in data for taking derivative. None if there is only one component in the
                         data
         bc : integer iterable of size 2 with the boundary condition at the left and right.
              0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
@@ -487,7 +487,7 @@ class CompactDifferentiator(object):
             raise RuntimeError("There is no d2dz2 for 1D problem!")
         
         elif self._dim == 2:
-            raise RuntimeError("There is no d2dz2 for 1D problem!")
+            raise RuntimeError("There is no d2dz2 for 2D problem!")
         
         else:
             if len(data_shape) != 3:
@@ -514,9 +514,9 @@ class CompactDifferentiator(object):
         
         self._grid_partition.transpose_3d_to_z(data_3d, data_z)
         
-        if self._order[0] == 6:
+        if self._order[2] == 6:
             raise NotImplementedError("6th order 2nd derivatives are not implemented yet. Sorry!")
-        elif self._order[0] == 10:
+        elif self._order[2] == 10:
             self._der_z.d2d3(data_z, der_z, self._chunk_z_size[0], self._chunk_z_size[1], bc1_=bc[0], bcn_=bc[1])
         
         self._grid_partition.transpose_z_to_3d(der_z, der)
@@ -527,16 +527,16 @@ class CompactDifferentiator(object):
     
     def gradient(self, data, component_idx=None, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0)):
         """
-        Function to compute the gradient of data.
+        Method to compute the gradient of data.
 
         data : input numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
                and the problem dimension
-        component_idx : index of component in data to for taking derivative. None if there is only one component in the
+        component_idx : index of component in data for taking derivative. None if there is only one component in the
                         data
         *_bc : integer tuple of size 2 with the boundary condition at the left and right.
                0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
-        gradient_* : retruned output numpy array in Fortran contiguous layout. This array must be consistent with the
-                     3D decomposition and the problem dimension. This method will return der if der is None
+        gradient_* : returned output numpy array in Fortran contiguous layout. This array must be consistent with the
+                     3D decomposition and the problem dimension
         """
         
         if self._dim == 1:
@@ -554,14 +554,13 @@ class CompactDifferentiator(object):
     
     def divergence(self, data, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0)):
         """
-        Function to compute the gradient of a vector (u,v,w)
+        Method to compute the gradient of a vector (u, v, w).
 
         data : input numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
                and the problem dimension. The number of components should be as same as the number of dimensions
-        divergence : output 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
-                     This array is in the 3D decomposition
         *_bc : integer tuple of size 2 with the boundary condition at the left and right.
                0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
+        divergence : output 3D numpy array in Fortran contiguous layout. This array is in the 3D decomposition
         """
         
         data_shape = data.shape
@@ -575,10 +574,7 @@ class CompactDifferentiator(object):
         if self._dim == 3 and len(data_shape) != 4:
             raise RuntimeError("Make sure data is 3D and has enough number of components!")
         
-        divergence = None
-        
-        if self._dim >= 1:
-            divergence = self.ddx(data, component_idx=0, bc=x_bc)
+        divergence = self.ddx(data, component_idx=0, bc=x_bc)
         if self._dim >= 2:
             divergence = divergence + self.ddy(data, component_idx=1, bc=y_bc)
         if self._dim == 3:
@@ -589,22 +585,19 @@ class CompactDifferentiator(object):
     
     def laplacian(self, data, component_idx=None, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0)):
         """
-        Function to compute the laplacian of data.
+        Method to compute the laplacian of data.
 
         data : input numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
                and the problem dimension
-        component_idx : index of component in data to for taking derivative. None if there is only one component in the
+        component_idx : index of component in data for taking derivative. None if there is only one component in the
                         data
         *_bc : integer tuple of size 2 with the boundary condition at the left and right.
                0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
-        laplacian_* : retruned output numpy array in Fortran contiguous layout. This array must be consistent with the
-                      3D decomposition and the problem dimension. This method will return der if der is None
+        laplacian : returned output numpy array in Fortran contiguous layout. This array must be consistent with the
+                    3D decomposition and the problem dimension
         """
         
-        laplacian = None
-        
-        if self._dim >= 1:
-            laplacian = self.d2dx2(data, component_idx=component_idx, bc=x_bc)
+        laplacian = self.d2dx2(data, component_idx=component_idx, bc=x_bc)
         if self._dim >= 2:
             laplacian = laplacian + self.d2dy2(data, component_idx=component_idx, bc=y_bc)
         if self._dim == 3:
