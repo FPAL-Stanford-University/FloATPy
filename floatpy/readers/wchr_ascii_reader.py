@@ -119,9 +119,9 @@ class WchrAsciiReader(BaseReader):
                 raise ValueError('Invalid indices in chunk. Cannot be < 0 or > domain size!')
             if hi[i] < lo[i]:
                 raise ValueError('Invalid indices in chunk. Upper bound cannot be smaller than lower bound!')
-
+        
         # Now set the chunk to be used later.
-        self.chunk = ((lo[0],hi[0]),(lo[1],hi[1]),(lo[2],hi[2]))
+        self.chunk = ( (lo[0], hi[0] + 1), (lo[1], hi[1] + 1), (lo[2], hi[2] + 1) )
     
     
     def getSubDomain(self):
@@ -131,7 +131,7 @@ class WchrAsciiReader(BaseReader):
         """
         
         lo = (self.chunk[0][0], self.chunk[1][0], self.chunk[2][0])
-        hi = (self.chunk[0][1], self.chunk[1][1], self.chunk[2][1])
+        hi = (self.chunk[0][1] - 1, self.chunk[1][1] - 1, self.chunk[2][1] - 1)
         
         return lo, hi
     
@@ -146,6 +146,15 @@ class WchrAsciiReader(BaseReader):
         """
         
         return tuple(self._domain_size)
+    
+    
+    @property
+    def dimension(self):
+        """
+        Return the dimension of the domain.
+        """
+        
+        return 3
     
     
     @property
@@ -164,6 +173,15 @@ class WchrAsciiReader(BaseReader):
         """
         
         return 0.
+    
+    
+    @property
+    def data_order(self):
+        """
+        Return the data order.
+        """
+        
+        return 'F'
     
     
     @property
@@ -253,9 +271,9 @@ class WchrAsciiReader(BaseReader):
         """
         
         chunk_size = (self.chunk[0][1]-self.chunk[0][0], self.chunk[1][1]-self.chunk[1][0], self.chunk[2][1]-self.chunk[2][0])
-        x_c = numpy.zeros( chunk_size )
-        y_c = numpy.zeros( chunk_size )
-        z_c = numpy.zeros( chunk_size )
+        x_c = numpy.empty(chunk_size, order='F')
+        y_c = numpy.empty(chunk_size, order='F')
+        z_c = numpy.empty(chunk_size, order='F')
         
         ny = self._domain_size[1]
         
@@ -305,7 +323,7 @@ class WchrAsciiReader(BaseReader):
         return x_c, y_c, z_c
     
     
-    def readData(self, var_names):
+    def readData(self, var_names, data=None):
         """
         Method to read in the a chunk of the data for variables at current vizdump step.
         """
@@ -315,13 +333,16 @@ class WchrAsciiReader(BaseReader):
             var_names = (var_names,)
         
         chunk_size = (self.chunk[0][1]-self.chunk[0][0], self.chunk[1][1]-self.chunk[1][0], self.chunk[2][1]-self.chunk[2][0])
-        data = [ numpy.zeros( chunk_size ) for i in range(len(var_names)) ]
+        if data == None:
+            _data = [ numpy.zeros( chunk_size ) for i in range(len(var_names)) ]
+        else:
+            _data = data
         
         ny = self._domain_size[1]
         
         for i in range(len(var_names)):
             var = var_names[i]
-            v   = data[i]
+            v   = _data[i]
             
             ind = self.inds[var]
             
@@ -352,7 +373,8 @@ class WchrAsciiReader(BaseReader):
                               max(0,self.chunk[1][0]- 0   ):min(  ny -  0  ,self.chunk[1][1]- 0   ),
                               max(0,self.chunk[2][0]-lo[1]):min(hi[1]-lo[1],self.chunk[2][1]-lo[1]) ]
         
-        return tuple(data)
+        if data == None:
+            return tuple(_data)
     
     
     def plotThreeSlice(self, var, index):

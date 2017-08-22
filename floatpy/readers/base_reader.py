@@ -23,6 +23,14 @@ class BaseReader(object):
     
     
     @abc.abstractmethod
+    def dimension(self):
+        """
+        Return the dimension of the domain.
+        """
+        return
+    
+    
+    @abc.abstractmethod
     def setStep(self, step):
         """
         Update the metadata from the summary file in the data directory at a new time step.
@@ -93,6 +101,14 @@ class BaseReader(object):
         return
     
     
+    @abc.abstractproperty
+    def data_order(self):
+        """
+        Return the data order.
+        """
+        return
+    
+    
     @abc.abstractmethod
     def readCoordinates(self):
         """
@@ -103,7 +119,7 @@ class BaseReader(object):
     
     
     @abc.abstractmethod
-    def readData(self, var_names):
+    def readData(self, var_names, data=None):
         """
         Read the data of several variables in the stored sub-domain.
         Default to the full domain when the sub-domain is not set.
