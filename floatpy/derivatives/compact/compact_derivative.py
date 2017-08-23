@@ -294,6 +294,36 @@ class CompactDerivative(object):
         return (dudx + dvdy + dwdz)
 
 
+    def curl(self, u, v, w, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0)):
+        nx, ny, nz = u.shape
+
+        dudy = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+        dudz = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+
+        dvdx = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+        dvdz = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+
+        dwdx = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+        dwdy = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+
+        vorticity = numpy.empty( (self._chunk_3d_size[0], self._chunk_3d_size[1], self._chunk_3d_size[2], 3), dtype=numpy.float64, order='F' )
+
+        self.ddx(v, dvdx, bc=x_bc)
+        self.ddx(w, dwdx, bc=x_bc)
+
+        self.ddy(u, dudy, bc=y_bc)
+        self.ddy(w, dwdy, bc=y_bc)
+
+        self.ddz(u, dudz, bc=z_bc)
+        self.ddz(v, dvdz, bc=z_bc)
+
+        vorticity[:,:,:,0] = dwdy - dvdz
+        vorticity[:,:,:,1] = dudz - dwdx
+        vorticity[:,:,:,2] = dvdx - dudy
+
+        return vorticity
+
+
     def laplacian(self, f, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0)):
         """
         Function to compute the laplacian of f
