@@ -5,7 +5,7 @@ import unittest
 from floatpy.parallel import _t3dmod
 from floatpy.derivatives import CompactDifferentiator
 
-class TestDerivativesCompact(unittest.TestCase):
+class TestDifferentiatorCompact(unittest.TestCase):
     
     def setUp(self):
         self.nx, self.ny, self.nz = 64, 64, 64
@@ -63,7 +63,7 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.array([ myerror[0] ])
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in X!")
+        self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in the X direction!")
 
 
     def testFirstDerivativeY(self):
@@ -78,7 +78,7 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.array([ myerror[0] ])
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in Y!")
+        self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in the Y direction!")
 
 
     def testFirstDerivativeZ(self):
@@ -93,7 +93,7 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.array([ myerror[0] ])
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in Z!")
+        self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in the Z direction!")
     
 
     def testSecondDerivativeX(self):
@@ -108,7 +108,7 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.array([ myerror[0] ])
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in X!")
+        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in the X direction!")
 
 
     def testSecondDerivativeY(self):
@@ -123,7 +123,7 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.array([ myerror[0] ])
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in X!")
+        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in the Y direction!")
 
 
     def testSecondDerivativeZ(self):
@@ -138,12 +138,12 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.array([ myerror[0] ])
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in X!")
+        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in the Z direction!")
 
 
     def testGradient(self):
         """
-        Test the gradient function
+        Test the gradient function.
         """
 
         dfdx, dfdy, dfdz = self.der.gradient(self.f)
@@ -162,7 +162,7 @@ class TestDerivativesCompact(unittest.TestCase):
 
     def testDivergence(self):
         """
-        Test the divergence function
+        Test the divergence function.
         """
 
         df = numpy.concatenate((self.dfdx_exact[..., numpy.newaxis], \
@@ -179,9 +179,31 @@ class TestDerivativesCompact(unittest.TestCase):
         self.assertLess(error[0], 5.0e-14, "Incorrect divergence!")
 
 
+    def testCurl(self):
+        """
+        Test the curl function.
+        """
+
+        df = numpy.concatenate((self.dfdx_exact[..., numpy.newaxis], \
+            self.dfdy_exact[..., numpy.newaxis], self.dfdz_exact[..., numpy.newaxis]), axis=3)
+
+        curl = self.der.curl(df)
+
+        myerror = numpy.zeros(3)
+        myerror[0] = numpy.absolute(curl[:,:,:,0]).max()
+        myerror[1] = numpy.absolute(curl[:,:,:,1]).max()
+        myerror[2] = numpy.absolute(curl[:,:,:,2]).max()
+
+        error = numpy.zeros(3)
+        self.comm.Allreduce(myerror, error, op=MPI.MAX)
+
+        for i in range(3):
+            self.assertLess(error[i], 5.0e-14, "Incorrect curl!")
+
+
     def testLaplacian(self):
         """
-        Test the laplacian function
+        Test the laplacian function.
         """
 
         laplacian = self.der.laplacian(self.f)
