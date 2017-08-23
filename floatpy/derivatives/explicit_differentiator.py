@@ -1,7 +1,7 @@
 import numpy
 
-import explicit.first_order as first_order
-import explicit.second_order as second_order
+import explicit.first as first_der
+import explicit.second as second_der
 
 class ExplicitDifferentiator(object):
     """
@@ -29,9 +29,6 @@ class ExplicitDifferentiator(object):
         
         if len(order) < self._dim:
             raise RuntimeError("Size of 'order' is smaller than problem dimension!")
-        
-        if len(periodic_dimensions) < self._dim:
-            raise RuntimeError("Size of 'periodic_dimensions' is smaller than problem dimension!")
         
         for i in range(self._dim):
             if order[i] not in [2, 4, 6]:
@@ -123,17 +120,21 @@ class ExplicitDifferentiator(object):
                 raise RuntimeError("Make sure data is 3D!")
         
         return_der = True
-        if der is not None:
+        if der is None:
+            der = numpy.empty(data_shape, dtype=numpy.float64, order='F')
+        else:
+            if der.shape != data_shape:
+                raise RuntimeError("Make sure shape of der is consistent with that of data!")
             return_der = False
         
         if self._order[0] == 2:
-            der = first_order.differentiateSecondOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = first_der.differentiateSecondOrderFiniteDifference(\
                 data, self._dx, 0, component_idx, use_one_sided, self._dim, self._data_order)
         elif self._order[0] == 4:
-            der = first_order.differentiateFourthOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = first_der.differentiateFourthOrderFiniteDifference(\
                 data, self._dx, 0, component_idx, use_one_sided, self._dim, self._data_order)
         elif self._order[0] == 6:
-            der = first_order.differentiateSixthOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = first_der.differentiateSixthOrderFiniteDifference(\
                 data, self._dx, 0, component_idx, use_one_sided, self._dim, self._data_order)
         
         if return_der:
@@ -170,17 +171,21 @@ class ExplicitDifferentiator(object):
                 raise RuntimeError("Make sure data is 3D!")
         
         return_der = True
-        if der is not None:
+        if der is None:
+            der = numpy.empty(data_shape, dtype=numpy.float64, order='F')
+        else:
+            if der.shape != data_shape:
+                raise RuntimeError("Make sure shape of der is consistent with that of data!")
             return_der = False
         
         if self._order[1] == 2:
-            der = first_order.differentiateSecondOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = first_der.differentiateSecondOrderFiniteDifference(\
                 data, self._dy, 1, component_idx, use_one_sided, self._dim, self._data_order)
         elif self._order[1] == 4:
-            der = first_order.differentiateFourthOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = first_der.differentiateFourthOrderFiniteDifference(\
                 data, self._dy, 1, component_idx, use_one_sided, self._dim, self._data_order)
         elif self._order[1] == 6:
-            der = first_order.differentiateSixthOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = first_der.differentiateSixthOrderFiniteDifference(\
                 data, self._dy, 1, component_idx, use_one_sided, self._dim, self._data_order)
         
         if return_der:
@@ -217,17 +222,21 @@ class ExplicitDifferentiator(object):
                 raise RuntimeError("Make sure data is 3D!")
         
         return_der = True
-        if der is not None:
+        if der is None:
+            der = numpy.empty(data_shape, dtype=numpy.float64, order='F')
+        else:
+            if der.shape != data_shape:
+                raise RuntimeError("Make sure shape of der is consistent with that of data!")
             return_der = False
         
         if self._order[2] == 2:
-            der = first_order.differentiateSecondOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = first_der.differentiateSecondOrderFiniteDifference(\
                 data, self._dz, 2, component_idx, use_one_sided, self._dim, self._data_order)
         elif self._order[2] == 4:
-            der = first_order.differentiateFourthOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = first_der.differentiateFourthOrderFiniteDifference(\
                 data, self._dz, 2, component_idx, use_one_sided, self._dim, self._data_order)
         elif self._order[2] == 6:
-            der = first_order.differentiateSixthOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = first_der.differentiateSixthOrderFiniteDifference(\
                 data, self._dz, 2, component_idx, use_one_sided, self._dim, self._data_order)
         
         if return_der:
@@ -264,17 +273,21 @@ class ExplicitDifferentiator(object):
                 raise RuntimeError("Make sure data is 3D!")
         
         return_der = True
-        if der is not None:
+        if der is None:
+            der = numpy.empty(data_shape, dtype=numpy.float64, order='F')
+        else:
+            if der.shape != data_shape:
+                raise RuntimeError("Make sure shape of der is consistent with that of data!")
             return_der = False
         
         if self._order[0] == 2:
-            der = second_order.differentiateSecondOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = second_der.differentiateSecondOrderFiniteDifference(\
                 data, self._dx, 0, component_idx, use_one_sided, self._dim, self._data_order)
         elif self._order[0] == 4:
-            der = second_order.differentiateFourthOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = second_der.differentiateFourthOrderFiniteDifference(\
                 data, self._dx, 0, component_idx, use_one_sided, self._dim, self._data_order)
         elif self._order[0] == 6:
-            der = second_order.differentiateSixthOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = second_der.differentiateSixthOrderFiniteDifference(\
                 data, self._dx, 0, component_idx, use_one_sided, self._dim, self._data_order)
         
         if return_der:
@@ -311,17 +324,21 @@ class ExplicitDifferentiator(object):
                 raise RuntimeError("Make sure data is 3D!")
         
         return_der = True
-        if der is not None:
+        if der is None:
+            der = numpy.empty(data_shape, dtype=numpy.float64, order='F')
+        else:
+            if der.shape != data_shape:
+                raise RuntimeError("Make sure shape of der is consistent with that of data!")
             return_der = False
         
         if self._order[1] == 2:
-            der = second_order.differentiateSecondOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = second_der.differentiateSecondOrderFiniteDifference(\
                 data, self._dy, 1, component_idx, use_one_sided, self._dim, self._data_order)
         elif self._order[1] == 4:
-            der = second_order.differentiateFourthOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = second_der.differentiateFourthOrderFiniteDifference(\
                 data, self._dy, 1, component_idx, use_one_sided, self._dim, self._data_order)
         elif self._order[1] == 6:
-            der = second_order.differentiateSixthOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = second_der.differentiateSixthOrderFiniteDifference(\
                 data, self._dy, 1, component_idx, use_one_sided, self._dim, self._data_order)
         
         if return_der:
@@ -358,17 +375,21 @@ class ExplicitDifferentiator(object):
                 raise RuntimeError("Make sure data is 3D!")
         
         return_der = True
-        if der is not None:
+        if der is None:
+            der = numpy.empty(data_shape, dtype=numpy.float64, order='F')
+        else:
+            if der.shape != data_shape:
+                raise RuntimeError("Make sure shape of der is consistent with that of data!")
             return_der = False
         
         if self._order[2] == 2:
-            der = second_order.differentiateSecondOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = second_der.differentiateSecondOrderFiniteDifference(\
                 data, self._dz, 2, component_idx, use_one_sided, self._dim, self._data_order)
         elif self._order[2] == 4:
-            der = second_order.differentiateFourthOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = second_der.differentiateFourthOrderFiniteDifference(\
                 data, self._dz, 2, component_idx, use_one_sided, self._dim, self._data_order)
         elif self._order[2] == 6:
-            der = second_order.differentiateSixthOrderFiniteDifference(\
+            der[[slice(None)]*self._dim] = second_der.differentiateSixthOrderFiniteDifference(\
                 data, self._dz, 2, component_idx, use_one_sided, self._dim, self._data_order)
         
         if return_der:

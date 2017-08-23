@@ -6,7 +6,7 @@ import numpy
 
 def differentiateSecondOrderFiniteDifference(data, dx, direction, component_idx, use_one_sided, dimension, data_order):
     """
-    Compute second derivative using explicit second order finite differencing.
+    Compute second order derivative using explicit second order finite differencing.
     """
     
     # Get the shape of data.
@@ -215,7 +215,7 @@ def differentiateSecondOrderFiniteDifference(data, dx, direction, component_idx,
 
 def differentiateFourthOrderFiniteDifference(data, dx, direction, component_idx, use_one_sided, dimension, data_order):
     """
-    Compute second derivative using explicit fourth order finite differencing.
+    Compute second order derivative using explicit fourth order finite differencing.
     """
     
     # Get the shape of data.
@@ -489,7 +489,7 @@ def differentiateFourthOrderFiniteDifference(data, dx, direction, component_idx,
 
 def differentiateSixthOrderFiniteDifference(data, dx, direction, component_idx, use_one_sided, dimension, data_order):
     """
-    Compute second derivative using explicit sixth order finite differencing.
+    Compute second order derivative using explicit sixth order finite differencing.
     """
     
     # Get the shape of data.

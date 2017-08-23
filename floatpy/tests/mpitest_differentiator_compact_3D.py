@@ -5,7 +5,7 @@ import unittest
 from floatpy.parallel import _t3dmod
 from floatpy.derivatives import CompactDifferentiator
 
-class TestDerivativesCompact(unittest.TestCase):
+class TestDifferentiatorCompact(unittest.TestCase):
     
     def setUp(self):
         self.nx, self.ny, self.nz = 64, 64, 64
@@ -63,7 +63,7 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.array([ myerror[0] ])
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in X!")
+        self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in the X direction!")
 
 
     def testFirstDerivativeY(self):
@@ -78,7 +78,7 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.array([ myerror[0] ])
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in Y!")
+        self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in the Y direction!")
 
 
     def testFirstDerivativeZ(self):
@@ -93,7 +93,7 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.array([ myerror[0] ])
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in Z!")
+        self.assertLess(error[0], 5.0e-14, "Incorrect periodic first derivative in the Z direction!")
     
 
     def testSecondDerivativeX(self):
@@ -108,7 +108,7 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.array([ myerror[0] ])
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in X!")
+        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in the X direction!")
 
 
     def testSecondDerivativeY(self):
@@ -123,7 +123,7 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.array([ myerror[0] ])
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in X!")
+        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in the Y direction!")
 
 
     def testSecondDerivativeZ(self):
@@ -138,7 +138,7 @@ class TestDerivativesCompact(unittest.TestCase):
         error = numpy.array([ myerror[0] ])
         self.comm.Allreduce(myerror, error, op=MPI.MAX)
 
-        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in X!")
+        self.assertLess(error[0], 5.0e-12, "Incorrect periodic second derivative in the Z direction!")
 
 
     def testGradient(self):
