@@ -554,7 +554,7 @@ class CompactDifferentiator(object):
     
     def divergence(self, data, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0)):
         """
-        Method to compute the gradient of a vector (u, v, w).
+        Method to compute the gradient of a vector.
 
         data : input numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
                and the problem dimension. The number of components should be as same as the number of dimensions
@@ -581,6 +581,55 @@ class CompactDifferentiator(object):
             divergence = divergence + self.ddz(data, component_idx=2, bc=z_bc)
         
         return divergence
+    
+    
+    def curl(self, data, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0)):
+        """
+        Method to compute the curl of a vector.
+
+        data : input numpy array in the chosen contiguous layout. This array must be consistent with the problem
+               dimension. The number of components should be as same as the number of dimensions
+        *_bc : integer tuple of size 2 with the boundary condition at the left and right.
+               0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
+        curl : output numpy array in the chosen contiguous layout. This array is consistent with the problem
+               dimension
+        """
+        
+        data_shape = data.shape
+        
+        if self._dim == 1:
+            raise RuntimeError("There is no curl for 1D problem!")
+        
+        if self._dim == 2 and len(data_shape) != 3:
+            raise RuntimeError("Make sure data is 2D and has enough number of components!")
+        
+        if self._dim == 3 and len(data_shape) != 4:
+            raise RuntimeError("Make sure data is 3D and has enough number of components!")
+        
+        curl = None
+        if self._dim == 2:
+            dvdx = self.ddx(data, component_idx=1, bc=x_bc)
+            dudy = self.ddy(data, component_idx=0, bc=y_bc)
+            
+            curl = dvdx - dudy
+            
+        if self._dim == 3:
+            dvdx = self.ddx(data, component_idx=1, bc=x_bc)
+            dwdx = self.ddx(data, component_idx=2, bc=x_bc)
+            
+            dudy = self.ddy(data, component_idx=0, bc=y_bc)
+            dwdy = self.ddy(data, component_idx=2, bc=y_bc)
+            
+            dudz = self.ddz(data, component_idx=0, bc=z_bc)
+            dvdz = self.ddz(data, component_idx=1, bc=z_bc)
+            
+            curl = numpy.empty( (data_shape[0], data_shape[1], data_shape[2], 3), dtype=numpy.float64, order='F' )
+            
+            curl[:, :, :, 0] = dwdy - dvdz
+            curl[:, :, :, 1] = dudz - dwdx
+            curl[:, :, :, 2] = dvdx - dudy
+        
+        return curl
     
     
     def laplacian(self, data, component_idx=None, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0)):

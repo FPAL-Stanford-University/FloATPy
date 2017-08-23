@@ -424,12 +424,12 @@ class ExplicitDifferentiator(object):
     
     def divergence(self, data, use_one_sided=False):
         """
-        Method to compute the gradient of a vector (u, v, w).
+        Method to compute the gradient of a vector.
 
         data : input numpy array in the chosen contiguous layout. This array must be consistent with the problem
                dimension. The number of components should be as same as the number of dimensions
         use_one_sided : boolean to decide whether to use one-sided scheme at the boundaries
-        divergence : output 3D numpy array in the chosen contiguous layout. This array is consistent with the problem
+        divergence : output numpy array in the chosen contiguous layout. This array is consistent with the problem
                      dimension
         """
         
@@ -451,6 +451,62 @@ class ExplicitDifferentiator(object):
             divergence = divergence + self.ddz(data, component_idx=2, use_one_sided=use_one_sided)
         
         return divergence
+    
+    
+    def curl(self, data, use_one_sided=False):
+        """
+        Method to compute the curl of a vector.
+
+        data : input numpy array in the chosen contiguous layout. This array must be consistent with the problem
+               dimension. The number of components should be as same as the number of dimensions
+        use_one_sided : boolean to decide whether to use one-sided scheme at the boundaries
+        curl : output numpy array in the chosen contiguous layout. This array is consistent with the problem
+               dimension
+        """
+        
+        data_shape = data.shape
+        
+        if self._dim == 1:
+            raise RuntimeError("There is no curl for 1D problem!")
+        
+        if self._dim == 2 and len(data_shape) != 3:
+            raise RuntimeError("Make sure data is 2D and has enough number of components!")
+        
+        if self._dim == 3 and len(data_shape) != 4:
+            raise RuntimeError("Make sure data is 3D and has enough number of components!")
+        
+        curl = None
+        if self._dim == 2:
+            dvdx = self.ddx(data, component_idx=1, use_one_sided=use_one_sided)
+            dudy = self.ddy(data, component_idx=0, use_one_sided=use_one_sided)
+            
+            curl = dvdx - dudy
+            
+        if self._dim == 3:
+            dvdx = self.ddx(data, component_idx=1, use_one_sided=use_one_sided)
+            dwdx = self.ddx(data, component_idx=2, use_one_sided=use_one_sided)
+            
+            dudy = self.ddy(data, component_idx=0, use_one_sided=use_one_sided)
+            dwdy = self.ddy(data, component_idx=2, use_one_sided=use_one_sided)
+            
+            dudz = self.ddz(data, component_idx=0, use_one_sided=use_one_sided)
+            dvdz = self.ddz(data, component_idx=1, use_one_sided=use_one_sided)
+            
+            if self._data_order == 'C':
+                curl = numpy.empty( (3, data_shape[1], data_shape[2], data_shape[3]), dtype=numpy.float64, order='C' )
+                
+                curl[0, :, :, :] = dwdy - dvdz
+                curl[1, :, :, :] = dudz - dwdx
+                curl[2, :, :, :] = dvdx - dudy
+            
+            else:
+                curl = numpy.empty( (data_shape[0], data_shape[1], data_shape[2], 3), dtype=numpy.float64, order='F' )
+                
+                curl[:, :, :, 0] = dwdy - dvdz
+                curl[:, :, :, 1] = dudz - dwdx
+                curl[:, :, :, 2] = dvdx - dudy
+        
+        return curl
     
     
     def laplacian(self, data, component_idx=None, use_one_sided=False):

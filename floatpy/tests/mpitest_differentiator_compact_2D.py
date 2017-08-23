@@ -109,7 +109,7 @@ class TestDerivativesCompact(unittest.TestCase):
 
     def testGradient(self):
         """
-        Test the gradient function
+        Test the gradient function.
         """
 
         dfdx, dfdy = self.der.gradient(self.f)
@@ -127,7 +127,7 @@ class TestDerivativesCompact(unittest.TestCase):
 
     def testDivergence(self):
         """
-        Test the divergence function
+        Test the divergence function.
         """
 
         df = numpy.concatenate((self.dfdx_exact[..., numpy.newaxis], \
@@ -144,9 +144,28 @@ class TestDerivativesCompact(unittest.TestCase):
         self.assertLess(error[0], 5.0e-14, "Incorrect divergence!")
 
 
+    def testCurl(self):
+        """
+        Test the curl function.
+        """
+
+        df = numpy.concatenate((self.dfdx_exact[..., numpy.newaxis], \
+            self.dfdy_exact[..., numpy.newaxis]), axis=2)
+
+        curl = self.der.curl(df)
+
+        myerror = numpy.zeros(1)
+        myerror[0] = numpy.absolute(curl).max()
+
+        error = numpy.zeros(1)
+        self.comm.Allreduce(myerror, error, op=MPI.MAX)
+
+        self.assertLess(error[0], 5.0e-14, "Incorrect curl!")
+
+
     def testLaplacian(self):
         """
-        Test the laplacian function
+        Test the laplacian function.
         """
 
         laplacian = self.der.laplacian(self.f)

@@ -80,7 +80,7 @@ class TestDifferentiatorExplicit(unittest.TestCase):
         self.der.d2dx2(self.f, d2fdx2, use_one_sided=True)
 
         error = numpy.array([ numpy.absolute(self.d2fdx2_exact - d2fdx2).max() ])
-        self.assertLess(error[0], 1.0e-6, "Incorrect periodic second derivative in the X direction!")
+        self.assertLess(error[0], 1.0e-6, "Incorrect second derivative in the X direction!")
 
 
     def testSecondDerivativeY(self):
@@ -92,7 +92,7 @@ class TestDifferentiatorExplicit(unittest.TestCase):
         self.der.d2dy2(self.f, d2fdy2, use_one_sided=True)
 
         error = numpy.array([ numpy.absolute(self.d2fdy2_exact - d2fdy2).max() ])
-        self.assertLess(error[0], 1.0e-6, "Incorrect periodic second derivative in the Y direction!")
+        self.assertLess(error[0], 1.0e-6, "Incorrect second derivative in the Y direction!")
 
 
     def testSecondDerivativeZ(self):
@@ -104,11 +104,11 @@ class TestDifferentiatorExplicit(unittest.TestCase):
         self.der.d2dz2(self.f, d2fdz2, use_one_sided=True)
 
         error = numpy.array([ numpy.absolute(self.d2fdz2_exact - d2fdz2).max() ])
-        self.assertLess(error[0], 1.0e-6, "Incorrect periodic second derivative in the Z direction!")
+        self.assertLess(error[0], 1.0e-6, "Incorrect second derivative in the Z direction!")
 
     def testGradient(self):
         """
-        Test the gradient function
+        Test the gradient function.
         """
 
         dfdx, dfdy, dfdz = self.der.gradient(self.f, use_one_sided=True)
@@ -124,7 +124,7 @@ class TestDifferentiatorExplicit(unittest.TestCase):
 
     def testDivergence(self):
         """
-        Test the divergence function
+        Test the divergence function.
         """
 
         df = numpy.concatenate((self.dfdx_exact[..., numpy.newaxis], \
@@ -138,9 +138,28 @@ class TestDifferentiatorExplicit(unittest.TestCase):
         self.assertLess(error[0], 1.0e-6, "Incorrect divergence!")
 
 
+    def testCurl(self):
+        """
+        Test the curl function.
+        """
+
+        df = numpy.concatenate((self.dfdx_exact[..., numpy.newaxis], \
+            self.dfdy_exact[..., numpy.newaxis], self.dfdz_exact[..., numpy.newaxis]), axis=3)
+
+        curl = self.der.curl(df, use_one_sided=True)
+
+        error = numpy.zeros(3)
+        error[0] = numpy.absolute(curl[:,:,:,0]).max()
+        error[1] = numpy.absolute(curl[:,:,:,1]).max()
+        error[2] = numpy.absolute(curl[:,:,:,2]).max()
+
+        for i in range(3):
+            self.assertLess(error[i], 1.0e-6, "Incorrect curl!")
+
+
     def testLaplacian(self):
         """
-        Test the laplacian function
+        Test the laplacian function.
         """
 
         laplacian = self.der.laplacian(self.f, use_one_sided=True)
