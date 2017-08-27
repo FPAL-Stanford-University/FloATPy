@@ -179,14 +179,13 @@ class CompactDifferentiator(object):
         
         self._grid_partition.transpose_3d_to_x(data_3d, data_x)
         
-        der_3d = self._data_reshaper.reshapeTo3d(der)
-        
         if self._order[0] == 6:
             # symmetry BC only supported in 10th order for now
             self._der_x.dd1(data_x, der_x, self._chunk_x_size[1], self._chunk_x_size[2])
         elif self._order[0] == 10:
             self._der_x.dd1(data_x, der_x, self._chunk_x_size[1], self._chunk_x_size[2], bc1_=bc[0], bcn_=bc[1])
         
+        der_3d = self._data_reshaper.reshapeTo3d(der)
         self._grid_partition.transpose_x_to_3d(der_x, der_3d)
         der = self._data_reshaper.reshapeFrom3d(der_3d)
         
@@ -248,14 +247,13 @@ class CompactDifferentiator(object):
         
         self._grid_partition.transpose_3d_to_y(data_3d, data_y)
         
-        der_3d = self._data_reshaper.reshapeTo3d(der)
-        
         if self._order[1] == 6:
             # symmetry BC only supported in 10th order for now
             self._der_y.dd2(data_y, der_y, self._chunk_y_size[0], self._chunk_y_size[2])
         elif self._order[1] == 10:
             self._der_y.dd2(data_y, der_y, self._chunk_y_size[0], self._chunk_y_size[2], bc1_=bc[0], bcn_=bc[1])
         
+        der_3d = self._data_reshaper.reshapeTo3d(der)
         self._grid_partition.transpose_y_to_3d(der_y, der_3d)
         der = self._data_reshaper.reshapeFrom3d(der_3d)
         
@@ -382,13 +380,12 @@ class CompactDifferentiator(object):
         
         self._grid_partition.transpose_3d_to_x(data_3d, data_x)
         
-        der_3d = self._data_reshaper.reshapeTo3d(der)
-        
         if self._order[0] == 6:
             raise NotImplementedError("6th order 2nd derivatives are not implemented yet. Sorry!")
         elif self._order[0] == 10:
             self._der_x.d2d1(data_x, der_x, self._chunk_x_size[1], self._chunk_x_size[2], bc1_=bc[0], bcn_=bc[1])
         
+        der_3d = self._data_reshaper.reshapeTo3d(der)
         self._grid_partition.transpose_x_to_3d(der_x, der_3d)
         der = self._data_reshaper.reshapeFrom3d(der_3d)
         
@@ -450,13 +447,12 @@ class CompactDifferentiator(object):
         
         self._grid_partition.transpose_3d_to_y(data_3d, data_y)
         
-        der_3d = self._data_reshaper.reshapeTo3d(der)
-        
         if self._order[1] == 6:
             raise NotImplementedError("6th order 2nd derivatives are not implemented yet. Sorry!")
         elif self._order[1] == 10:
             self._der_y.d2d2(data_y, der_y, self._chunk_y_size[0], self._chunk_y_size[2], bc1_=bc[0], bcn_=bc[1])
         
+        der_3d = self._data_reshaper.reshapeTo3d(der)
         self._grid_partition.transpose_y_to_3d(der_y, der_3d)
         der = self._data_reshaper.reshapeFrom3d(der_3d)
         
