@@ -117,23 +117,63 @@ class Filter(object):
         data : input 3D numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
                and the problem dimension
         data_filtered : optional output 3D numpy array in Fortran contiguous layout. This array must be consistent with the 3D
-                        decomposition and the problem dimension. This method will return der if der is None
+                        decomposition and the problem dimension. This method will return data_filtered if data_filtered is None
         component_idx : index of component in data for filtering. None if there is only one component in the data
         bc : integer iterable of size 2 with the boundary condition at the left and right.
              0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
         """
 
-        if (data.shape[0] != self._chunk_3d_size[0]) or \
-           (data.shape[1] != self._chunk_3d_size[1]) or \
-           (data.shape[2] != self._chunk_3d_size[2]):
-            raise RuntimeError("Make sure data is of the same size as in grid_partition!")
-        
+        data_shape = data.shape
+
+        if component_idx is not None:
+            data_shape = data_shape[0:-1]
+
+        if self._dim == 1:
+            if len(data_shape) != 1:
+                raise RuntimeError("Make sure data is 1D!")
+            if data_shape[0] != self._chunk_3d_size[0]:
+                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+
+        elif self._dim == 2:
+            if len(data_shape) != 2:
+                raise RuntimeError("Make sure data is 2D!")
+            if data_shape[0] != self._chunk_3d_size[0] or \
+               data_shape[1] != self._chunk_3d_size[1]:
+                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+
+        else:
+            if len(data_shape) != 3:
+                raise RuntimeError("Make sure data is 3D!")
+            if data_shape[0] != self._chunk_3d_size[0] or \
+               data_shape[1] != self._chunk_3d_size[1] or \
+               data_shape[2] != self._chunk_3d_size[2]:
+                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+
+        return_data_filtered = True
+        if data_filtered is None:
+            data_filtered = numpy.empty(self._chunk_3d_size[0:self._dim], dtype=numpy.float64, order='F')
+        else:
+            return_data_filtered = False
+
         data_x          = numpy.empty( self._chunk_x_size, dtype=numpy.float64, order='F' )
         data_filtered_x = numpy.empty( self._chunk_x_size, dtype=numpy.float64, order='F' )
-        
-        self._grid_partition.transpose_3d_to_x( data, data_x )
+
+        data_3d = []
+        if component_idx is None:
+            data_3d = self._data_reshaper.reshapeTo3d(data)
+        else:
+            data_3d = self._data_reshaper.reshapeTo3d(data, component_idx)
+
+        self._grid_partition.transpose_3d_to_x( data_3d, data_x )
+
         self._xfil.filter1(data_x, data_filtered_x, self._chunk_x_size[1], self._chunk_x_size[2], bc1_=bc[0], bcn_=bc[1])
-        self._grid_partition.transpose_x_to_3d( data_filtered_x, data_filtered )
+
+        data_filtered_3d = self._data_reshaper.reshapeTo3d(data_filtered)
+        self._grid_partition.transpose_x_to_3d( data_filtered_x, data_filtered_3d )
+        data_filtered = self._data_reshaper.reshapeFrom3d(data_filtered_3d)
+
+        if return_data_filtered:
+            return data_filtered
 
 
     def filter_y(self, data, data_filtered=None, component_idx=None, bc=(0,0)):
@@ -143,23 +183,60 @@ class Filter(object):
         data : input 3D numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
                and the problem dimension
         data_filtered : optional output 3D numpy array in Fortran contiguous layout. This array must be consistent with the 3D
-                        decomposition and the problem dimension. This method will return der if der is None
+                        decomposition and the problem dimension. This method will return data_filtered if data_filtered is None
         component_idx : index of component in data for filtering. None if there is only one component in the data
         bc : integer tuple of size 2 with the boundary condition at the left and right.
              0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
         """
 
-        if (data.shape[0] != self._chunk_3d_size[0]) or \
-           (data.shape[1] != self._chunk_3d_size[1]) or \
-           (data.shape[2] != self._chunk_3d_size[2]):
-            raise RuntimeError("Make sure data is of the same size as in grid_partition!")
-        
+        data_shape = data.shape
+
+        if component_idx is not None:
+            data_shape = data_shape[0:-1]
+
+        if self._dim == 1:
+            raise RuntimeError("There is no ddy for 1D problem!")
+
+        elif self._dim == 2:
+            if len(data_shape) != 2:
+                raise RuntimeError("Make sure data is 2D!")
+            if data_shape[0] != self._chunk_3d_size[0] or \
+               data_shape[1] != self._chunk_3d_size[1]:
+                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+
+        else:
+            if len(data_shape) != 3:
+                raise RuntimeError("Make sure data is 3D!")
+            if data_shape[0] != self._chunk_3d_size[0] or \
+               data_shape[1] != self._chunk_3d_size[1] or \
+               data_shape[2] != self._chunk_3d_size[2]:
+                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+
+        return_data_filtered = True
+        if data_filtered is None:
+            data_filtered = numpy.empty(self._chunk_3d_size[0:self._dim], dtype=numpy.float64, order='F')
+        else:
+            return_data_filtered = False
+
         data_y          = numpy.empty( self._chunk_y_size, dtype=numpy.float64, order='F' )
         data_filtered_y = numpy.empty( self._chunk_y_size, dtype=numpy.float64, order='F' )
+
+        data_3d = []
+        if component_idx is None:
+            data_3d = self._data_reshaper.reshapeTo3d(data)
+        else:
+            data_3d = self._data_reshaper.reshapeTo3d(data, component_idx)
+
+        self._grid_partition.transpose_3d_to_y( data_3d, data_y )
         
-        self._grid_partition.transpose_3d_to_y( data, data_y )
         self._yfil.filter2(data_y, data_filtered_y, self._chunk_y_size[0], self._chunk_y_size[2], bc1_=bc[0], bcn_=bc[1])
-        self._grid_partition.transpose_y_to_3d( data_filtered_y, data_filtered )
+        
+        data_filtered_3d = self._data_reshaper.reshapeTo3d(data_filtered)
+        self._grid_partition.transpose_y_to_3d( data_filtered_y, data_filtered_3d )
+        data_filtered = self._data_reshaper.reshapeFrom3d(data_filtered_3d)
+
+        if return_data_filtered:
+            return data_filtered
 
 
     def filter_z(self, data, data_filtered=None, component_idx=None, bc=(0,0)):
@@ -169,54 +246,127 @@ class Filter(object):
         data : input 3D numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
                and the problem dimension
         data_filtered : optional output 3D numpy array in Fortran contiguous layout. This array must be consistent with the 3D
-                        decomposition and the problem dimension. This method will return der if der is None
+                        decomposition and the problem dimension. This method will return data_filtered if data_filtered is None
         component_idx : index of component in data for filtering. None if there is only one component in the data
         bc : integer tuple of size 2 with the boundary condition at the left and right.
              0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
         """
 
-        if (data.shape[0] != self._chunk_3d_size[0]) or \
-           (data.shape[1] != self._chunk_3d_size[1]) or \
-           (data.shape[2] != self._chunk_3d_size[2]):
-            raise RuntimeError("Make sure data is of the same size as in grid_partition!")
-        
+        data_shape = data.shape
+
+        if component_idx is not None:
+            data_shape = data_shape[0:-1]
+
+        if self._dim == 1:
+            raise RuntimeError("There is no ddz for 1D problem!")
+
+        elif self._dim == 2:
+            raise RuntimeError("There is no ddz for 2D problem!")
+
+        else:
+            if len(data_shape) != 3:
+                raise RuntimeError("Make sure data is 3D!")
+            if data_shape[0] != self._chunk_3d_size[0] or \
+               data_shape[1] != self._chunk_3d_size[1] or \
+               data_shape[2] != self._chunk_3d_size[2]:
+                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+
+        return_data_filtered = True
+        if data_filtered is None:
+            data_filtered = numpy.empty(self._chunk_3d_size[0:self._dim], dtype=numpy.float64, order='F')
+        else:
+            return_data_filtered = False
+
         data_z          = numpy.empty( self._chunk_z_size, dtype=numpy.float64, order='F' )
         data_filtered_z = numpy.empty( self._chunk_z_size, dtype=numpy.float64, order='F' )
+
+        data_3d = []
+        if component_idx is None:
+            data_3d = self._data_reshaper.reshapeTo3d(data)
+        else:
+            data_3d = self._data_reshaper.reshapeTo3d(data, component_idx)
+
+        self._grid_partition.transpose_3d_to_z( data_3d, data_z )
         
-        self._grid_partition.transpose_3d_to_z( data, data_z )
         self._zfil.filter3(data_z, data_filtered_z, self._chunk_z_size[0], self._chunk_z_size[1], bc1_=bc[0], bcn_=bc[1])
+        
         self._grid_partition.transpose_z_to_3d( data_filtered_z, data_filtered )
 
+        if return_data_filtered:
+            return data_filtered
 
-    def filter_all(self, data, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0), ntimes=1):
+
+    def filter_all(self, data, data_filtered=None, component_idx=None, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0), ntimes=1):
         """
         Function to filter data in all directions.
 
-        f : input 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
-            This array must be in the 3D decomposition
-        f_tilde : output 3D numpy array in Fortran contiguous layout with the 1st index being X and last being Z
-                  This array is in the 3D decomposition
+        data : input 3D numpy array in Fortran contiguous layout. This array must be consistent with the 3D decomposition
+               and the problem dimension
+        data_filtered : optional output 3D numpy array in Fortran contiguous layout. This array must be consistent with the 3D
+                        decomposition and the problem dimension. This method will return data_filtered if data_filtered is None
+        component_idx : index of component in data for filtering. None if there is only one component in the data
         *_bc : integer tuple of size 2 with the boundary condition at the left and right.
                0 is general, 1 is symmetric, -1 is anti-symmetric. Only required if non-periodic
         """
 
-        tmp           = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
-        data_filtered = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+        data_shape = data.shape
 
-        self.filter_x(data, data_filtered, bc=x_bc)
+        if component_idx is not None:
+            data_shape = data_shape[0:-1]
+
+        if self._dim == 1:
+            if len(data_shape) != 1:
+                raise RuntimeError("Make sure data is 1D!")
+            if data_shape[0] != self._chunk_3d_size[0]:
+                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+
+        elif self._dim == 2:
+            if len(data_shape) != 2:
+                raise RuntimeError("Make sure data is 2D!")
+            if data_shape[0] != self._chunk_3d_size[0] or \
+               data_shape[1] != self._chunk_3d_size[1]:
+                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+
+        else:
+            if len(data_shape) != 3:
+                raise RuntimeError("Make sure data is 3D!")
+            if data_shape[0] != self._chunk_3d_size[0] or \
+               data_shape[1] != self._chunk_3d_size[1] or \
+               data_shape[2] != self._chunk_3d_size[2]:
+                raise RuntimeError("Make sure data is of the same size as in grid_partition!")
+
+        return_data_filtered = True
+        if data_filtered is None:
+            data_filtered = numpy.empty(self._chunk_3d_size[0:self._dim], dtype=numpy.float64, order='F')
+        else:
+            return_data_filtered = False
+
+        tmp              = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+        data_filtered_3d = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+
+        data_3d = []
+        if component_idx is None:
+            data_3d = self._data_reshaper.reshapeTo3d(data)
+        else:
+            data_3d = self._data_reshaper.reshapeTo3d(data, component_idx)
+
+        self.filter_x(data_3d, data_filtered_3d, bc=x_bc)
         for i in range(ntimes-1):
-            tmp[:,:,:] = data_filtered[:,:,:]
-            self.filter_x(tmp, data_filtered, bc=x_bc)
+            tmp[:,:,:] = data_filtered_3d[:,:,:]
+            self.filter_x(tmp, data_filtered_3d, bc=x_bc)
 
-        self.filter_y(data_filtered, tmp, bc=y_bc)
+        self.filter_y(data_filtered_3d, tmp, bc=y_bc)
         for i in range(ntimes-1):
-            data_filtered[:,:,:] = tmp[:,:,:]
-            self.filter_y(data_filtered, tmp, bc=y_bc)
+            data_filtered_3d[:,:,:] = tmp[:,:,:]
+            self.filter_y(data_filtered_3d, tmp, bc=y_bc)
 
-        self.filter_z(tmp, data_filtered, bc=z_bc)
+        self.filter_z(tmp, data_filtered_3d, bc=z_bc)
         for i in range(ntimes-1):
-            tmp[:,:,:] = data_filtered[:,:,:]
-            self.filter_z(tmp, data_filtered, bc=z_bc)
+            tmp[:,:,:] = data_filtered_3d[:,:,:]
+            self.filter_z(tmp, data_filtered_3d, bc=z_bc)
 
-        return data_filtered
+        data_filtered = self._data_reshaper.reshapeFrom3d(data_filtered_3d)
+
+        if return_data_filtered:
+            return data_filtered
 
