@@ -218,5 +218,5 @@ class Filter(object):
             tmp[:,:,:] = data_filtered[:,:,:]
             self.filter_z(tmp, data_filtered, bc=z_bc)
 
-        return f_tilde
+        return data_filtered
 
