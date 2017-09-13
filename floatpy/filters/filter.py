@@ -349,31 +349,26 @@ class Filter(object):
         else:
             return_data_filtered = False
 
-        tmp              = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
-        data_filtered_3d = numpy.empty( self._chunk_3d_size, dtype=numpy.float64, order='F' )
+        tmp           = numpy.empty( data_shape, dtype=numpy.float64, order='F' )
+        data_filtered = numpy.empty( data_shape, dtype=numpy.float64, order='F' )
 
-        data_3d = []
-        if component_idx is None:
-            data_3d = self._data_reshaper.reshapeTo3d(data)
-        else:
-            data_3d = self._data_reshaper.reshapeTo3d(data, component_idx)
-
-        self.filter_x(data_3d, data_filtered_3d, bc=x_bc)
+        self.filter_x(data, data_filtered, bc=x_bc)
         for i in range(ntimes-1):
-            tmp[:,:,:] = data_filtered_3d[:,:,:]
-            self.filter_x(tmp, data_filtered_3d, bc=x_bc)
+            tmp[:,:,:] = data_filtered[:,:,:]
+            self.filter_x(tmp, data_filtered, bc=x_bc)
 
-        self.filter_y(data_filtered_3d, tmp, bc=y_bc)
-        for i in range(ntimes-1):
-            data_filtered_3d[:,:,:] = tmp[:,:,:]
-            self.filter_y(data_filtered_3d, tmp, bc=y_bc)
+        if self._dim > 1:
+            self.filter_y(data_filtered, tmp, bc=y_bc)
+            for i in range(ntimes-1):
+                data_filtered[:,:,:] = tmp[:,:,:]
+                self.filter_y(data_filtered, tmp, bc=y_bc)
+            data_filtered[:,:,:] = tmp[:,:,:]
 
-        self.filter_z(tmp, data_filtered_3d, bc=z_bc)
-        for i in range(ntimes-1):
-            tmp[:,:,:] = data_filtered_3d[:,:,:]
-            self.filter_z(tmp, data_filtered_3d, bc=z_bc)
-
-        data_filtered = self._data_reshaper.reshapeFrom3d(data_filtered_3d)
+        if self._dim > 2:
+            self.filter_z(tmp, data_filtered, bc=z_bc)
+            for i in range(ntimes-1):
+                tmp[:,:,:] = data_filtered[:,:,:]
+                self.filter_z(tmp, data_filtered, bc=z_bc)
 
         if return_data_filtered:
             return data_filtered
