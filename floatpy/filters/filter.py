@@ -102,15 +102,17 @@ class Filter(object):
         elif self._filter_type[0] == 'gaussian':
             self._xfil = pygaussian.gaussianstuff.gaussian( self._nx, self._periodic[0] )
         
-        if self._filter_type[1] == 'compact':
-            self._yfil = pycf90.cf90stuff.cf90( self._ny, self._periodic[1] )
-        elif self._filter_type[1] == 'gaussian':
-            self._yfil = pygaussian.gaussianstuff.gaussian( self._ny, self._periodic[1] )
+        if self._dim > 1:
+            if self._filter_type[1] == 'compact':
+                self._yfil = pycf90.cf90stuff.cf90( self._ny, self._periodic[1] )
+            elif self._filter_type[1] == 'gaussian':
+                self._yfil = pygaussian.gaussianstuff.gaussian( self._ny, self._periodic[1] )
         
-        if self._filter_type[2] == 'compact':
-            self._zfil = pycf90.cf90stuff.cf90( self._nz, self._periodic[2] )
-        elif self._filter_type[2] == 'gaussian':
-            self._zfil = pygaussian.gaussianstuff.gaussian( self._nz, self._periodic[2] )
+        if self._dim > 2:
+            if self._filter_type[2] == 'compact':
+                self._zfil = pycf90.cf90stuff.cf90( self._nz, self._periodic[2] )
+            elif self._filter_type[2] == 'gaussian':
+                self._zfil = pygaussian.gaussianstuff.gaussian( self._nz, self._periodic[2] )
         
         # Initialize the data reshaper.
         self._data_reshaper = data_reshaper.DataReshaper(self._dim, data_order='F')
