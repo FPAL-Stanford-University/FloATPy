@@ -185,7 +185,7 @@ class Filter(object):
         
         self._grid_partition.transpose_3d_to_z( data, data_z )
         self._zfil.filter3(data_z, data_filtered_z, self._chunk_z_size[0], self._chunk_z_size[1], bc1_=bc[0], bcn_=bc[1])
-        self._grid_partition.transpose_z_to_3d( data_filtered_z, f_filtered )
+        self._grid_partition.transpose_z_to_3d( data_filtered_z, data_filtered )
 
 
     def filter_all(self, data, x_bc=(0,0), y_bc=(0,0), z_bc=(0,0), ntimes=1):
