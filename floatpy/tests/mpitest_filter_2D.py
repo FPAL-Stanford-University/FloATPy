@@ -21,13 +21,13 @@ def getTransferFunction(k):
 class TestFilter(unittest.TestCase):
     
     def setUp(self):
-        self.nx, self.ny, self.nz = 32, 32, 32
+        self.nx, self.ny, self.nz = 32, 32, 1
         self.omega = 12.
 
         self.comm = MPI.COMM_WORLD
         self.fcomm = self.comm.py2f()
-        self.periodic = numpy.array([True, True, True])
-        self.filter_type = ('compact', 'compact', 'compact')
+        self.periodic = numpy.array([True, True])
+        self.filter_type = ('compact', 'compact')
 
         self.grid_partition = _t3dmod.t3d(self.fcomm, self.nx, self.ny, self.nz, self.periodic )
 
@@ -44,28 +44,23 @@ class TestFilter(unittest.TestCase):
 
         self.x = numpy.linspace(0., 2.*numpy.pi, num=self.nx+1)[self.chunk_3d_lo[0]:self.chunk_3d_hi[0]+1]
         self.y = numpy.linspace(0., 2.*numpy.pi, num=self.ny+1)[self.chunk_3d_lo[1]:self.chunk_3d_hi[1]+1]
-        self.z = numpy.linspace(0., 2.*numpy.pi, num=self.nz+1)[self.chunk_3d_lo[2]:self.chunk_3d_hi[2]+1]
 
-        self.x, self.y, self.z = numpy.meshgrid(self.x, self.y, self.z, indexing='ij')
+        self.x, self.y = numpy.meshgrid(self.x, self.y, indexing='ij')
         self.x = numpy.asfortranarray(self.x)
         self.y = numpy.asfortranarray(self.y)
-        self.z = numpy.asfortranarray(self.z)
 
-        self.f = numpy.sin(self.omega*self.x) * numpy.cos(self.omega*self.y) * numpy.cos(self.omega*self.z)
+        self.f = numpy.sin(self.omega*self.x) * numpy.cos(self.omega*self.y)
 
-        self.dx, self.dy, self.dz = 2.*numpy.pi / self.nx, 2.*numpy.pi / self.ny, 2.*numpy.pi / self.nz
+        self.dx, self.dy = 2.*numpy.pi / self.nx, 2.*numpy.pi / self.ny
         k_norm_x = self.omega * self.dx
         TF_x = getTransferFunction(k_norm_x)
         k_norm_y = self.omega * self.dy
         TF_y = getTransferFunction(k_norm_y)
-        k_norm_z = self.omega * self.dz
-        TF_z = getTransferFunction(k_norm_z)
 
         self.f_tilde_x_exact = TF_x * self.f
         self.f_tilde_y_exact = TF_y * self.f
-        self.f_tilde_z_exact = TF_z * self.f
 
-        self.f_tilde_exact = TF_x * TF_y * TF_z * self.f
+        self.f_tilde_exact = TF_x * TF_y * self.f
 
 
     def testFilterPeriodicX(self):
@@ -73,7 +68,7 @@ class TestFilter(unittest.TestCase):
         Test the filter in the X direction.
         """
 
-        f_tilde = numpy.empty( self.chunk_3d_size, dtype=numpy.float64, order='F' )
+        f_tilde = numpy.empty( self.chunk_3d_size[0:2], dtype=numpy.float64, order='F' )
         self.fil.filter_x(self.f, f_tilde)
 
         myerror = numpy.zeros(1)
@@ -90,7 +85,7 @@ class TestFilter(unittest.TestCase):
         Test the filter in the Y direction.
         """
 
-        f_tilde = numpy.empty( self.chunk_3d_size, dtype=numpy.float64, order='F' )
+        f_tilde = numpy.empty( self.chunk_3d_size[0:2], dtype=numpy.float64, order='F' )
         self.fil.filter_y(self.f, f_tilde)
 
         myerror = numpy.zeros(1)
@@ -102,26 +97,9 @@ class TestFilter(unittest.TestCase):
         self.assertLess(error[0], 5.0e-14, "Incorrect filter in Y direction!")
     
     
-    def testFilterPeriodicZ(self):
+    def testFilterPeriodic2D(self):
         """
-        Test the filter in the Z direction.
-        """
-
-        f_tilde = numpy.empty( self.chunk_3d_size, dtype=numpy.float64, order='F' )
-        self.fil.filter_z(self.f, f_tilde)
-
-        myerror = numpy.zeros(1)
-        myerror[0] = numpy.absolute(self.f_tilde_z_exact - f_tilde).max()
-
-        error = numpy.zeros(1)
-        self.comm.Allreduce(myerror, error, op=MPI.MAX)
-
-        self.assertLess(error[0], 5.0e-14, "Incorrect compact filter in Z direction!")
-    
-    
-    def testFilterPeriodic3D(self):
-        """
-        Test the periodic 3D filter.
+        Test the periodic 2D filter.
         """
 
         f_tilde = self.fil.filter_all(self.f)

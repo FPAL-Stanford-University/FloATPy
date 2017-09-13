@@ -13,7 +13,7 @@ class Filter(object):
 
     def __init__(self, grid_partition, filter_type, dimension=3, periodic_dimensions=(False, False, False)):
         """
-        Constructor of the class
+        Constructor of the class.
 
         grid_partition : grid_partition property (t3d object) of the parallel data reader class
         filter_type : string iterable of size 3 with the type of filter to use in each direction
@@ -29,7 +29,13 @@ class Filter(object):
         
         self._dim = dimension
         
-        for i in range(3):
+        if len(filter_type) < self._dim:
+            raise RuntimeError("Size of 'filter_type' is smaller than problem dimension!")
+
+        if len(periodic_dimensions) < self._dim:
+            raise RuntimeError("Size of 'periodic_dimensions' is smaller than problem dimension!")
+
+        for i in range(self._dim):
             if filter_type[i] not in ['compact', 'gaussian']:
                 raise RuntimeError("filter_type[%d] has to be one of {'compact', 'gaussian'}" %i)
 
