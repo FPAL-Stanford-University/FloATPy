@@ -17,6 +17,7 @@ def getTransferFunction(k):
       / (1. + 2.*alpha90*numpy.cos(k) + 2.*beta90*numpy.cos(2.*k) )
     return T
 
+
 class TestFilter(unittest.TestCase):
     
     def setUp(self):
@@ -26,7 +27,7 @@ class TestFilter(unittest.TestCase):
         self.comm = MPI.COMM_WORLD
         self.fcomm = self.comm.py2f()
         self.periodic = numpy.array([True, True, True])
-        self.filter_type = ('compact','compact','compact')
+        self.filter_type = ('compact', 'compact', 'compact')
 
         self.grid_partition = _t3dmod.t3d(self.fcomm, self.nx, self.ny, self.nz, self.periodic )
 
@@ -39,7 +40,7 @@ class TestFilter(unittest.TestCase):
         self.chunk_3d_lo = self.chunk_3d_lo - 1 # Convert to 0 based indexing
         self.chunk_3d_hi = self.chunk_3d_hi - 1 # Convert to 0 based indexing
 
-        self.fil = Filter( self.grid_partition, self.filter_type, self.periodic )
+        self.fil = Filter( self.grid_partition, self.filter_type, periodic_dimensions=self.periodic )
 
         self.x = numpy.linspace(0., 2.*numpy.pi, num=self.nx+1)[self.chunk_3d_lo[0]:self.chunk_3d_hi[0]+1]
         self.y = numpy.linspace(0., 2.*numpy.pi, num=self.ny+1)[self.chunk_3d_lo[1]:self.chunk_3d_hi[1]+1]
@@ -65,6 +66,7 @@ class TestFilter(unittest.TestCase):
         self.f_tilde_z_exact = TF_z * self.f
 
         self.f_tilde_exact = TF_x * TF_y * TF_z * self.f
+
 
     def testFilterPeriodicX(self):
         """
@@ -122,7 +124,7 @@ class TestFilter(unittest.TestCase):
         Test the periodic 3D filter
         """
 
-        f_tilde = self.fil.filter(self.f)
+        f_tilde = self.fil.filter_all(self.f)
 
         myerror = numpy.zeros(1)
         myerror[0] = numpy.absolute(self.f_tilde_exact - f_tilde).max()

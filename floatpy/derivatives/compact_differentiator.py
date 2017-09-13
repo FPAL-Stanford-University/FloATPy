@@ -97,9 +97,9 @@ class CompactDifferentiator(object):
         self._ny = self._chunk_y_size[1]
         self._nz = self._chunk_z_size[2]
         
-        self.der_x = None
-        self.der_y = None
-        self.der_z = None
+        self._der_x = None
+        self._der_y = None
+        self._der_z = None
         
         if self._order[0] == 6:
             self._der_x = pycd06.cd06stuff.cd06( self._nx, grid_spacing[0], self._periodic[0], 0, 0 )
