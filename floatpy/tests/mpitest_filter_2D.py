@@ -26,7 +26,7 @@ class TestFilter(unittest.TestCase):
 
         self.comm = MPI.COMM_WORLD
         self.fcomm = self.comm.py2f()
-        self.periodic = numpy.array([True, True])
+        self.periodic = numpy.array([True, True, True])
         self.filter_type = ('compact', 'compact')
 
         self.grid_partition = _t3dmod.t3d(self.fcomm, self.nx, self.ny, self.nz, self.periodic )
@@ -40,7 +40,7 @@ class TestFilter(unittest.TestCase):
         self.chunk_3d_lo = self.chunk_3d_lo - 1 # Convert to 0 based indexing
         self.chunk_3d_hi = self.chunk_3d_hi - 1 # Convert to 0 based indexing
 
-        self.fil = Filter( self.grid_partition, self.filter_type, periodic_dimensions=self.periodic )
+        self.fil = Filter( self.grid_partition, self.filter_type, 2, (self.periodic[0], self.periodic[1]) )
 
         self.x = numpy.linspace(0., 2.*numpy.pi, num=self.nx+1)[self.chunk_3d_lo[0]:self.chunk_3d_hi[0]+1]
         self.y = numpy.linspace(0., 2.*numpy.pi, num=self.ny+1)[self.chunk_3d_lo[1]:self.chunk_3d_hi[1]+1]

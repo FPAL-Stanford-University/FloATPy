@@ -29,7 +29,8 @@ class TestDerivativesCompact(unittest.TestCase):
         self.chunk_3d_lo = self.chunk_3d_lo - 1 # Convert to 0 based indexing
         self.chunk_3d_hi = self.chunk_3d_hi - 1 # Convert to 0 based indexing
 
-        self.der = CompactDifferentiator(self.grid_partition, (self.dx, self.dy), self.order, 2, self.periodic)
+        self.der = CompactDifferentiator(self.grid_partition, (self.dx, self.dy), self.order, 2,\
+                                         (self.periodic[0], self.periodic[1]))
         
         self.x = numpy.linspace(0., 2.*numpy.pi, num=self.nx+1)[self.chunk_3d_lo[0]:self.chunk_3d_hi[0]+1]
         self.y = numpy.linspace(0., 2.*numpy.pi, num=self.ny+1)[self.chunk_3d_lo[1]:self.chunk_3d_hi[1]+1]
