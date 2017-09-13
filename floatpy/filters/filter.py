@@ -354,20 +354,21 @@ class Filter(object):
 
         self.filter_x(data, data_filtered, bc=x_bc)
         for i in range(ntimes-1):
-            tmp[:,:,:] = data_filtered[:,:,:]
+            tmp = numpy.copy(data_filtered, order='F')
             self.filter_x(tmp, data_filtered, bc=x_bc)
 
         if self._dim > 1:
             self.filter_y(data_filtered, tmp, bc=y_bc)
             for i in range(ntimes-1):
-                data_filtered[:,:,:] = tmp[:,:,:]
+                data_filtered = numpy.copy(tmp, order='F')
                 self.filter_y(data_filtered, tmp, bc=y_bc)
-            data_filtered[:,:,:] = tmp[:,:,:]
+                data_filtered = numpy.copy(tmp, order='F')
+            data_filtered = numpy.copy(tmp, order='F')
 
         if self._dim > 2:
             self.filter_z(tmp, data_filtered, bc=z_bc)
             for i in range(ntimes-1):
-                tmp[:,:,:] = data_filtered[:,:,:]
+                tmp = numpy.copy(data_filtered, order='F')
                 self.filter_z(tmp, data_filtered, bc=z_bc)
 
         if return_data_filtered:
