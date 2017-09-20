@@ -18,6 +18,19 @@ MPI_INCLUDE_DIRS = subprocess.check_output([MPIFC,'--showme:incdirs']).split()
 MPI_LINK_DIRS = subprocess.check_output([MPIFC,'--showme:libdirs']).split()
 MPI_LIBS = subprocess.check_output([MPIFC,'--showme:libs']).split()
 
+COMPILER = subprocess.check_output([MPIFC,'--showme:command']).split()[0]
+if COMPILER == 'gfortran':
+    COMPILER_ID = 'GNU'
+    f2py_compiler_option = '--fcompiler=gnu'
+    sys.path.extend('config_fc --fcompiler=gnu'.split())
+elif COMPILER == 'ifort':
+    COMPILER_ID = 'Intel'
+    f2py_compiler_option = '--fcompiler=intelem'
+    sys.path.extend('config_fc --fcompiler=intelem'.split())
+else:
+    print "Unknown compiler %s. gfortran and ifort are supported." %COMPILER
+    sys.exit(-1)
+
 # Python version
 if sys.version_info[:2] < (2, 7):
     print('FloATPy requires Python 2.7 or newer')
@@ -28,7 +41,7 @@ version = '1.0'
 # Build the fortran extension modules.
 obj_compact_6th_order = BuildFortranObjects(['floatpy/derivatives/compact/kind_parameters.F90',
                                              'floatpy/derivatives/compact/constants.F90',
-                                             'floatpy/derivatives/compact/cd06.F90'])
+                                             'floatpy/derivatives/compact/cd06.F90'], compiler=COMPILER, compiler_id=COMPILER_ID)
 
 ext_compact_6th_order = Extension('_pycd06',
                                     sources = ['floatpy/derivatives/compact/f90wrap_cd06.f90'],
@@ -37,7 +50,7 @@ ext_compact_6th_order = Extension('_pycd06',
 
 obj_compact_10th_order = BuildFortranObjects(['floatpy/derivatives/compact/kind_parameters.F90',
                                               'floatpy/derivatives/compact/constants.F90',
-                                              'floatpy/derivatives/compact/cd10.F90'])
+                                              'floatpy/derivatives/compact/cd10.F90'], compiler=COMPILER, compiler_id=COMPILER_ID)
 
 ext_compact_10th_order = Extension('_pycd10',
                                      sources = ['floatpy/derivatives/compact/f90wrap_cd10.f90'],
@@ -46,7 +59,7 @@ ext_compact_10th_order = Extension('_pycd10',
 
 obj_filter_cf90 = BuildFortranObjects(['floatpy/filters/kind_parameters.F90',
                                        'floatpy/filters/constants.F90',
-                                       'floatpy/filters/cf90.F90'])
+                                       'floatpy/filters/cf90.F90'], compiler=COMPILER, compiler_id=COMPILER_ID)
 
 ext_filter_cf90 = Extension('_pycf90',
                               sources = ['floatpy/filters/f90wrap_cf90.f90'],
@@ -55,7 +68,7 @@ ext_filter_cf90 = Extension('_pycf90',
 
 obj_filter_gaussian = BuildFortranObjects(['floatpy/filters/kind_parameters.F90',
                                            'floatpy/filters/constants.F90',
-                                           'floatpy/filters/gaussian.F90'])
+                                           'floatpy/filters/gaussian.F90'], compiler=COMPILER, compiler_id=COMPILER_ID)
 
 ext_filter_gaussian = Extension('_pygaussian',
                                   sources = ['floatpy/filters/f90wrap_gaussian.f90'],
@@ -66,7 +79,7 @@ obj_pyt3d = BuildFortranObjects(['floatpy/parallel/pyt3d/kind_parameters.F90',
                                  'floatpy/parallel/pyt3d/constants.F90',
                                  'floatpy/parallel/pyt3d/exits.F90',
                                  'floatpy/parallel/pyt3d/reductions.F90',
-                                 'floatpy/parallel/pyt3d/t3dMod.F90'], compiler=MPIFC)
+                                 'floatpy/parallel/pyt3d/t3dMod.F90'], compiler=MPIFC, compiler_id=COMPILER_ID)
 
 ext_pyt3d = Extension('_pyt3d',
                       sources = ['floatpy/parallel/pyt3d/f90wrap_t3dMod.f90'],
