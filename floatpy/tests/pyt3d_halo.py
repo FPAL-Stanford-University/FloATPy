@@ -4,7 +4,7 @@ import os
 import sys
 import unittest
 
-from floatpy.parallel import _t3dmod as t3dmod
+from floatpy.parallel import t3dmod
 
 #------------------------------------
 # Set the MPI communicator

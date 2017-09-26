@@ -4,7 +4,7 @@ import numpy
 import os
 import sys
 
-from floatpy.parallel import _t3dmod
+from floatpy.parallel import t3dmod
 
 class ParallelDataReader(object):
     """
@@ -102,7 +102,7 @@ class ParallelDataReader(object):
             self._subdomain_size = self._subdomain_hi - self._subdomain_lo + 1
         
         # Create the parallel grid partition object that handles all the communication stuff.
-        self._grid_partition = _t3dmod.t3d(self._fcomm, \
+        self._grid_partition = t3dmod.t3d(self._fcomm, \
                                                self._subdomain_size[0], self._subdomain_size[1], self._subdomain_size[2], \
                                                self._periodic_dimensions, nghosts=self._num_ghosts )
         

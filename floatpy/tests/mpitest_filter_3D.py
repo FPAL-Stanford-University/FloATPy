@@ -2,8 +2,8 @@ from mpi4py import MPI
 import numpy
 import unittest
 
-from floatpy.parallel import _t3dmod
-from floatpy.filters import Filter
+from floatpy.parallel import t3dmod
+from floatpy.filters.filter import Filter
 
 def getTransferFunction(k):
     alpha90 = 6.6624e-1
@@ -29,7 +29,7 @@ class TestFilter(unittest.TestCase):
         self.periodic = numpy.array([True, True, True])
         self.filter_type = ('compact', 'compact', 'compact')
 
-        self.grid_partition = _t3dmod.t3d(self.fcomm, self.nx, self.ny, self.nz, self.periodic )
+        self.grid_partition = t3dmod.t3d(self.fcomm, self.nx, self.ny, self.nz, self.periodic )
 
         self.chunk_3d_size = numpy.zeros(3, dtype=numpy.int32, order='F')
         self.chunk_3d_lo   = numpy.zeros(3, dtype=numpy.int32, order='F')
