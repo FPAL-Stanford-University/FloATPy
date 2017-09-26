@@ -10,12 +10,12 @@ class TestReaderParallel(unittest.TestCase):
     
     def setUp(self):
         self.filename_prefix = os.path.join(os.path.dirname(__file__), 'test_data_miranda/plot.mir')
-        self.serial_reader = mir.MirandaReader(self.filename_prefix, periodic=(False,True,True))
+        self.serial_reader = mir.MirandaReader(self.filename_prefix, periodic_dimensions=(False,True,True))
         self.serial_reader.step = 0
         
         self.comm = MPI.COMM_WORLD
         self.num_ghosts = (1, 1, 1)
-        self.reader = pdr.ParallelDataReader( MPI.COMM_WORLD, mir.MirandaReader(self.filename_prefix, periodic=(False,True,True)), num_ghosts=self.num_ghosts )
+        self.reader = pdr.ParallelDataReader( MPI.COMM_WORLD, mir.MirandaReader(self.filename_prefix, periodic_dimensions=(False,True,True)), num_ghosts=self.num_ghosts )
         self.reader.step = 0
         
         self.lo, self.hi = self.reader.interior_chunk

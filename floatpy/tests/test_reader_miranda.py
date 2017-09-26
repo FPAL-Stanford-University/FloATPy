@@ -8,7 +8,7 @@ class TestReaderMiranda(unittest.TestCase):
     
     def setUp(self):
         self.filename_prefix = os.path.join(os.path.dirname(__file__), 'test_data_miranda/plot.mir')
-        self.reader = mir.MirandaReader(self.filename_prefix, periodic=(False,True,True))
+        self.reader = mir.MirandaReader(self.filename_prefix, periodic_dimensions=(False,True,True))
 
         self.lo = (0, 0, 0)
         self.hi = (319, 63, 0)
