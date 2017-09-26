@@ -2,7 +2,7 @@ import numpy
 import pycd06
 import pycd10
 
-from floatpy.parallel import _t3dmod
+from floatpy.parallel import t3dmod
 
 class CompactDerivative(object):
     """
@@ -20,7 +20,7 @@ class CompactDerivative(object):
         periodic : boolean tuple of size 3
         """
 
-        if not isinstance(grid_partition, _t3dmod.t3d):
+        if not isinstance(grid_partition, t3dmod.t3d):
             raise RuntimeError("The given grid partition object is not an instance of the t3d class!")
 
         for i in range(3):

@@ -3,7 +3,7 @@ import numpy
 import pycf90
 import pygaussian
 
-from floatpy.parallel import _t3dmod
+from floatpy.parallel import t3dmod
 from floatpy.utilities import data_reshaper
 
 class Filter(object):
@@ -21,7 +21,7 @@ class Filter(object):
         periodic_dimensions : boolean iterable of size 3
         """
 
-        if not isinstance(grid_partition, _t3dmod.t3d):
+        if not isinstance(grid_partition, t3dmod.t3d):
             raise RuntimeError("The given grid partition object is not an instance of the t3d class!")
         
         if dimension < 1 or dimension > 3:
