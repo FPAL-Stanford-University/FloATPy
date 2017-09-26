@@ -3,19 +3,19 @@ import numpy
 import os
 import unittest
 
-import floatpy.readers.padeops_reader as por
+import floatpy.readers.miranda_reader as mir
 import floatpy.readers.parallel_reader as pdr
 
 class TestReaderParallel(unittest.TestCase):
     
     def setUp(self):
-        self.filename = os.path.join(os.path.dirname(__file__), 'test_data_padeops/taylorgreen.h5')
-        self.serial_reader = por.PadeopsReader(self.filename, periodic_dimensions=(True,True,True))
+        self.filename_prefix = os.path.join(os.path.dirname(__file__), 'test_data_miranda/plot.mir')
+        self.serial_reader = mir.MirandaReader(self.filename_prefix, periodic=(False,True,True))
         self.serial_reader.step = 0
         
         self.comm = MPI.COMM_WORLD
         self.num_ghosts = (1, 1, 1)
-        self.reader = pdr.ParallelDataReader( MPI.COMM_WORLD, por.PadeopsReader(self.filename, periodic_dimensions=(True,True,True)), num_ghosts=self.num_ghosts )
+        self.reader = pdr.ParallelDataReader( MPI.COMM_WORLD, mir.MirandaReader(self.filename_prefix, periodic=(False,True,True)), num_ghosts=self.num_ghosts )
         self.reader.step = 0
         
         self.lo, self.hi = self.reader.interior_chunk
@@ -62,6 +62,7 @@ class TestReaderParallel(unittest.TestCase):
         indices_ghost_z = range(lo[2], hi[2]+1)
         
         # Create the correct coordinates in domain with ghost cells.
+        
         x_ghost = x.take(indices_ghost_x, axis=0, mode='wrap')
         x_ghost = x_ghost.take(indices_ghost_y, axis=1, mode='wrap')
         x_ghost = x_ghost.take(indices_ghost_z, axis=2, mode='wrap')
@@ -90,15 +91,15 @@ class TestReaderParallel(unittest.TestCase):
         # Read full data.
         
         self.serial_reader.sub_domain = (0,0,0), (self.serial_reader.domain_size[0]-1, self.serial_reader.domain_size[1]-1, self.serial_reader.domain_size[2]-1)
-        rho,    = self.serial_reader.readData('rho')
-        u, v, w = self.serial_reader.readData(('u','v','w'))
-        p,      = self.serial_reader.readData('p')
+        rho,    = self.serial_reader.readData('density')
+        u, v, w = self.serial_reader.readData(('velocity-0','velocity-1','velocity-2'))
+        p,      = self.serial_reader.readData('pressure')
         
         # Read in chunked data.
         
-        rho_c,        = self.reader.readData('rho')
-        u_c, v_c, w_c = self.reader.readData(('u','v','w'))
-        p_c,          = self.reader.readData('p')
+        rho_c,        = self.reader.readData('density')
+        u_c, v_c, w_c = self.reader.readData(('velocity-0','velocity-1','velocity-2'))
+        p_c,          = self.reader.readData('pressure')
         
         rerr = numpy.absolute(rho[ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, self.lo[2]:self.hi[2]+1 ] - rho_c[self.reader.interior]).max()
         uerr = numpy.absolute(u  [ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, self.lo[2]:self.hi[2]+1 ] - u_c  [self.reader.interior]).max()
@@ -118,15 +119,15 @@ class TestReaderParallel(unittest.TestCase):
         # Read full data.
         
         self.serial_reader.sub_domain = (0,0,0), (self.serial_reader.domain_size[0]-1, self.serial_reader.domain_size[1]-1, self.serial_reader.domain_size[2]-1)
-        rho,    = self.serial_reader.readData('rho')
-        u, v, w = self.serial_reader.readData(('u','v','w'))
-        p,      = self.serial_reader.readData('p')
+        rho,    = self.serial_reader.readData('density')
+        u, v, w = self.serial_reader.readData(('velocity-0','velocity-1','velocity-2'))
+        p,      = self.serial_reader.readData('pressure')
         
         # Read in chunked data.
         
-        rho_c,        = self.reader.readData('rho', communicate=True)
-        u_c, v_c, w_c = self.reader.readData(('u','v','w'), communicate=True)
-        p_c,          = self.reader.readData('p', communicate=True)
+        rho_c,        = self.reader.readData('density', communicate=True)
+        u_c, v_c, w_c = self.reader.readData(('velocity-0','velocity-1','velocity-2'), communicate=True)
+        p_c,          = self.reader.readData('pressure', communicate=True)
         
         # Get the indices with ghost cells.
         
@@ -136,7 +137,7 @@ class TestReaderParallel(unittest.TestCase):
         indices_ghost_z = range(lo[2], hi[2]+1)
         
         # Create the correct data in domain with ghost cells.
-        lo, hi = self.reader.full_chunk
+        
         rho_ghost = rho.take(indices_ghost_x, axis=0, mode='wrap')
         rho_ghost = rho_ghost.take(indices_ghost_y, axis=1, mode='wrap')
         rho_ghost = rho_ghost.take(indices_ghost_z, axis=2, mode='wrap')
