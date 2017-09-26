@@ -1,6 +1,6 @@
 import numpy
 
-from floatpy.parallel import _t3dmod
+from floatpy.parallel import t3dmod
 from floatpy.utilities import data_reshaper
 
 class TransposeWrapper(object):
@@ -16,7 +16,7 @@ class TransposeWrapper(object):
         direction : direction of pencil
         """
         
-        if not isinstance(grid_partition, _t3dmod.t3d):
+        if not isinstance(grid_partition, t3dmod.t3d):
             raise RuntimeError("The given grid partition object is not an instance of the t3d class!")
         
         self._grid_partition = grid_partition

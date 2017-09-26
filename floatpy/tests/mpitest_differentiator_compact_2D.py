@@ -2,7 +2,7 @@ from mpi4py import MPI
 import numpy
 import unittest
 
-from floatpy.parallel import _t3dmod
+from floatpy.parallel import t3dmod
 from floatpy.derivatives import CompactDifferentiator
 
 class TestDerivativesCompact(unittest.TestCase):
@@ -18,7 +18,7 @@ class TestDerivativesCompact(unittest.TestCase):
 
         self.dx, self.dy = 2.*numpy.pi / self.nx, 2.*numpy.pi / self.ny
 
-        self.grid_partition = _t3dmod.t3d(self.fcomm, self.nx, self.ny, self.nz, self.periodic )
+        self.grid_partition = t3dmod.t3d(self.fcomm, self.nx, self.ny, self.nz, self.periodic )
 
         self.chunk_3d_size = numpy.zeros(3, dtype=numpy.int32, order='F')
         self.chunk_3d_lo   = numpy.zeros(3, dtype=numpy.int32, order='F')
