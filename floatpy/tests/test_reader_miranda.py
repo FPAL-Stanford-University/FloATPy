@@ -7,11 +7,11 @@ import floatpy.readers.miranda_reader as mir
 class TestReaderMiranda(unittest.TestCase):
     
     def setUp(self):
-        self.filename_prefix = os.path.join(os.path.dirname(__file__), 'test_miranda/RM_CTR_3D_64/plot.mir')
-        self.reader = mir.MirandaReader(self.filename_prefix)
-        
-        self.lo = (2, 4, 1)
-        self.hi = (4, 7, 6)
+        self.filename_prefix = os.path.join(os.path.dirname(__file__), 'test_data_miranda/plot.mir')
+        self.reader = mir.MirandaReader(self.filename_prefix, periodic=(False,True,True))
+
+        self.lo = (0, 0, 0)
+        self.hi = (319, 63, 0)
         self.reader.sub_domain = (self.lo, self.hi)
         self.reader.step = 0
     
@@ -49,16 +49,21 @@ class TestReaderMiranda(unittest.TestCase):
             (self.reader.domain_size[0]-1, self.reader.domain_size[1]-1, self.reader.domain_size[2]-1)
         
         rho,    = self.reader.readData('density')
-        u, v, w = self.reader.readData(('velocity-1','velocity-2','velocity-3'))
+        u, v, w = self.reader.readData(('velocity-0','velocity-1','velocity-2'))
         p,      = self.reader.readData('pressure')
         
         # Read in chunked data.
         
         self.reader.sub_domain = self.lo, self.hi
         rho_c,        = self.reader.readData('density')
-        u_c, v_c, w_c = self.reader.readData(('velocity-1','velocity-2','velocity-3'))
+        u_c, v_c, w_c = self.reader.readData(('velocity-0','velocity-1','velocity-2'))
         p_c,          = self.reader.readData('pressure')
         
+        # x_c, y_c, z_c = self.reader.readCoordinates()
+        # plt.imshow( numpy.transpose(rho_c[:,:,0]), extent=[x_c[0,0,0], x_c[-1,-1,0], y_c[0,0,0], y_c[-1,-1,0]], origin='lower', interpolation='lanczos', aspect=1. )
+        # plt.colorbar()
+        # plt.show()
+
         rerr = numpy.absolute(rho[ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, self.lo[2]:self.hi[2]+1 ] - rho_c).max()
         uerr = numpy.absolute(u  [ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, self.lo[2]:self.hi[2]+1 ] - u_c  ).max()
         verr = numpy.absolute(v  [ self.lo[0]:self.hi[0]+1, self.lo[1]:self.hi[1]+1, self.lo[2]:self.hi[2]+1 ] - v_c  ).max()
