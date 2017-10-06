@@ -11,7 +11,7 @@ class ParallelDataReader(object):
     Class to read data and exchange data across nodes with MPI.
     """
     
-    def __init__(self, comm, serial_reader, sub_domain=None, num_ghosts=None):
+    def __init__(self, comm, serial_reader, sub_domain=None, num_ghosts=None, grid_partition=None):
         """
         Constructor of the class.
         
@@ -101,10 +101,27 @@ class ParallelDataReader(object):
             self._subdomain_hi = numpy.asarray(hi)
             self._subdomain_size = self._subdomain_hi - self._subdomain_lo + 1
         
-        # Create the parallel grid partition object that handles all the communication stuff.
-        self._grid_partition = t3dmod.t3d(self._fcomm, \
-                                               self._subdomain_size[0], self._subdomain_size[1], self._subdomain_size[2], \
-                                               self._periodic_dimensions, nghosts=self._num_ghosts )
+        if grid_partition is None:
+            # Create the parallel grid partition object that handles all the communication stuff.
+            self._grid_partition = t3dmod.t3d(self._fcomm, \
+                                                   self._subdomain_size[0], self._subdomain_size[1], self._subdomain_size[2], \
+                                                   self._periodic_dimensions, nghosts=self._num_ghosts )
+        else:
+            sz = numpy.zeros(3, dtype=numpy.int32, order='F')
+
+            # Check for domain size in X direction
+            grid_partition.get_szx(sz)
+            assert( sz[0] == self._domain_size[0] ), "X domain size in grid_partition object and data reader is inconsistent!"
+                
+            # Check for domain size in Y direction
+            grid_partition.get_szy(sz)
+            assert( sz[1] == self._domain_size[1] ), "Y domain size in grid_partition object and data reader is inconsistent!"
+                
+            # Check for domain size in Z direction
+            grid_partition.get_szz(sz)
+            assert( sz[2] == self._domain_size[2] ), "Z domain size in grid_partition object and data reader is inconsistent!"
+                
+            self._grid_partition = grid_partition
         
         # Size of the interior chunk of this process.
         self._interior_chunk_size = numpy.zeros(3, dtype=numpy.int32, order='F')
