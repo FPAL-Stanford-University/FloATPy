@@ -1,0 +1,30 @@
+VERSION 1.2
+curvilinear: yes        # general grid
+gridfiles: grid/p%06d     # grid files
+datafiles: vis%04d/p%06d  # data files
+fileorder: XYZ # processor order
+domainsize:    320    64    64  # overall grid dimensions
+blocksize:     20    16    16  # grid dimensions per processor
+origin: -0.984375000000000D+01 -0.500000000000000D+01 -0.500000000000000D+01  # xmin, ymin, zmin
+spacing:  0.156250000000000D+00  0.156250000000000D+00  0.156250000000000D+00  # dx, dy, dz
+variables:   13  # number of variables
+  velocity 3  -1.484178E+03   1.545147E+03  -1.571780E+03   1.663661E+03  -1.442979E+03   1.462802E+03
+  density 1   8.420179E-04   5.027493E-03
+  energy 1   2.568744E+09   3.823510E+09
+  pressure 1   1.270688E+06   1.317968E+06
+  temperature 1   3.463189E+02   5.308760E+02
+  sound_speed 1   1.680491E+04   4.629431E+04
+  shear_visc 1   1.582704E-04   1.513683E-02
+  bulk_visc 1   1.684454E-08   4.143413E+00
+  conductivity 1   9.221072E+02   2.628549E+05
+  D_Ideal1_01 1   1.069939E-02   1.432473E+02
+  D_Ideal1_02 1   1.040807E-02   1.092574E+02
+  D_Ideal1_03 1   4.429476E-03   2.470932E+02
+  D_Ideal1_04 1   4.430713E-03   2.354240E+02
+materials:    4  # number of materials
+  Ideal1_01 1  -2.999518E-04   7.680066E-01
+  Ideal1_02 1  -2.103620E-04   2.331915E-01
+  Ideal1_03 1  -6.455200E-04   8.004010E-01
+  Ideal1_04 1  -5.526220E-04   2.001000E-01
+timesteps:   1  # number of times to plot
+  0000     0.000000E+00
