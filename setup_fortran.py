@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-compiler_flags = '-Wall -Wconversion -Wextra -Waliasing -ffree-form -ffree-line-length-none -ffast-math -march=core-avx-i -funroll-loops -fno-protect-parens'
+compiler_flags = '-Wall -Wconversion -Wextra -Waliasing -ffree-form -ffree-line-length-none -ffast-math -march=native -funroll-loops -fno-protect-parens'
 
 def BuildFortranObjects(sources, compiler='gfortran'):
     objects = []
