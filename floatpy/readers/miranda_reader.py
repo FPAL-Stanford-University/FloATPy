@@ -96,9 +96,15 @@ class MirandaReader(BaseReader):
                     self.zblk = 1
 
             # Fix the local indices
-            self.ax -=  numpy.minimum(self.px-1,1)
-            self.ay -=  numpy.minimum(self.py-1,1)
-            self.az -=  numpy.minimum(self.pz-1,1)
+            # self.ax -=  numpy.minimum(self.px-1,1)
+            # self.ay -=  numpy.minimum(self.py-1,1)
+            # self.az -=  numpy.minimum(self.pz-1,1)
+            if self.nx > 1:                              
+                self.ax -=  1 #numpy.minimum(self.px-1,1)
+            if self.ny > 1:                              
+                self.ay -=  1 #numpy.minimum(self.py-1,1)
+            if self.nz > 1:                              
+                self.az -=  1 #numpy.minimum(self.pz-1,1)
 
             # Fix the global indices
             if not self.zonal:
@@ -192,6 +198,9 @@ class MirandaReader(BaseReader):
 
         # Step is set to 0 by default.
         self._step = 0
+
+        # Set sub domain size to full domain by default.
+        self.chunk = tuple( (0,i) for i in self._domain_size )
         
    
         
