@@ -6,7 +6,7 @@ from floatpy.parallel import t3dmod
 import floatpy.utilities.reduction as red
 
 
-class TestDerivativesCompact(unittest.TestCase):
+class TestReduction(unittest.TestCase):
     
     def setUp(self):
         self.nx, self.ny, self.nz = 64, 32, 16

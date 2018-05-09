@@ -235,7 +235,7 @@ class Reduction(object):
         array : reduced 2D decomposed numpy array
         """
 
-        shape = self._grid_size
+        shape = numpy.copy(self._grid_size)
 
         for i in range(3):
             if self._directions[i]:
