@@ -82,6 +82,9 @@ class WchrAsciiReader(BaseReader):
         
         # Step is set to 0 by default.
         self._step = 0
+        
+        # Set subdomain to full domain by default
+        self.chunk = ( (0, self._domain_size[0]), (0, self._domain_size[1]), (0, self._domain_size[2]) )
     
     
     def setStep(self, step):
