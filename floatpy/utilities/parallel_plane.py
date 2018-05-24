@@ -52,7 +52,7 @@ class ParallelPlane(object):
         self._index = index
 
         self._is_involved = False
-        if (self._index >= self._3d_lo[direction]) or (self._index <= self._3d_hi[direction]):
+        if (self._index >= self._3d_lo[direction]) and (self._index <= self._3d_hi[direction]):
             self._is_involved = True
         
         if direction == 0:
