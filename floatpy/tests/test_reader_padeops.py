@@ -7,7 +7,7 @@ import floatpy.readers.padeops_reader as por
 class TestReaderPadeops(unittest.TestCase):
     
     def setUp(self):
-        self.filename = os.path.join(os.path.dirname(__file__), 'test_data_padeops/taylorgreen.h5')
+        self.filename = os.path.join(os.path.dirname(__file__), 'test_data_padeops/taylorgreen_')
         self.reader = por.PadeopsReader(self.filename, periodic_dimensions=(True,True,True))
         
         self.lo = (2, 1, 2)
