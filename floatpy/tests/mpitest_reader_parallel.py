@@ -9,7 +9,7 @@ import floatpy.readers.parallel_reader as pdr
 class TestReaderParallel(unittest.TestCase):
     
     def setUp(self):
-        self.filename = os.path.join(os.path.dirname(__file__), 'test_data_padeops/taylorgreen.h5')
+        self.filename = os.path.join(os.path.dirname(__file__), 'test_data_padeops/taylorgreen_')
         self.serial_reader = por.PadeopsReader(self.filename, periodic_dimensions=(True,True,True))
         self.serial_reader.step = 0
         
