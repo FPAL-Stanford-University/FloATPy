@@ -1,7 +1,7 @@
 import numpy
 import unittest
 
-from floatpy.derivatives import ExplicitDifferentiator
+from floatpy.derivatives.explicit_differentiator import ExplicitDifferentiator
 
 class TestDifferentiatorExplicit(unittest.TestCase):
     

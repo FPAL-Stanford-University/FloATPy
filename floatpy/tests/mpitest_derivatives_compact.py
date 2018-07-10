@@ -3,7 +3,7 @@ import numpy
 import unittest
 
 from floatpy.parallel import t3dmod
-from floatpy.derivatives.compact import CompactDerivative
+from floatpy.derivatives.compact.compact_derivative import CompactDerivative
 
 
 class TestDerivativesCompact(unittest.TestCase):

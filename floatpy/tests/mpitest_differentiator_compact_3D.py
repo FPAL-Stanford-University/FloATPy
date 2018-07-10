@@ -3,7 +3,7 @@ import numpy
 import unittest
 
 from floatpy.parallel import t3dmod
-from floatpy.derivatives import CompactDifferentiator
+from floatpy.derivatives.compact_differentiator import CompactDifferentiator
 
 class TestDifferentiatorCompact(unittest.TestCase):
     

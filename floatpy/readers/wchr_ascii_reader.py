@@ -1,11 +1,6 @@
 import glob
 import numpy
 
-import matplotlib
-from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
-
 from base_reader import BaseReader
 
 class WchrAsciiReader(BaseReader):
@@ -82,6 +77,9 @@ class WchrAsciiReader(BaseReader):
         
         # Step is set to 0 by default.
         self._step = 0
+        
+        # Set subdomain to full domain by default
+        self.chunk = ( (0, self._domain_size[0]), (0, self._domain_size[1]), (0, self._domain_size[2]) )
     
     
     def setStep(self, step):
@@ -377,81 +375,6 @@ class WchrAsciiReader(BaseReader):
             return tuple(_data)
     
     
-    def plotThreeSlice(self, var, index):
-        """
-        Method to plot variable var on three orthogonal slices intersecting at the given index.
-        """
-        
-        xind = index[0]
-        yind = index[1]
-        zind = index[2]
-
-        norm = matplotlib.colors.Normalize(vmin=var.min(), vmax=var.max())
-        cmap = cm.ScalarMappable(norm=norm, cmap=cm.viridis)
-        cmap.set_array(var)
-
-        fig = plt.figure()
-        ax = fig.gca(projection='3d')
-
-        surf_x = ax.plot_surface(self.x_c[xind,:,:], self.y_c[xind,:,:], self.z_c[xind,:,:], \
-                                 facecolors=cmap.to_rgba(var[xind,:,:]), linewidth=0)
-        surf_y = ax.plot_surface(self.x_c[:,yind,:], self.y_c[:,yind,:], self.z_c[:,yind,:], \
-                                 facecolors=cmap.to_rgba(var[:,yind,:]), linewidth=0)
-        surf_z = ax.plot_surface(self.x_c[:,:,zind], self.y_c[:,:,zind], self.z_c[:,:,zind], \
-                                 facecolors=cmap.to_rgba(var[:,:,zind]), linewidth=0)
-
-        fig.colorbar(cmap)
-        plt.show()
-    
-    
-    def cubeShowSlider(self, cube, axis=2, **kwargs):
-        """
-        Display a 3d ndarray with a slider to move along the third dimension.
-    
-        Extra keyword arguments are passed to imshow.
-        """
-        
-        from matplotlib.widgets import Slider, Button, RadioButtons
-        
-        # Check number of dimensions is correct.
-        if not cube.ndim == 3:
-            raise ValueError("cube should be an ndarray with ndim == 3")
-        
-        # Generate figure.
-        
-        fig = plt.figure()
-        ax = plt.subplot(111)
-        fig.subplots_adjust(left=0.25, bottom=0.25)
-    
-        # Select first image.
-        
-        s = [slice(0, 1) if i == axis else slice(None) for i in xrange(3)]
-        im = cube[s].squeeze().transpose()
-    
-        # Display image.
-        l = ax.imshow(im, **kwargs)
-    
-        # Define slider.
-        
-        axcolor = 'lightgoldenrodyellow'
-        ax = fig.add_axes([0.25, 0.1, 0.65, 0.03], axisbg=axcolor)
-    
-        slider = Slider(ax, 'Axis %i index' % axis, 0, cube.shape[axis] - 1,
-                        valinit=0, valfmt='%i')
-    
-        def update(val):
-            ind = int(slider.val)
-            s = [slice(ind, ind + 1) if i == axis else slice(None)
-                     for i in xrange(3)]
-            im = cube[s].squeeze()
-            l.set_data(im)
-            fig.canvas.draw()
-    
-        slider.on_changed(update)
-    
-        plt.show()
-
-
 BaseReader.register(WchrAsciiReader)
 
 if __name__ == '__main__':
