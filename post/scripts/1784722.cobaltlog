@@ -1,0 +1,5 @@
+Jobid: 1784722
+qsub -I -n 64 -t 30
+Wed Mar 27 18:23:41 2019 +0000 (UTC) submitted with cwd set to: /gpfs/mira-home/kmatsuno/FloATPy/post/scripts
+jobid 1784722 submitted from terminal /dev/pts/102
+Wed Mar 27 18:29:45 2019 +0000 (UTC) Info: user delete requested; removing job from the queue

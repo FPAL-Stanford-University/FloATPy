@@ -1,0 +1,57 @@
+#!/usr/bin/python
+import h5py
+import sys
+import matplotlib
+matplotlib.use('pdf')
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+import numpy as np
+import floatpy.readers.padeops_reader as por
+
+def visualize(reader, step, savefig):
+    reader.step = step
+    zslice = 0
+    fs = 8
+    vel = reader.readData(('u', 'v', 'w'))
+    colormap = ['inferno','afmhot','viridis']
+    
+    fig, axarr = plt.subplots(1,3, figsize=(8,25), dpi=200)
+    for icol in range(0,3):
+        im = axarr[icol].imshow( np.transpose(vel[icol][:,:,0]),
+                        cmap=colormap[icol], origin='lower', interpolation='none')#, aspect=1.)\n",
+        divider1 = make_axes_locatable(axarr[icol])
+        #axarr[icol].set_ylim([])\n",
+        cax = divider1.append_axes('right', size='2%', pad=0.1)
+        cbar = plt.colorbar(im, cax)
+        cbar.ax.tick_params(labelsize=8)
+        plt.subplots_adjust(wspace=0.7,hspace=0.1)
+
+    if savefig:
+        savefig('slices.png')
+
+
+# Check input args
+if len(sys.argv) < 2:
+    print('Usage: ')
+    print(' python {} <fname>'.format(sys.argv[0]) )
+    sys.exit()
+
+
+directory = sys.argv[1]
+filename_prefix = directory+'shearlayer_'
+reader = por.PadeopsReader(filename_prefix, periodic_dimensions=(False,False,True))
+print('Grid size: {}'.format(reader.domain_size))
+
+# Only get a single x-y slice
+zslice = 0
+reader.sub_domain = (0,0,zslice), (reader.domain_size[0]-1, reader.domain_size[1]-1, zslice)
+x, y, z = reader.readCoordinates()
+steps = sorted(reader.steps)
+
+
+# Only get a single x-y slice
+reader.sub_domain = (0,0,zslice), (reader.domain_size[0]-1, reader.domain_size[1]-1, zslice)
+x, y, z = reader.readCoordinates()
+steps = sorted(reader.steps)
+
+visualize(reader, step=0, savefig=True)
