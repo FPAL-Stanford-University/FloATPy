@@ -74,11 +74,11 @@ if __name__ == '__main__':
         rho, u = reader.readData( ('rho', 'u') )
         rho_bar = stats.reynolds_average(avg,rho)
         u_bar = stats.reynolds_average(avg,rho)
-        utilde= stats.favre_average(avg,rho,u,rho_bar)
+        utilde = stats.favre_average(avg,rho,u,rho_bar)
         
         # Compute momentum thickness
         I = rho_bar*(0.5*du-utilde)*(0.5*du+utilde)
-        dtheta[i] = stats.integrate_y(I, dy, reader.grid_partition)
+        dtheta[i] = stats.integrate_y(I, dy, reader.grid_partition)/(inp.r_ref*inp.du**2)
 
         # vorticity thickness
         dudx,dudy,dudz = der.gradient(u, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
@@ -89,8 +89,6 @@ if __name__ == '__main__':
             print("{} \t {} \t {}".format(reader.time,dtheta[i],domega[i]))
         i = i+1; 
     
-    dtheta = dtheta / (inp.r_ref*inp.du**2)
-
     # Write to file 
     if rank==0:
         if 0:#Nsteps <= 5:

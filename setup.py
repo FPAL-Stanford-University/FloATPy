@@ -12,11 +12,16 @@ try:
     MPIFC = os.environ['MPIFC']
 except:
     MPIFC = subprocess.check_output(['which','mpif90']).split()[0]
+MPIFC = '/soft/libraries/mpi/mvapich2/gcc/bin/mpif90'
 print "Using MPI Fortran compiler ", MPIFC
 
-MPI_INCLUDE_DIRS = subprocess.check_output([MPIFC,'--showme:incdirs']).split()
-MPI_LINK_DIRS = subprocess.check_output([MPIFC,'--showme:libdirs']).split()
-MPI_LIBS = subprocess.check_output([MPIFC,'--showme:libs']).split()
+# MPI_INCLUDE_DIRS = subprocess.check_output([MPIFC,'--showme:incdirs']).split()
+# MPI_LINK_DIRS = subprocess.check_output([MPIFC,'--showme:libdirs']).split()
+# MPI_LIBS = subprocess.check_output([MPIFC,'--showme:libs']).split()
+
+MPI_INCLUDE_DIRS=['/soft/libraries/mpi/mvapich2-2.2/gcc/include', '/soft/libraries/mpi/mvapich2-2.2/gcc/include']
+MPI_LINK_DIRS=['/soft/libraries/mpi/mvapich2-2.2/gcc/lib']
+MPI_LIBS=['mpifort', 'mpi']
 
 # Python version
 if sys.version_info[:2] < (2, 7):
