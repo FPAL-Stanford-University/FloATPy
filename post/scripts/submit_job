@@ -1,0 +1,19 @@
+#! /bin/bash
+# A simple test, for 1k ranks
+# Use queue training for vesta
+# Use queue default for cetus and mira
+
+wctime=20
+nnodes=1
+ndeps=0
+# jobid=`qsub -A PadeOps_inclined-RM -q prod-short -t ${wctime} -n ${nnodes} --env XLFRTEOPTS=ufmt_littleendian=27 --mode script ./run_inclinedRM`
+jobid=`qsub -A ShockInducedMix -q default -t ${wctime} -n ${nnodes} --mode script ./runjob $1 $2`
+
+echo "Submitted job with ID ${jobid}"
+
+#jobid=1739034
+for i in `seq 1 $ndeps`
+do
+    jobid=`qsub -A ShockInducedMix -q default -t ${wctime} -n ${nnodes} --dependencies ${jobid} --mode script ./run_shearlayer`
+    echo "Submitted job with ID ${jobid}"
+done

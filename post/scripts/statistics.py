@@ -13,14 +13,15 @@ def domain(reader,verbose):
     [Nx,Ny,Nz] = reader.domain_size
     [Lx,Ly,Lz] = [x[-1,0,0],y[0,-1,0]-y[0,0,0],z[0,0,-1]]
     [dx,dy,dz] = [x[1,0,0]-x[0,0,0],y[0,1,0]-y[0,0,0],z[0,0,1]-z[0,0,0]]
-    kx = 2.0*np.pi/Lx * np.fft.fftfreq(Nx); kx = kx[range(Nx/2)]
-    kz = 2.0*np.pi/Lz * np.fft.fftfreq(Nz); kz = kz[range(Nz/2)]
+    dk = 2.0*np.pi/float(Lx);
+    kx = [dk*w for w in range(0,Nx/2)]
+    dk = 2.0*np.pi/float(Lz)
+    kz = [dk*w for w in range(0,Nz/2)]
     if verbose:
         print("Domain size: {} x {} x {}".format(Lx,Ly,Lz))
         print("Grid size: {} x {} x {}".format(Nx,Ny,Nz))
         print("Grid res: {} x {} x {}".format(dx,dy,dz))
     return Nx,Ny,Nz,Lx,Ly,Lz,dx,dy,dz,kx,kz
-
 
 def reynolds_average(avg, f):
     return avg.average(f)

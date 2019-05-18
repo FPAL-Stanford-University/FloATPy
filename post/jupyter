@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd /home/kmatsuno/FloATPy/post
+source ~/floatpy_env/bin/activate
+jupyter notebook

@@ -24,7 +24,10 @@ if __name__ == '__main__':
         sys.exit()
     filename_prefix = sys.argv[1]
     tid_list = map(int, sys.argv[2].strip('[]').split(',')) 
-    
+    Nt = np.size(tid_list)
+    if (Nt==2): 
+        tid_list = range(tid_list[0],tid_list[1])
+
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
     y_bc = (0,0)
@@ -63,6 +66,18 @@ if __name__ == '__main__':
     tmp1 = np.empty( der._chunk_3d_size,dtype=np.float64, order='F' )
     tmp2 = tmp1; tmp3 = tmp1
 
+    # First get the ru terms from the previous steps:
+    def get_ru():
+        r = reader.readData('rho');
+        r = np.squeeze(np.array(r))
+        rbar = stats.reynolds_average(avg,r)
+        u = reader.readData('u')
+        u = np.squeeze(np.array(u))
+        utilde = stats.favre_average(avg, r, u, rho_bar=rbar)
+        return rbar*utilde
+    reader.step = tid_list[0]-1
+    ru = get_ru()
+    t0 = reader.time 
 
     # Compute stats at each step:
     for tid in tid_list:
@@ -83,14 +98,13 @@ if __name__ == '__main__':
         vtilde = stats.favre_average(avg, r, v, rho_bar=rbar)
         wtilde = stats.favre_average(avg, r, w, rho_bar=rbar)
 
+        # Store for the ddt term:
+        t = reader.time
+        ddt_ru = (rbar*utilde-ru)/(t-t0)
+        t0 = t
+        ru = rbar*utilde
 
         # make the means 3D
-        #rbar = np.tile(rbar,(Nx,1,Nz));
-        #ubar = np.tile(ubar,(Nx,1,Nz));
-        #pbar = np.tile(pbar,(Nx,1,Nz));
-        #utilde = np.tile(utilde,(Nx,1,Nz));
-        #vtilde = np.tile(vtilde,(Nx,1,Nz));
-        #wtilde = np.tile(wtilde,(Nx,1,Nz));
         rbar3D = np.zeros([Nx,Ny,Nz])
         ubar3D = np.zeros([Nx,Ny,Nz])
         pbar3D = np.zeros([Nx,Ny,Nz])
@@ -136,14 +150,9 @@ if __name__ == '__main__':
         dudx,dudy,dudz = der.gradient(u, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
         uy = stats.reynolds_average(avg,dudy)
 
-        # ddt term: one sided fd 3fi-4fi+1+fi+2 / 2h
-        # reader.step = tid-1
-
-
         # Write to file 
         if rank==0:
             time = reader.time
             outputfile = filename_prefix + "%04d_budget_mean_momentum.npz"%tid
-            np.savez(outputfile,time=time,I=I,II=II,III=III,IV=IV,
-                    ubar3D=ubar3D,uy=uy,mu=mu)
+            np.savez(outputfile,time=time,I=I,II=II,III=III,IV=IV,ddt_ru=ddt_ru)
             print("Time: {}\tDone writing to {}".format(reader.time, outputfile))

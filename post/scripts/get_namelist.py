@@ -23,6 +23,19 @@ class inputs:
         self.T_ref = T_ref 
         self.r_ref = r_ref 
         self.mu_ref = mu_ref
+        self.rr = rr
+
+    def dimensionalize(this,rho_ref,p_ref,T_ref,mu_ref,Rgas,verbose=True):
+        Rgas1 = (1.+self.rr)/2.			
+        Rgas2 = (1.+self.rr)/(2.*rr) 
+        c1 = (gam*p_ref/(r_ref/Rgas1))**0.5
+        c2 = (gam*p_ref/(r_ref/Rgas2))**0.5
+        u1 = Mc*c1
+        u2 = Mc*c2
+        du = Mc*(c1+c2)
+        dtheta0 = 1
+        Re = dtheta0*du/mu_ref
+        
 
 
 # Assumes the line has a comment, =, and D#
@@ -61,6 +74,9 @@ def get_namelist(dirname,verbose):
         print("\trr = {}".format(rr))
     return Mc,Re,rr
 
+
+
+        
 
 if __name__ == '__main__':
     if len(sys.argv)<2:

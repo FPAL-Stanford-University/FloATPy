@@ -65,7 +65,7 @@ if __name__ == '__main__':
     # Compute stats at each step:
     i = 0
     for tid in tid_list:
-        reader.step = steps[tid]
+        reader.step = tid
         time[i] = reader.time
        
         # vorticity and enstrophy 
@@ -86,12 +86,12 @@ if __name__ == '__main__':
             # Save x spectrum
             array2save = np.empty([Nx,1])
             array2save[:,0] = spec_x;
-            outputfile  = "%04d_enstrophy_spectrum_x.dat"%steps[tid]
+            outputfile  = "%04d_enstrophy_spectrum_x.dat"%tid
             np.savetxt(filename_prefix+outputfile,array2save,delimiter=' ')
             # Save z spectrum
             array2save = np.empty([Nz,1])
             array2save[:,0] = spec_z;
-            outputfile  = "%04d_enstrophy_spectrum_z.dat"%steps[tid]
+            outputfile  = "%04d_enstrophy_spectrum_z.dat"%tid
             np.savetxt(filename_prefix+outputfile,array2save,delimiter=' ')
             
             print("Time: {}\tDone writing to {}".format(time[i], outputfile))

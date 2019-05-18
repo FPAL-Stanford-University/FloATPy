@@ -46,13 +46,13 @@ if __name__ == '__main__':
     dz = z[0,0,1] - z[0,0,0]
 
     # Compute stats at each step:
-    Nsteps = np.size(steps[start_index:])-1
+    Nsteps = np.size(steps[start_index:])
     time = np.empty(Nsteps)
     tke  = np.empty(Nsteps)
     i = 0
     if rank == 0:
         print("Time \t TKE integrated") 
-    for step in steps[start_index:-1]:
+    for step in steps[start_index:]:
         reader.step = step
         time[i] = reader.time
         rho, u, v, w = reader.readData( ('rho', 'u', 'v', 'w') )
