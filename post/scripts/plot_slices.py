@@ -28,30 +28,34 @@ def visualize(reader, step, savefig):
 
     if savefig:
         savefig('slices.png')
+    else: 
+        plt.show()
 
 
 # Check input args
-if len(sys.argv) < 2:
-    print('Usage: ')
-    print(' python {} <fname>'.format(sys.argv[0]) )
-    sys.exit()
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print('Usage: ')
+        print(' python {} <fname>'.format(sys.argv[0]) )
+        sys.exit()
 
+    fname = sys.argv[1]
+    directory = './'
+    if '/' in fname: 
+        directory = list(filter(None,fname.split('shearlayer')))[0]
 
-directory = sys.argv[1]
-filename_prefix = directory+'shearlayer_'
-reader = por.PadeopsReader(filename_prefix, periodic_dimensions=(False,False,True))
-print('Grid size: {}'.format(reader.domain_size))
+    tID = list(filter(None,fname.split('_')))[-1]
+    tID = list(filter(None,tID.split('.h5')))[-1]
+    tID = int(tID)
 
-# Only get a single x-y slice
-zslice = 0
-reader.sub_domain = (0,0,zslice), (reader.domain_size[0]-1, reader.domain_size[1]-1, zslice)
-x, y, z = reader.readCoordinates()
-steps = sorted(reader.steps)
+    reader = por.PadeopsReader(directory+'/shearlayer_', periodic_dimensions=(False,False,True))
+    print('Grid size: {}'.format(reader.domain_size))
+    
+    # Only get a single x-y slice
+    zslice = 0
+    reader.sub_domain = (0,0,zslice), (reader.domain_size[0]-1, reader.domain_size[1]-1, zslice)
+    x, y, z = reader.readCoordinates()
+    steps = sorted(reader.steps)
+   
 
-
-# Only get a single x-y slice
-reader.sub_domain = (0,0,zslice), (reader.domain_size[0]-1, reader.domain_size[1]-1, zslice)
-x, y, z = reader.readCoordinates()
-steps = sorted(reader.steps)
-
-visualize(reader, step=0, savefig=True)
+    visualize(reader, step=tID, savefig=False)

@@ -1,5 +1,6 @@
 from mpi4py import MPI
 import numpy as np
+import numpy.linalg as la
 import os
 import sys
 
@@ -10,23 +11,28 @@ import floatpy.utilities.reduction as red
 import statistics as stats
 import get_namelist as nml
 
+xdir = 0
+zdir = 2
+
 def grid_res(x,y,z):
     dx = x[1,0,0] - x[0,0,0]
     dy = y[0,1,0] - y[0,0,0]
     dz = z[0,0,1] - z[0,0,0]
     return dx,dy,dz
-
+   
+ 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print "Usage: "
+        print "Usage:" 
+        print "Computes the momentum thickness and decorrelation lengths" 
         print "  python {} <prefix> [tID_start(default=0)] ".format(sys.argv[0])
         sys.exit()
-    filename_prefix = sys.argv[1]
-    start_index = 0
+    start_index = 0;
     if len(sys.argv) > 2:
         start_index = int(sys.argv[2])
-    outputfile  = filename_prefix + "Mt_growth.dat"
-
+    filename_prefix = sys.argv[1]
+    outputfile = filename_prefix + "L99.dat"
+    
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
     y_bc = (0,0)
@@ -44,54 +50,51 @@ if __name__ == '__main__':
     reader = pdr.ParallelDataReader(comm, serial_reader)
     avg = red.Reduction(reader.grid_partition, periodic_dimensions)
     steps = sorted(reader.steps)
+    tid_list = steps[start_index:]
 
+    # Set up compact derivative object w/ 10th order schemes
     x, y, z = reader.readCoordinates()
-    Nx,Ny,Nz = reader.domain_size
     dx,dy,dz = grid_res(x,y,z)
+    der = cd.CompactDerivative(reader.grid_partition, 
+            (dx, dy, dz), (10, 10, 10), periodic_dimensions)
     
     # setup the inputs object
     dirname = os.path.dirname(filename_prefix)
-    if rank==0: verbosity=True
-    else: verbosity=False
-    inp = nml.inputs(dirname,verbose=verbosity)
+    inp = nml.inputs(dirname,verbose=True)
     du = inp.du
     if rank==0: print("\tdu = {}".format(inp.du))
+    utop = inp.du/2.*0.99# this is wrong, ubot is neg
+    ubot = inp.du/2.*0.01
 
-    # Compute stats at each step:
-    Nsteps = np.size(steps[start_index:])-1
-    time = np.empty(Nsteps)
-    Mt_max = np.empty(Nsteps)   # Max Mt across all y planes
-    Mt_center = np.empty(Nsteps)# Mt at center plane Ny/2
-    if rank == 0: print("Time \t Max Mt \t Center Mt") 
+    # Preallocate for means and derivatives
+    Nsteps = np.size(tid_list)
+    Nx,Ny,Nz = reader.domain_size
+    time = np.zeros([Nsteps])
+    L99 = np.zeros([Nsteps])
     
+    # Compute stats at each step:
     i = 0
-    for step in steps[start_index:-1]:
-        reader.step = step
+    if rank==0: print("Time \t 99%")
+    for tid in tid_list:
+        reader.step = tid
         time[i] = reader.time
 
-        # TKE
-        rho, u, v, w, T = reader.readData( ('rho', 'u', 'v', 'w','T') )
-        tke = stats.TKE(rho, u, v, w, reader.grid_partition, 
-                avg, dx, dy, dz, volume_integrated=False)
-        
-        # Speed of sound, xz average
-        c3D = np.sqrt(inp.gam*T)
-        c = stats.reynolds_average(avg, c3D)
-
-        # Turbulent Mach number
-        Mt = np.squeeze(tke**0.5/c)
-        Mt_max[i] = np.amax(Mt);
-        Mt_center[i] = Mt[Ny/2]
-
-        if rank == 0:
-            print("{} \t {} \t {}".format(reader.time,Mt_max[i],Mt_center[i]))
-        i = i+1
+        # Mean velocity 
+        u = reader.readData( ('u') )
+        u = np.squeeze(np.array(u))
+        ubar = stats.reynolds_average(avg, u)
+         
+        # Compute momentum thickness
+        i1 = np.argmin(abs(ubar[0,:Ny/2,0]-ubot))
+        i2 = np.argmin(abs(ubar[0,Ny/2:,0]-utop)) + Ny/2
+        L99[i] = (y[0,i2,0] - y[0,i1,0])/2.
+        if rank==0: print("{} \t {}".format(time[i],L99[i]))
+        i+=1
 
     # Write to file 
     if rank==0:
-        array2save = np.empty((Nsteps,3))
+        array2save = np.empty((Nsteps,2))
         array2save[:,0] = time
-        array2save[:,1] = Mt_center
-        array2save[:,2] = Mt_max
+        array2save[:,1] = L99 
         np.savetxt(outputfile,array2save,delimiter=' ')
         print("Done writing to {}".format(outputfile))

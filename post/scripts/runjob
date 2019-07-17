@@ -1,5 +1,0 @@
-#! /bin/bash
-
-nprocs=16
-echo "floatpy with ${nprocs} processors"
-runjob --np ${nprocs} -p 16 --block $COBALT_PARTNAME : python $1 $2 

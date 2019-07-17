@@ -27,7 +27,7 @@ if __name__ == '__main__':
     start_index = 0
     if len(sys.argv) > 2:
         start_index = int(sys.argv[2])
-    outputfile  = filename_prefix + "growth.dat"
+    outputfile  = filename_prefix + "anisotropy.dat"
     
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -55,58 +55,47 @@ if __name__ == '__main__':
 
     # setup the inputs object
     dirname = os.path.dirname(filename_prefix)
-    if rank==0: verbose=True
-    else: verbose=False
-    inp = nml.inputs(dirname,verbose)
-    du = inp.du
-    if rank==0: print("du = {}".format(inp.du))
+    inp = nml.inputs(dirname,verbose=True)
+    if rank==0: print("\tdu = {}".format(inp.du))
 
     # Compute stats at each step:
     Nsteps = np.size(steps[start_index:])-1
+    Ny = np.size(y,1)
     time   = np.empty(Nsteps)
-    dtheta = np.empty(Nsteps)
-    domega = np.empty(Nsteps)
-    dtheta_rate = np.empty(Nsteps)
+    b12 = np.empty(Nsteps)
     i = 0
     if rank == 0:
-        print("Time \t dtheta \t domega \t dtheta_rate")
+        print("Time \t b12_center\t b12_max")
     for step in steps[start_index:-1]:
         reader.step = step
         time[i] = reader.time
         
-        # density and streamwise vel, means
-        rho, u, v = reader.readData( ('rho', 'u', 'v') )
-        rho_bar = stats.reynolds_average(avg,rho)
-        utilde = stats.favre_average(avg,rho,u,rho_bar=rho_bar)
-        vtilde = stats.favre_average(avg,rho,v,rho_bar=rho_bar)
-        upp = u - utilde
-        vpp = v - vtilde
-        R12 = stats.favre_average(avg,rho,upp*vpp,rho_bar=rho_bar)
+        rho, u, v, w = reader.readData( ('rho', 'u', 'v', 'w') )
+        rho_bar = stats.reynolds_average(avg, rho)
+        u_tilde = stats.favre_average(avg, rho, u, rho_bar=rho_bar)
+        v_tilde = stats.favre_average(avg, rho, v, rho_bar=rho_bar)
+        w_tilde = stats.favre_average(avg, rho, w, rho_bar=rho_bar)
+        upp = u - u_tilde
+        vpp = v - v_tilde
+        wpp = w - w_tilde
 
-        # Compute momentum thickness
-        I = rho_bar*(0.5*du-utilde)*(0.5*du+utilde)/(inp.r_ref*inp.du**2)
-        dtheta[i] = stats.integrate_y(I, dy, reader.grid_partition)
-
-        # vorticity thickness
-        dudx,dudy,dudz = der.gradient(u, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
-        dudy_bar = stats.reynolds_average(avg,dudy)
-        domega[i] = du/np.amax(np.abs(dudy_bar))
-
-        # Momentum thickness growth rate
-        dudy_tilde = stats.favre_average(avg,rho,dudy,rho_bar=rho_bar)
-        I = -2./(inp.r_ref*du**3)*rho_bar*R12*dudy_tilde
-        dtheta_rate[i] = stats.integrate_y(I, dy, reader.grid_partition)
+        u2 = stats.favre_average(avg, rho, upp*upp + vpp*vpp + wpp*wpp, rho_bar=rho_bar)
+        uv = stats.favre_average(avg, rho, upp*vpp, rho_bar=rho_bar)
+        b12_vec = uv/u2;
 
         if rank == 0:
-            print("{} \t {} \t {} \t {}".format(reader.time,dtheta[i],domega[i],dtheta_rate[i]))
-        i = i+1; 
+            b12[i] = b12_vec[0,Ny/2,0] 
+            print("{} \t {} \t {}".format(reader.time,b12[i],max(b12_vec[0,:,0])))
+            i += 1 
+            # Save the vector
+            #np.savetxt(filename_prefix+"%04d_b12.dat"%step,np.squeeze(b12_vec),delimiter=' ')
     
     # Write to file 
     if rank==0:
-        array2save = np.empty((Nsteps,3))
+        array2save = np.empty((Nsteps,2))
         array2save[:,0] = time
-        array2save[:,1] = dtheta
-        array2save[:,2] = domega
-        #array2save[:,3] = dtheta_rate
+        array2save[:,1] = b12
+        outputfile = filename_prefix + 'anisotropy.dat'
         np.savetxt(outputfile,array2save,delimiter=' ')
         print("Done writing to {}".format(outputfile))
+

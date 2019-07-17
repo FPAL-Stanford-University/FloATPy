@@ -20,7 +20,7 @@ def get_nnodes(line):
     except Exception as e:
         print("Error getting N nodes for line")
         print("\t{}".format(original))
-        n = None
+        n = 0
     return float(n) 
 
 # Get the time from the cobaltlog 
@@ -50,15 +50,15 @@ def get_cost(fname,verbose=False):
     t1 = get_time(data_raw[-2])
     t2 = get_time(data_raw[-1])
     FMT = '%H:%M:%S'
-    runtime = datetime.strptime(t2,FMT) - datetime.strptime(t1,FMT)
-    if runtime.days < 0:
-        print("Runtime passed midnight,adjusting")
-        run1 = datetime.strptime("23:59:59",FMT) - datetime.strptime(t1,FMT)
-        run2 = datetime.strptime(t2,FMT) - datetime.strptime("00:00:00",FMT)
-        runtime = run1+run2
+    try:
+        runtime = datetime.strptime(t2,FMT) - datetime.strptime(t1,FMT)
+    except:
+       return 0
 
     # Convert to decimal hours
-    hrs = runtime.total_seconds()/360.
+    secs = runtime.total_seconds()
+    hrs = secs/3600.
+    if hrs<0: hrs += 24
 
     cost = hrs*nodes
     if verbose:
@@ -66,6 +66,7 @@ def get_cost(fname,verbose=False):
         print("\t nodes = {}".format(nodes))
         print("\t t1 = {}".format(t1))
         print("\t t2 = {}".format(t2))
+        print("\t hrs = {}".format(hrs))
         print("\t cost = %.2E core-hours"%Decimal(cost))
     
     return cost
@@ -74,15 +75,19 @@ def get_cost(fname,verbose=False):
 if __name__ == '__main__':
     if len(sys.argv)<2:
         print("Returns the cost in node-hrs (core-hrs) for all cobaltlogs")
-        print("Usage: \n\t{} dirname".format(sys.argv[0]))
+        print("Usage: \n\t{} dirname [verbose (True)]".format(sys.argv[0]))
         sys.exit()
+    elif len(sys.argv)==3:
+        verbosity=False
+    else:
+        verbosity = True
         
     dirname = sys.argv[1]
 
     cost = 0;
     for f in os.listdir(dirname):
         if f.endswith(".cobaltlog"):
-           cost += get_cost(dirname+f,verbose=True)
+           cost += get_cost(dirname+f,verbose=verbosity)
     print("Total cost = %.2E core-hours"%Decimal(cost))
            
 

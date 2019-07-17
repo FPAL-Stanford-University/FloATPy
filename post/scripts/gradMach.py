@@ -19,19 +19,18 @@ def grid_res(x,y,z):
     dy = y[0,1,0] - y[0,0,0]
     dz = z[0,0,1] - z[0,0,0]
     return dx,dy,dz
-   
  
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print "Usage:" 
-        print "Computes the momentum thickness and decorrelation lengths" 
+        print "Computes the gradient Mach number Mg = Sl/c" 
         print "  python {} <prefix> [tID_start(default=0)] ".format(sys.argv[0])
         sys.exit()
     start_index = 0;
     if len(sys.argv) > 2:
         start_index = int(sys.argv[2])
     filename_prefix = sys.argv[1]
-    outputfile = filename_prefix + "lengthscales.dat"
+    outputfile = filename_prefix + "gradMach.dat"
     
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -67,15 +66,13 @@ if __name__ == '__main__':
     # Preallocate for means and derivatives
     Nsteps = np.size(tid_list)
     Nx,Ny,Nz = reader.domain_size
+    Mg_center = np.zeros([Nsteps])
     time = np.zeros([Nsteps])
-    dtheta = np.zeros([Nsteps])
-    Lx = np.zeros([Nsteps])
-    Ly = np.zeros([Nsteps])
-    Lz = np.zeros([Nsteps])
-    
+    Lscale = np.zeros([Nsteps])
+
     # Compute stats at each step:
     i = 0
-    print("Time \t lx \t ly \t lz \n")
+    print("Time \t integral L \t Mg center \n")
     for tid in tid_list:
         reader.step = tid
        
@@ -86,65 +83,38 @@ if __name__ == '__main__':
         rbar = stats.reynolds_average(avg, r)
         ubar = stats.reynolds_average(avg, u)
         cbar = stats.reynolds_average(avg, c) 
-        utilde = stats.favre_average(avg,r,u,rho_bar=rbar)
-        
-        # Compute momentum thickness
-        I = rbar*(0.5*du-utilde)*(0.5*du+utilde)/(inp.r_ref*inp.du**2)
-        dtheta[i] = stats.integrate_y(I, dy, reader.grid_partition)
+        ux,uy,uz = der.gradient(u) #
+        S = stats.favre_average(avg, r, uy, rho_bar=rbar) # tilde{dudy}
 
-        # Compute integral lengthscale for u'u'
+        # Compute integral lengthscale and Mgrad. Have to run serially
         if (rank==0):
             up = np.array(u - ubar)
-            thresh = 0.1
-
-            # y integral lengthscale
             R11_mean = np.zeros([Ny])
-            for xi in range(0,Nx,int(Nx/10.)):
-                for zi in range(0,Nz,int(Nz/10.)):
+            for xi in range(0,Nx,int(Nx/5)):
+                for zi in range(0,Nz,int(Nz/5)):
                     uhat = np.fft.fft(up[xi,:,zi])
                     R11hat = uhat*np.conj(uhat)
                     R11 = abs(np.fft.ifft(R11hat))
-                    R11_mean += np.fft.ifftshift(R11)/R11.max()
+                    R11 = np.fft.ifftshift(R11)/R11.max()
+                    R11_mean += R11
             R11_mean /= R11_mean.max()
-            i1 = np.argmin(abs(R11_mean[:Ny/2]-thresh))
-            i2 = np.argmin(abs(R11_mean[Ny/2:]-thresh)) + Ny/2
-            Ly[i] = (y[0,i2,0]-y[0,i1,0])/2.
+            i1 = np.argmin(abs(R11_mean[:Ny/2]-0.1))
+            i2 = np.argmin(abs(R11_mean[Ny/2:]-0.1)) + Ny/2
+            L = (y[0,i2,0]-y[0,i1,0])/2.
             
-            # x integral lengthscale at centerline
-            R11_mean = np.zeros([Nx])
-            for zi in range(0,Nz,int(Nz/10.)):
-                uhat = np.fft.fft(up[:,Ny/2,zi])
-                R11hat = uhat*np.conj(uhat)
-                R11 = abs(np.fft.ifft(R11hat))
-                R11_mean += np.fft.ifftshift(R11)/R11.max()
-            R11_mean /= R11_mean.max()
-            i1 = np.argmin(abs(R11_mean[:Nx/2]-thresh))
-            i2 = np.argmin(abs(R11_mean[Nx/2:]-thresh)) + Nx/2
-            Lx[i] = (x[i2,0,0]-x[i1,0,0])/2.
-            
-            # x integral lengthscale at centerline
-            R11_mean = np.zeros([Nz])
-            for xi in range(0,Nx,int(Nx/10.)):
-                uhat = np.fft.fft(up[xi,Ny/2,:])
-                R11hat = uhat*np.conj(uhat)
-                R11 = abs(np.fft.ifft(R11hat))
-                R11_mean += np.fft.ifftshift(R11)/R11.max()
-            R11_mean /= R11_mean.max()
-            i1 = np.argmin(abs(R11_mean[:Nz/2]-thresh))
-            i2 = np.argmin(abs(R11_mean[Nz/2:]-thresh)) + Nz/2
-            Lz[i] = (z[0,0,i2]-z[0,0,i1])/2.
-            
+            Mg = S*L/cbar
+
             time[i] = reader.time
-            print("{} \t {} \t {} \t {}".format(time[i], Lx[i], Ly[i], Lz[i]))
-        i+=1
+            Lscale[i] = L
+            Mg_center[i] = Mg[:,Ny/2,:];
+            print("{} \t {} \t {}".format(time[i], L, Mg_center[i]))
+            i+=1
 
     # Write to file 
     if rank==0:
-        array2save = np.empty((Nsteps,5))
+        array2save = np.empty((Nsteps,3))
         array2save[:,0] = time
-        array2save[:,1] = dtheta 
-        array2save[:,2] = Lx
-        array2save[:,3] = Ly
-        array2save[:,4] = Lz
+        array2save[:,1] = Lscale 
+        array2save[:,2] = Mg_center
         np.savetxt(outputfile,array2save,delimiter=' ')
         print("Done writing to {}".format(outputfile))

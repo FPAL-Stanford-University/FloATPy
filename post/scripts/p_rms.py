@@ -8,15 +8,9 @@ import floatpy.readers.padeops_reader as por
 import floatpy.readers.parallel_reader as pdr
 import floatpy.utilities.reduction as red
 import statistics as stats
-import get_namelist as nml
-
-def grid_res(x,y,z):
-    dx = x[1,0,0] - x[0,0,0]
-    dy = y[0,1,0] - y[0,0,0]
-    dz = z[0,0,1] - z[0,0,0]
-    return dx,dy,dz
 
 if __name__ == '__main__':
+   
     if len(sys.argv) < 2:
         print "Usage: "
         print "  python {} <prefix> [tID_start(default=0)] ".format(sys.argv[0])
@@ -25,7 +19,7 @@ if __name__ == '__main__':
     start_index = 0
     if len(sys.argv) > 2:
         start_index = int(sys.argv[2])
-    outputfile  = filename_prefix + "Mt_growth.dat"
+    outputfile  = filename_prefix + "prms_integrated.dat"
 
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -45,53 +39,36 @@ if __name__ == '__main__':
     avg = red.Reduction(reader.grid_partition, periodic_dimensions)
     steps = sorted(reader.steps)
 
+    # Set up the derivative object
     x, y, z = reader.readCoordinates()
-    Nx,Ny,Nz = reader.domain_size
-    dx,dy,dz = grid_res(x,y,z)
-    
-    # setup the inputs object
-    dirname = os.path.dirname(filename_prefix)
-    if rank==0: verbosity=True
-    else: verbosity=False
-    inp = nml.inputs(dirname,verbose=verbosity)
-    du = inp.du
-    if rank==0: print("\tdu = {}".format(inp.du))
+    dx = x[1,0,0] - x[0,0,0]
+    dy = y[0,1,0] - y[0,0,0]
+    dz = z[0,0,1] - z[0,0,0]
 
     # Compute stats at each step:
-    Nsteps = np.size(steps[start_index:])-1
+    Nsteps = np.size(steps[start_index:])
     time = np.empty(Nsteps)
-    Mt_max = np.empty(Nsteps)   # Max Mt across all y planes
-    Mt_center = np.empty(Nsteps)# Mt at center plane Ny/2
-    if rank == 0: print("Time \t Max Mt \t Center Mt") 
-    
+    prms = np.empty(Nsteps)
     i = 0
-    for step in steps[start_index:-1]:
+    if rank == 0:
+        print("Time \t p_rms integrated") 
+    for step in steps[start_index:]:
         reader.step = step
         time[i] = reader.time
-
-        # TKE
-        rho, u, v, w, T = reader.readData( ('rho', 'u', 'v', 'w','T') )
-        tke = stats.TKE(rho, u, v, w, reader.grid_partition, 
-                avg, dx, dy, dz, volume_integrated=False)
+        r, p = reader.readData( ('rho', 'p') )
+        rbar = stats.reynolds_average(avg, r)
+        ptilde = stats.favre_average(avg,r, p, rho_bar=rbar)
+        ppp = p - ptilde;
+        prms = stats.integrate_y(abs(prms), dy, reader.grid_partition)
         
-        # Speed of sound, xz average
-        c3D = np.sqrt(inp.gam*T)
-        c = stats.reynolds_average(avg, c3D)
-
-        # Turbulent Mach number
-        Mt = np.squeeze(tke**0.5/c)
-        Mt_max[i] = np.amax(Mt);
-        Mt_center[i] = Mt[Ny/2]
-
         if rank == 0:
-            print("{} \t {} \t {}".format(reader.time,Mt_max[i],Mt_center[i]))
+            print("{} \t {}".format(reader.time,prms[i]))
         i = i+1
 
     # Write to file 
     if rank==0:
-        array2save = np.empty((Nsteps,3))
+        array2save = np.empty((Nsteps,2))
         array2save[:,0] = time
-        array2save[:,1] = Mt_center
-        array2save[:,2] = Mt_max
+        array2save[:,1] = prms
         np.savetxt(outputfile,array2save,delimiter=' ')
         print("Done writing to {}".format(outputfile))
