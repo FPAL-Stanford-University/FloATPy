@@ -1,4 +1,4 @@
 #! /bin/bash
 source ~/floatpy_env/bin/activate
-#python hh_decomp.py /projects/ShockInducedMix/ShearLayerData/production/Mc12/rr1/256x384x128/with_LAD/shearlayer_ 25
-python growth.py /projects/ShockInducedMix/ShearLayerData/production/Mc12/rr1/1024x1448x512/shearlayer_ 
+python hh_decomp_serial.py /projects/ShockInducedMix/ShearLayerData/production/Mc12/rr1/256x384x128/with_LAD/shearlayer_ 25
+#python growth.py /projects/ShockInducedMix/ShearLayerData/production/Mc12/rr1/1024x1448x512/shearlayer_ 

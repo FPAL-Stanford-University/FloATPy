@@ -1,0 +1,110 @@
+~/PadeOps /gpfs/mira-home/kmatsuno/FloATPy/post/scripts
+/gpfs/mira-home/kmatsuno/FloATPy/post/scripts
+~/PadeOps /gpfs/mira-home/kmatsuno
+/gpfs/mira-home/kmatsuno
+ 
+ ================ Optimizing t3d ================ 
+Processor decomposition:     1 x    1 x   12. Time =   1.307E-001 seconds
+ >>>> Found a better processor decomposition 1 x 1 x 12 with time   1.307E-001 seconds
+Processor decomposition:     1 x    2 x    6. Time =   1.378E-001 seconds
+Processor decomposition:     1 x    3 x    4. Time =   1.375E-001 seconds
+Processor decomposition:     1 x    4 x    3. Time =   1.283E-001 seconds
+ >>>> Found a better processor decomposition 1 x 4 x 3 with time   1.283E-001 seconds
+Processor decomposition:     1 x    6 x    2. Time =   1.361E-001 seconds
+Processor decomposition:     1 x   12 x    1. Time =   1.289E-001 seconds
+Processor decomposition:     2 x    1 x    6. Time =   1.266E-001 seconds
+ >>>> Found a better processor decomposition 2 x 1 x 6 with time   1.266E-001 seconds
+Processor decomposition:     2 x    2 x    3. Time =   1.248E-001 seconds
+ >>>> Found a better processor decomposition 2 x 2 x 3 with time   1.248E-001 seconds
+Processor decomposition:     2 x    3 x    2. Time =   1.341E-001 seconds
+Processor decomposition:     2 x    6 x    1. Time =   1.292E-001 seconds
+Processor decomposition:     3 x    1 x    4. Time =   1.346E-001 seconds
+Processor decomposition:     3 x    2 x    2. Time =   1.345E-001 seconds
+Processor decomposition:     3 x    4 x    1. Time =   1.338E-001 seconds
+Processor decomposition:     4 x    1 x    3. Time =   1.236E-001 seconds
+ >>>> Found a better processor decomposition 4 x 1 x 3 with time   1.236E-001 seconds
+Processor decomposition:     4 x    3 x    1. Time =   1.254E-001 seconds
+Processor decomposition:     6 x    1 x    2. Time =   1.286E-001 seconds
+Processor decomposition:     6 x    2 x    1. Time =   1.299E-001 seconds
+Processor decomposition:    12 x    1 x    1. Time =   1.223E-001 seconds
+ >>>> Found a better processor decomposition 12 x 1 x 1 with time   1.223E-001 seconds
+>>>> Using 3D processor decomposition 12x1x1
+>>>> Total decompositions tried = 18
+>>>> Total feasible decompositions = 18
+ ================================================ 
+ 
+Note: Missing D# multiplier for line:
+	Re      = 640         ! Reynolds number rho_Ref*dU*L/mu_ref
+	Assuming multiplier is 1.
+
+Params for this run:
+	Mc = 1.2
+	Re = 640.0
+	rr = 1.0
+	du = 2.83971829589
+Setting up fft...
+ 
+ ================ Optimizing t3d ================ 
+Processor decomposition:     1 x    1 x   12. Time =   1.331E-001 seconds
+ >>>> Found a better processor decomposition 1 x 1 x 12 with time   1.331E-001 seconds
+Processor decomposition:     1 x    2 x    6. Time =   1.356E-001 seconds
+Processor decomposition:     1 x    3 x    4. Time =   1.308E-001 seconds
+ >>>> Found a better processor decomposition 1 x 3 x 4 with time   1.308E-001 seconds
+Processor decomposition:     1 x    4 x    3. Time =   1.301E-001 seconds
+ >>>> Found a better processor decomposition 1 x 4 x 3 with time   1.301E-001 seconds
+Processor decomposition:     1 x    6 x    2. Time =   1.309E-001 seconds
+Processor decomposition:     1 x   12 x    1. Time =   1.266E-001 seconds
+ >>>> Found a better processor decomposition 1 x 12 x 1 with time   1.266E-001 seconds
+Processor decomposition:     2 x    1 x    6. Time =   1.322E-001 seconds
+Processor decomposition:     2 x    2 x    3. Time =   1.280E-001 seconds
+Processor decomposition:     2 x    3 x    2. Time =   1.351E-001 seconds
+Processor decomposition:     2 x    6 x    1. Time =   1.312E-001 seconds
+Processor decomposition:     3 x    1 x    4. Time =   1.352E-001 seconds
+Processor decomposition:     3 x    2 x    2. Time =   1.354E-001 seconds
+Processor decomposition:     3 x    4 x    1. Time =   1.402E-001 seconds
+Processor decomposition:     4 x    1 x    3. Time =   1.264E-001 seconds
+ >>>> Found a better processor decomposition 4 x 1 x 3 with time   1.264E-001 seconds
+Processor decomposition:     4 x    3 x    1. Time =   1.270E-001 seconds
+Processor decomposition:     6 x    1 x    2. Time =   1.343E-001 seconds
+Processor decomposition:     6 x    2 x    1. Time =   1.343E-001 seconds
+Processor decomposition:    12 x    1 x    1. Time =   1.379E-001 seconds
+>>>> Using 3D processor decomposition 4x1x3
+>>>> Total decompositions tried = 18
+>>>> Total feasible decompositions = 18
+ ================================================ 
+ 
+[PROCESSOR 8] >>> Settings: Domain size is 256 X 384 X 128.  Chunk size is 64 X 384 X 42
+[PROCESSOR 11] >>> Settings: Domain size is 256 X 384 X 128.  Chunk size is 64 X 384 X 42
+[PROCESSOR 0] >>> Settings: Domain size is 256 X 384 X 128.  Chunk size is 64 X 384 X 43
+[PROCESSOR 1] >>> Settings: Domain size is 256 X 384 X 128.  Chunk size is 64 X 384 X 43
+[PROCESSOR 2] >>> Settings: Domain size is 256 X 384 X 128.  Chunk size is 64 X 384 X 43
+[PROCESSOR 3] >>> Settings: Domain size is 256 X 384 X 128.  Chunk size is 64 X 384 X 43
+[PROCESSOR 5] >>> Settings: Domain size is 256 X 384 X 128.  Chunk size is 64 X 384 X 43
+[PROCESSOR 6] >>> Settings: Domain size is 256 X 384 X 128.  Chunk size is 64 X 384 X 43
+[PROCESSOR 7] >>> Settings: Domain size is 256 X 384 X 128.  Chunk size is 64 X 384 X 43
+[PROCESSOR 10] >>> Settings: Domain size is 256 X 384 X 128.  Chunk size is 64 X 384 X 42
+[PROCESSOR 9] >>> Settings: Domain size is 256 X 384 X 128.  Chunk size is 64 X 384 X 42
+[PROCESSOR 4] >>> Settings: Domain size is 256 X 384 X 128.  Chunk size is 64 X 384 X 43
+Computing fluctuations...
+[ 64 384  43]
+[256 192  21]
+[ 64 384  43]
+[ 64 128 128]
+[64  0  0]
+[127 127 127]
+Computing fluctuations fft...
+Computing ddy vhat ...
+Computing divergence fft...
+(64, 384, 43)
+(64, 384, 128)
+(64, 384, 43)
+(64, 384, 43)
+(64, 384, 43)
+
+===================================================================================
+=   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES
+=   PID 80021 RUNNING AT cc060.cooley
+=   EXIT CODE: 1
+=   CLEANING UP REMAINING PROCESSES
+=   YOU CAN IGNORE THE BELOW CLEANUP MESSAGES
+===================================================================================

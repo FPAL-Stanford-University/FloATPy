@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     # Get derivative ddy{vhat}, zero the oddball
     if rank==1: print('Computing ddy vhat ...')
-    ddy_vhat_hat = ffto._fftY(vhat)
+    ddy_vhat_hat = 1j*ky*ffto._fftY(vhat)
     if rank_ny:
         ddy_vhat_hat[:,Ny/2,:] = 0
     ddy_vhat = ffto._ifftY(ddy_vhat_hat)
@@ -157,9 +157,9 @@ if __name__ == '__main__':
     
     # 3. Coefficients for homogenous exponetial soln
     # Zero coefficients at zero wavenumber kx=kz=0
-    if rank_0y:
-        phiL  = dphihat_L[:,0,:];
-        dphiL = dphihat_L[:,0,:];
+    #if rank_0y:
+    phiL  = dphihat_L[:,0,:];
+    dphiL = dphihat_L[:,0,:];
     kmat = (kx[:,0,:]**2 + kz[:,0,:]**2)**0.5;
     if rank_0x and rank_0z: kmat[0,0] = 1 #to suppress warning
     tmp = 0.5/kmat

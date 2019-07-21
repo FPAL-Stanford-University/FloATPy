@@ -77,32 +77,6 @@ if __name__ == '__main__':
     ky = np.tile(ffto.ky[np.newaxis,:,np.newaxis],[szx,1,szz])
     kz = np.tile(ffto.kz[np.newaxis,np.newaxis,:],[szx,szy,1])
 
-    if rank==1:
-        print(np.shape(kx))
-        print(np.shape(ky))
-        print(np.shape(kz))
-
-        print(ffto.chunk_x_ind.min(),ffto.chunk_x_ind.max())
-        print(ffto.chunk_y_ind.min(),ffto.chunk_y_ind.max())
-        print(ffto.chunk_z_ind.min(),ffto.chunk_z_ind.max())
-        
-        print(settings.chunk_z_lo)
-        print(settings.chunk_z_hi)
-
-    # Which ranks have idx=0, N/2?
-    rank_0x = 0 
-    rank_0y = 0 
-    rank_0z = 0 
-    rank_nx = 0 
-    rank_ny = 0 
-    rank_nz = 0 
-    if 0 in kx: rank_0x = rank
-    if 0 in ky: rank_0y = rank
-    if 0 in kz: rank_0z = rank
-    if 2*np.pi/ffto.LX in kx: rank_nx = rank
-    if 2*np.pi/ffto.LY in ky: rank_ny = rank
-    if 2*np.pi/ffto.LZ in kz: rank_nz = rank
-
     # vel fluct
     if rank==0: print('Computing fluctuations...')
     reader.step = tid_list[0]
@@ -112,69 +86,58 @@ if __name__ == '__main__':
     u -= utilde
 
     # Get perturbations fft in x,z, zero the means
-    if rank==1: print('Computing fluctuations fft...')
+    if rank==0: print('Computing fluctuations fft...')
     uhat = ffto._fftZ(ffto._fftX(u))
     vhat = ffto._fftZ(ffto._fftX(v))
     what = ffto._fftZ(ffto._fftX(w))
-    if rank_0x:
-        uhat[0,:,:] = 0
-        vhat[0,:,:] = 0
-        what[0,:,:] = 0
-    if rank_0z:
-        uhat[:,:,0] = 0
-        vhat[:,:,0] = 0
-        what[:,:,0] = 0
+    uhat[0,:,:] = 0
+    vhat[0,:,:] = 0
+    what[0,:,:] = 0
+    uhat[:,:,0] = 0
+    vhat[:,:,0] = 0
+    what[:,:,0] = 0
 
     # Get derivative ddy{vhat}, zero the oddball
-    if rank==1: print('Computing ddy vhat ...')
-    ddy_vhat_hat = ffto._fftY(vhat)
-    if rank_ny:
-        ddy_vhat_hat[:,Ny/2,:] = 0
+    if rank==0: print('Computing ddy vhat ...')
+    ddy_vhat_hat = 1j*ky*ffto._fftY(vhat)
+    ddy_vhat_hat[:,Ny/2,:] = 0
     ddy_vhat = ffto._ifftY(ddy_vhat_hat)
 
     # 1. Get divergence RHS, zero oddballs
-    if rank==1: 
-        print('Computing divergence fft...')
-        print(np.shape(kx))
-        print(np.shape(kz))
-        print(np.shape(uhat))
-        print(np.shape(what))
-        print(np.shape(ddy_vhat))
+    print('Computing divergence fft...')
     fhat = 1j*(kx*uhat + kz*what) + ddy_vhat;
-    if rank_nx: fhat[Nx/2,:,:] = 0
-    if rank_nz: fhat[:,:,Nz/2] = 0
+    fhat[Nx/2,:,:] = 0
+    fhat[:,:,Nz/2] = 0
     fhathat = ffto._fftY(fhat);
 
     # 2. Solve for particular soln and derivative, phi_L, dphi_L, zero means
     k2 = (kx**2 + ky**2 + kz**2)
-    if rank_0x and rank_0y and rank_0z: k2[0,0,0] = 1 #suppress warning
+    k2[0,0,0] = 1 #suppress warning
     phihathat  = -fhathat/k2
     dphihathat = 1j*ky*phihathat
-    if rank_0x and rank_0y and rank_0z: 
-        phihathat[0,0,0]  = 0
-        dphihathat[0,0,0] = 0
-    if rank_0x: dphihathat[0,:,:] = 0
-    if rank_0z: dphihathat[:,:,0] = 0
-    if rank==1: print('Computing scalar phi fft...')
+    phihathat[0,0,0]  = 0
+    dphihathat[0,0,0] = 0
+    dphihathat[0,:,:] = 0
+    dphihathat[:,:,0] = 0
+    print('Computing scalar phi fft...')
     phihat_L  = ffto._ifftY(phihathat);
     dphihat_L = ffto._ifftY(dphihathat);
     
     # 3. Coefficients for homogenous exponetial soln
     # Zero coefficients at zero wavenumber kx=kz=0
-    if rank_0y:
-        phiL  = dphihat_L[:,0,:];
-        dphiL = dphihat_L[:,0,:];
+    phiL  = dphihat_L[:,0,:];
+    dphiL = dphihat_L[:,0,:];
     kmat = (kx[:,0,:]**2 + kz[:,0,:]**2)**0.5;
-    if rank_0x and rank_0z: kmat[0,0] = 1 #to suppress warning
+    kmat[0,0] = 1 #to suppress warning
     tmp = 0.5/kmat
-    if rank_0x and rank_0z: tmp[0,0] = 0;
+    tmp[0,0] = 0;
     a_plus = -tmp*(kmat*phiL + dphiL);
     a_minus = tmp*(kmat*phiL - dphiL);
     aplus  = np.tile(a_plus[:,np.newaxis,:], [1,szy,1])
     aminus = np.tile(a_minus[:,np.newaxis,:],[1,szy,1])
     
     # 4. Make total solution for phi
-    if rank==1: print('Computing scalar phi ...')
+    print('Computing scalar phi ...')
     kmat   = (kx**2 + kz**2)**0.5 
     phihat = phihat_L 
     phihat += aplus*np.exp(kmat*(y-ffto.LY)) 
@@ -183,17 +146,17 @@ if __name__ == '__main__':
     phi = ffto._ifftZ(tmp)
 
     # 5. Get velocities
-    if rank==0: print('Computing ud, us...')
+    print('Computing ud, us...')
     dphihat = 1j*kx*ffto._fftX(phi)
-    if rank_nx: dphihat[Nx/2,:,:] = 0
+    dphihat[Nx/2,:,:] = 0
     ud = np.real(ffto._ifftX(dphihat))
     
     dphihat = 1j*ky*ffto._fftY(phi)
-    if rank_ny: dphihat[:,Ny/2,:] = 0
+    dphihat[:,Ny/2,:] = 0
     vd = np.real(ffto._ifftY(dphihat))
 
     dphihat = 1j*kz*ffto._fftZ(phi)
-    if rank_nz: dphihat[:,:,Nz/2] = 0
+    dphihat[:,:,Nz/2] = 0
     wd = np.real(ffto._ifftZ(dphihat))
 
     # Normalize

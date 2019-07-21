@@ -1,0 +1,48 @@
+Traceback (most recent call last):
+  File "hh_decomp.py", line 139, in <module>
+    fhat = 1j*(kx*uhat + kz*what) + ddy_vhat;
+ValueError: operands could not be broadcast together with shapes (64,384,128) (64,384,43) 
+Traceback (most recent call last):
+  File "hh_decomp.py", line 139, in <module>
+    fhat = 1j*(kx*uhat + kz*what) + ddy_vhat;
+ValueError: operands could not be broadcast together with shapes (64,384,128) (64,384,43) 
+Traceback (most recent call last):
+  File "hh_decomp.py", line 139, in <module>
+    fhat = 1j*(kx*uhat + kz*what) + ddy_vhat;
+ValueError: operands could not be broadcast together with shapes (64,384,128) (64,384,43) 
+Traceback (most recent call last):
+  File "hh_decomp.py", line 139, in <module>
+Traceback (most recent call last):
+  File "hh_decomp.py", line 139, in <module>
+    fhat = 1j*(kx*uhat + kz*what) + ddy_vhat;
+    fhat = 1j*(kx*uhat + kz*what) + ddy_vhat;
+ValueError: operands could not be broadcast together with shapes (64,384,128) (64,384,43) 
+ValueError: operands could not be broadcast together with shapes (64,384,128) (64,384,43) 
+Traceback (most recent call last):
+  File "hh_decomp.py", line 139, in <module>
+    fhat = 1j*(kx*uhat + kz*what) + ddy_vhat;
+ValueError: operands could not be broadcast together with shapes (64,384,128) (64,384,43) 
+Traceback (most recent call last):
+  File "hh_decomp.py", line 139, in <module>
+    fhat = 1j*(kx*uhat + kz*what) + ddy_vhat;
+ValueError: operands could not be broadcast together with shapes (64,384,128) (64,384,42) 
+Traceback (most recent call last):
+  File "hh_decomp.py", line 139, in <module>
+Traceback (most recent call last):
+  File "hh_decomp.py", line 139, in <module>
+    fhat = 1j*(kx*uhat + kz*what) + ddy_vhat;
+    fhat = 1j*(kx*uhat + kz*what) + ddy_vhat;
+Traceback (most recent call last):
+  File "hh_decomp.py", line 139, in <module>
+Traceback (most recent call last):
+  File "hh_decomp.py", line 139, in <module>
+ValueError: operands could not be broadcast together with shapes (64,384,128) (64,384,42) 
+ValueError: operands could not be broadcast together with shapes (64,384,128) (64,384,42) 
+    fhat = 1j*(kx*uhat + kz*what) + ddy_vhat;
+    fhat = 1j*(kx*uhat + kz*what) + ddy_vhat;
+ValueError: operands could not be broadcast together with shapes (64,384,128) (64,384,43) 
+ValueError: operands could not be broadcast together with shapes (64,384,128) (64,384,43) 
+Traceback (most recent call last):
+  File "hh_decomp.py", line 139, in <module>
+    fhat = 1j*(kx*uhat + kz*what) + ddy_vhat;
+ValueError: operands could not be broadcast together with shapes (64,384,128) (64,384,42) 
