@@ -1,4 +1,10 @@
-#! /bin/bash
+#!/bin/bash
 source ~/floatpy_env/bin/activate
-python hh_decomp_serial.py /projects/ShockInducedMix/ShearLayerData/production/Mc12/rr1/256x384x128/with_LAD/shearlayer_ 25
-#python growth.py /projects/ShockInducedMix/ShearLayerData/production/Mc12/rr1/1024x1448x512/shearlayer_ 
+
+dir="/projects/ShockInducedMix/ShearLayerData/production/Mc20/rr1/1024x1448x512"
+tID_list="[4,5,6,7,8]"
+#python hh_decomp_serial.py /projects/ShockInducedMix/ShearLayerData/production/Mc12/rr1/256x384x128/with_LAD/shearlayer_ 25
+#python growth.py ${dir}/shearlayer_ 
+python Rij.py ${dir}/shearlayer_ ${tID_list} 
+python utilde.py ${dir}/shearlayer_ ${tID_list} 
+python integral_lengthscale_vv.py ${dir}/shearlayer_ ${tID_list} 

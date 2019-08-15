@@ -1,0 +1,5 @@
+Jobid: 1891360
+qsub -I -n 1 -t 30 -A ATPESC2019 -q R.ATPESC2019
+Tue Aug 06 00:07:29 2019 +0000 (UTC) submitted with cwd set to: /gpfs/mira-home/kmatsuno/FloATPy/post
+jobid 1891360 submitted from terminal /dev/pts/5
+Tue Aug 06 00:09:04 2019 +0000 (UTC) Info: user delete requested; removing job from the queue

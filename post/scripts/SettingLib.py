@@ -9,11 +9,12 @@ from floatpy.filters.filter import Filter
 # Specifies all the features of domain, mesh, time step, etc. #
 ###############################################################
 class NumSetting:
-    def __init__(self, NX=16, NY=16, NZ=20,
-                 XMIN=0.0, XMAX=2*numpy.pi,
-                 YMIN=0.0, YMAX=2*numpy.pi,
-                 ZMIN=-0.5,ZMAX=0.5,
-                 order=10):
+    def __init__(self, comm, grid_partition,
+                NX=16, NY=16, NZ=20,
+                XMIN=0.0, XMAX=2*numpy.pi,
+                YMIN=0.0, YMAX=2*numpy.pi,
+                ZMIN=-0.5,ZMAX=0.5,
+                order=10):
         # Mesh configurations
         self.XMIN, self.XMAX =               XMIN, XMAX # scanning direction
         self.YMIN, self.YMAX =               YMIN, YMAX # keep this empty for 2D simulation
@@ -33,11 +34,11 @@ class NumSetting:
         
         # PadeOpts configurations (copied from mpitest_derivatives_compact.py)
         self.omega = 1.
-        self.comm = MPI.COMM_WORLD
+        self.comm = comm#MPI.COMM_WORLD
         self.fcomm = self.comm.py2f()
         self.periodic = numpy.array([True, True, True])
         self.order = (order, order, order)
-        self.grid_partition = t3dmod.t3d(self.fcomm, self.NX, self.NY, self.NZ, self.periodic)
+        self.grid_partition = grid_partition#t3dmod.t3d(self.fcomm, self.NX, self.NY, self.NZ, self.periodic)
         
         # Numerical settings for 3d chunk
         self.chunk_3d_size = numpy.zeros(3, dtype=numpy.int32, order='F')

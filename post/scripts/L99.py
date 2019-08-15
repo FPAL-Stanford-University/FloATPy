@@ -64,7 +64,7 @@ if __name__ == '__main__':
     du = inp.du
     if rank==0: print("\tdu = {}".format(inp.du))
     utop = inp.du/2.*0.99# this is wrong, ubot is neg
-    ubot = inp.du/2.*0.01
+    ubot = -inp.du/2.*0.99
 
     # Preallocate for means and derivatives
     Nsteps = np.size(tid_list)

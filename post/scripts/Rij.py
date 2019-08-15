@@ -26,8 +26,7 @@ if __name__ == '__main__':
     filename_prefix = sys.argv[1]
     start_index = 0
     if len(sys.argv) > 2:
-        start_index = int(sys.argv[2])
-    outputfile  = filename_prefix + "growth.dat"
+        tID_list = map(int, sys.argv[2].strip('[]').split(',')) 
     
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -48,6 +47,7 @@ if __name__ == '__main__':
     steps = sorted(reader.steps)
 
     # Set up the derivative object
+    Nx,Ny,Nz = reader.domain_size
     x, y, z = reader.readCoordinates()
     dx,dy,dz = grid_res(x,y,z)
     der = cd.CompactDerivative(reader.grid_partition, 
@@ -62,51 +62,34 @@ if __name__ == '__main__':
     if rank==0: print("du = {}".format(inp.du))
 
     # Compute stats at each step:
-    Nsteps = np.size(steps[start_index:])-1
-    time   = np.empty(Nsteps)
-    dtheta = np.empty(Nsteps)
-    domega = np.empty(Nsteps)
-    dtheta_rate = np.empty(Nsteps)
-    i = 0
-    if rank == 0:
-        print("Time \t dtheta \t dtheta_rate")
-    for step in steps[start_index:-1]:
+
+    recvbuf = None
+    for step in tID_list: 
         reader.step = step
-        time[i] = reader.time
         
         # density and streamwise vel, means
-        rho, u, v = reader.readData( ('rho', 'u', 'v') )
-        rho_bar = stats.reynolds_average(avg,rho)
-        utilde = stats.favre_average(avg,rho,u,rho_bar=rho_bar)
-        vtilde = stats.favre_average(avg,rho,v,rho_bar=rho_bar)
+        rho, u, vpp, wpp = reader.readData( ('rho', 'u', 'v','w') )
+        rbar = stats.reynolds_average(avg,rho)
+        utilde = stats.favre_average(avg,rho,u,rho_bar=rbar)
         upp = u - utilde
-        vpp = v - vtilde
-        R12 = stats.favre_average(avg,rho,upp*vpp,rho_bar=rho_bar)
+       
+        Rij = np.zeros([np.shape(u)[1],6],dtype='f')
+        Rij[:,0] = np.squeeze(stats.favre_average(avg,rho,upp*upp,rho_bar=rbar))
+        Rij[:,1] = np.squeeze(stats.favre_average(avg,rho,upp*vpp,rho_bar=rbar))
+        Rij[:,2] = np.squeeze(stats.favre_average(avg,rho,upp*wpp,rho_bar=rbar))
+        Rij[:,3] = np.squeeze(stats.favre_average(avg,rho,vpp*vpp,rho_bar=rbar))
+        Rij[:,4] = np.squeeze(stats.favre_average(avg,rho,vpp*wpp,rho_bar=rbar))
+        Rij[:,5] = np.squeeze(stats.favre_average(avg,rho,wpp*wpp,rho_bar=rbar))
 
-        # Compute momentum thickness
-        I = rho_bar*(0.5*du-utilde)*(0.5*du+utilde)/(inp.r_ref*inp.du**2)
-        dtheta[i] = stats.integrate_y(I, dy, reader.grid_partition)
-
-        # vorticity thickness
-        dudx,dudy,dudz = der.gradient(u, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
-        dudy_bar = stats.reynolds_average(avg,dudy)
-        domega[i] = du/np.amax(np.abs(dudy_bar))
-
-        # Momentum thickness growth rate
-        dudy_tilde = stats.favre_average(avg,rho,dudy,rho_bar=rho_bar)
-        I = -2./(inp.r_ref*du**3)*rho_bar*R12*dudy_tilde
-        dtheta_rate[i] = stats.integrate_y(I, dy, reader.grid_partition)
-
-        if rank == 0:
-            print("{} \t {} \t {} \t {}".format(reader.time,dtheta[i],domega[i],dtheta_rate[i]))
-        i = i+1; 
-    
-    # Write to file 
-    if rank==0:
-        array2save = np.empty((Nsteps,3))
-        array2save[:,0] = time
-        array2save[:,1] = dtheta
-        array2save[:,2] = dtheta_rate
-        #array2save[:,3] = dtheta_rate
-        np.savetxt(outputfile,array2save,delimiter=' ')
-        print("Done writing to {}".format(outputfile))
+        #recvbuf = comm.gather(Rij, root=0)
+        if rank==0:
+            #recvbuf = np.empty([Ny,6], dtype='f')
+            #comm.Gather(np.float32(Rij), recvbuf, root=0)
+            #print(np.shape(recvbuf))
+            #recvbuf = np.array(recvbuf)
+            #print(recvbuf[0,:,1])
+            #print(recvbuf[1,:,1])
+            recvbuf = Rij
+            outputfile = filename_prefix + 'Rij_%04d.dat'%step
+            np.savetxt(outputfile,recvbuf,delimiter=' ')
+            print("{}".format(outputfile))

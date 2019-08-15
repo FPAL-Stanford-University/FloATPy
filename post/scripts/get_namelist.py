@@ -5,7 +5,7 @@ import os
 # A class for accessing vars given a namelist
 class inputs:
     def __init__(self,dirname,verbose=False):
-        self.Mc,self.Re,self.rr = get_namelist(dirname,verbose)
+        self.Mc,self.Re,self.rr = read_namelist(dirname,verbose)
         
         gam = 1.4
         p_ref = 1.
@@ -24,6 +24,9 @@ class inputs:
         self.r_ref = r_ref 
         self.mu_ref = mu_ref
 
+    def grid_params(self,dirname,verbose=False):
+        return read_grid_params(dirname,verbose)
+    
     def dimensionalize(this,rho_ref,p_ref,T_ref,mu_ref,Rgas,verbose=True):
         Rgas1 = (1.+self.rr)/2.			
         Rgas2 = (1.+self.rr)/(2.*rr) 
@@ -56,7 +59,7 @@ def get_param(line,verbose=False):
 
 
 # Gets Mc, rr, Re from namelist
-def get_namelist(dirname,verbose):
+def read_namelist(dirname,verbose):
     fname = dirname+"/input.dat"
     with open('{}'.format(fname),'r') as file:
         data_raw = file.read().splitlines()
@@ -74,9 +77,26 @@ def get_namelist(dirname,verbose):
         print("\trr = {}".format(rr))
     return Mc,Re,rr
 
+# Gets Mc, rr, Re from namelist
+def read_grid_params(dirname,verbose):
+    fname = dirname+"/input.dat"
+    with open('{}'.format(fname),'r') as file:
+        data_raw = file.read().splitlines()
 
+    # What lines to get
+    for line in data_raw:
+        if   'nx ' in line: Nx = get_param(line,verbose=False)
+        elif 'ny ' in line: Ny = get_param(line,verbose=False)
+        elif 'nz ' in line: Nz = get_param(line,verbose=False)
+        elif 'Lx ' in line: Lx = get_param(line,verbose=False)
+        elif 'Ly ' in line: Ly = get_param(line,verbose=False)
+        elif 'Lz ' in line: Lz = get_param(line,verbose=False)
 
-        
+    if verbose:
+        print("Params for this grid:")
+        print("\tN = {}x{}x{}".format(Nx,Ny,Nz))
+        print("\tL = {}x{}x{}".format(Lx,Ly,Lz))
+    return Nx,Ny,Nz,Lx,Ly,Lz
 
 if __name__ == '__main__':
     if len(sys.argv)<2:
@@ -85,6 +105,7 @@ if __name__ == '__main__':
         
     dirname = sys.argv[1]
     inp = inputs(dirname,verbose=True) 
+    read_grid_params(dirname,verbose=True) 
 
 
 

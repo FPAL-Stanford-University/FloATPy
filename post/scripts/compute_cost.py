@@ -37,7 +37,6 @@ def get_time(line):
     return time  
 
 
-# Gets Mc, rr, Re from namelist
 def get_cost(fname,verbose=False):
     with open('{}'.format(fname),'r') as file:
         data_raw = file.read().splitlines()
@@ -88,7 +87,8 @@ if __name__ == '__main__':
     for f in os.listdir(dirname):
         if f.endswith(".cobaltlog"):
            cost += get_cost(dirname+f,verbose=verbosity)
-    print("Total cost = %.2E core-hours"%Decimal(cost))
+    print("Total cost = %.2E node-hours"%Decimal(cost))
+    print("Total cost = %.2E core-hours"%Decimal(cost*16))
            
 
 
