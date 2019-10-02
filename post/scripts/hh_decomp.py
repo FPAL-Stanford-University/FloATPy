@@ -29,7 +29,7 @@ if __name__ == '__main__':
         sys.exit()
     filename_prefix = sys.argv[1]
     tid_list = map(int, sys.argv[2].strip('[]').split(',')) 
-    outputfile  = filename_prefix + "enstrophy_spectrum.dat"
+    outputfile  = filename_prefix + "hhdecomp.dat"
     
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -66,11 +66,12 @@ if __name__ == '__main__':
     # Setup the fft object
     if rank==0: print('Setting up fft...')
     Nx,Ny,Nz = reader.domain_size
-    settings = NumSetting( NX=Nx, NY=Ny, NZ=Nz,
-                 XMIN=x[0,0,0], XMAX=x[-1,0,0]+dx,
-                 YMIN=y[0,0,0], YMAX=y[0,-1,0]+dy,
-                 ZMIN=z[0,0,0], ZMAX=z[0,0,-1]+dz,
-                 order=10)
+    settings = NumSetting( comm, reader.grid_partition, 
+             NX=Nx, NY=Ny, NZ=Nz,
+             XMIN=x[0,0,0], XMAX=x[-1,0,0]+dx,
+             YMIN=y[0,0,0], YMAX=y[0,-1,0]+dy,
+             ZMIN=z[0,0,0], ZMAX=z[0,0,-1]+dz,
+             order=10)
     ffto = PoissonSol(settings)
     szx, szy, szz = ffto.size_3d 
     kx = np.tile(ffto.kx[:,np.newaxis,np.newaxis],[1,szy,szz])
@@ -78,13 +79,27 @@ if __name__ == '__main__':
     kz = np.tile(ffto.kz[np.newaxis,np.newaxis,:],[szx,szy,1])
 
     if rank==1:
+        print('Size of k:')
+        print(np.shape(ffto.kx))
+        print(np.shape(ffto.ky))
+        print(np.shape(ffto.kz))
+        print('Settings chunk 3d,x,y,z size')
         print(settings.chunk_3d_size)
         print(settings.chunk_x_size)
         print(settings.chunk_y_size)
         print(settings.chunk_z_size)
+        print('Grid partition z size:')
+        chunk_z_size = np.zeros(3, dtype=np.int32, order='F')
+        reader.grid_partition.get_szz(chunk_z_size)
+        print(chunk_z_size)
         print(settings.chunk_z_lo)
         print(settings.chunk_z_hi)
-
+    
+    xmin = settings.x[0]; xmax = settings.x[-1]
+    ymin = settings.y[0]; ymax = settings.y[-1]
+    zmin = settings.z[0]; zmax = settings.z[-1]
+    print("rank {} xyz = [{},{},{}] [{},{},{}]".format(rank,xmin,ymin,zmin,xmax,ymax,zmax))
+    
     # Which ranks have idx=0, N/2?
     rank_0x = 0 
     rank_0y = 0 
@@ -122,7 +137,10 @@ if __name__ == '__main__':
         what[:,:,0] = 0
 
     # Get derivative ddy{vhat}, zero the oddball
-    if rank==1: print('Computing ddy vhat ...')
+    if rank==1: 
+        print('Computing ddy vhat ...')
+        print(np.shape(ky))
+        print(np.shape(vhat))
     ddy_vhat_hat = 1j*ky*ffto._fftY(vhat)
     if rank_ny:
         ddy_vhat_hat[:,Ny/2,:] = 0

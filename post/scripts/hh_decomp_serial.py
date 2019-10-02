@@ -29,7 +29,7 @@ if __name__ == '__main__':
         sys.exit()
     filename_prefix = sys.argv[1]
     tid_list = map(int, sys.argv[2].strip('[]').split(',')) 
-    outputfile  = filename_prefix + "enstrophy_spectrum.dat"
+    outputfile  = filename_prefix + "hhdecomp.dat"
     
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -66,11 +66,15 @@ if __name__ == '__main__':
     # Setup the fft object
     if rank==0: print('Setting up fft...')
     Nx,Ny,Nz = reader.domain_size
-    settings = NumSetting( NX=Nx, NY=Ny, NZ=Nz,
-                 XMIN=x[0,0,0], XMAX=x[-1,0,0]+dx,
-                 YMIN=y[0,0,0], YMAX=y[0,-1,0]+dy,
-                 ZMIN=z[0,0,0], ZMAX=z[0,0,-1]+dz,
-                 order=10)
+    xmin=x[0,0,0]; xmax=x[-1,0,0]+dx
+    ymin=y[0,0,0]; ymax=y[0,-1,0]+dy
+    zmin=z[0,0,0]; zmax=z[0,0,-1]+dz
+    settings = NumSetting( comm, reader.grid_partition, 
+             NX=Nx, NY=Ny, NZ=Nz,
+             XMIN=xmin, XMAX=xmax,
+             YMIN=ymin, YMAX=ymax,
+             ZMIN=zmin, ZMAX=zmax,
+             order=10)
     ffto = PoissonSol(settings)
     szx, szy, szz = ffto.size_3d 
     kx = np.tile(ffto.kx[:,np.newaxis,np.newaxis],[1,szy,szz])
@@ -184,5 +188,7 @@ if __name__ == '__main__':
         %(uu.max(),udud.max(),usud.max(),
         vv.max(),vdvd.max(),vsvd.min(),
         uv.min(),udvd.min(),cross.max()))
+
         #0.011 & 0.057 & 0.281 & 0.006 & 0.040 & -1.024 -0.004 & -0.025 & 0.928 # matlab
-        #0.011 & 0.061 & 0.297 & 0.006 & 0.043 & -1.077 & -0.004 & -0.025 & 0.959 #serial
+        #0.011 & 0.061 & 0.297 & 0.006 & 0.043 & -1.077 & -0.004 & -0.025 & 0.959 #serial, 
+        # Mc12 256x384x128 with LAD shearlayer_0025

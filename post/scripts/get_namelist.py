@@ -49,11 +49,7 @@ def get_param(line,verbose=False):
     try:
         line = list(filter(None,line[0].split('D')))
         mult = 10**(int(line[1]))
-    except Exception as e:
-        if verbose:
-            print("Note: Missing D# multiplier for line:")
-            print("\t{}".format(original))
-            print("\tAssuming multiplier is 1.\n")
+    except:
         mult = 1.0
     return float(line[0])*mult
 
@@ -78,7 +74,7 @@ def read_namelist(dirname,verbose):
     return Mc,Re,rr
 
 # Gets Mc, rr, Re from namelist
-def read_grid_params(dirname,verbose):
+def read_grid_params(dirname,verbose=False):
     fname = dirname+"/input.dat"
     with open('{}'.format(fname),'r') as file:
         data_raw = file.read().splitlines()
@@ -98,6 +94,16 @@ def read_grid_params(dirname,verbose):
         print("\tL = {}x{}x{}".format(Lx,Ly,Lz))
     return Nx,Ny,Nz,Lx,Ly,Lz
 
+def read_time(dirname,tID,prefix='shearlayer_'):
+    fname = dirname+"/shearlayer_%04d.xmf"%int(tID)
+    with open('{}'.format(fname),'r') as file:
+        data_raw = file.read().splitlines()
+
+    for line in data_raw[0:10]:
+        if 'Time' in line:
+            time = line.split('"')[1]
+    return float(time)
+
 if __name__ == '__main__':
     if len(sys.argv)<2:
         print("Usage: {} dirname".format(sys.argv[0]))
@@ -106,7 +112,5 @@ if __name__ == '__main__':
     dirname = sys.argv[1]
     inp = inputs(dirname,verbose=True) 
     read_grid_params(dirname,verbose=True) 
-
-
 
 

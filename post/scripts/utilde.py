@@ -25,7 +25,7 @@ def grid_res(x,y,z):
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print "Usage:" 
-        print "Computes the vv correlation lengths" 
+        print "Computes utilde" 
         print "  python {} <prefix> [tID_list (csv)] ".format(sys.argv[0])
         sys.exit()
     start_index = 0;
@@ -75,13 +75,19 @@ if __name__ == '__main__':
     # Compute stats at each step:
     i = 0
     thresh = 0.15
-    if rank==0: print("Time \t lx \t ly \t lz \n")
     for tid in tID_list:
         reader.step = tid
-        r,u = reader.readData( ('rho','u') )
+        r,u = reader.readData( ('rho','v') )
         utilde = stats.favre_average(avg,r,u)
         utilde = np.squeeze(utilde)
         
+        offset = 50
+        print(utilde[offset])
+        print(utilde[-offset])
+        offset = 20
+        print(utilde[offset])
+        print(utilde[-offset])
+        sys.exit()
         # now gather from all processes
         root=0
         comm.Barrier()
@@ -97,12 +103,6 @@ if __name__ == '__main__':
             
             # Stack the vectors into the correct order
             R22_array = np.reshape(recvbuf,[nblk_x,nblk_y,nblk_z,ny],order='F')
-            #R22_array = np.zeros([nblk_x,nblk_y,nblk_z,ny])
-            #for zi in range(nblk_z):
-            #    for yi in range(nblk_y):
-            #        for xi in range(nblk_x):
-            #            idx = xi + yi*(nblk_x) + zi*(nblk_x*nblk_y)
-            #            R22_array[xi,yi,zi,:] = recvbuf[idx,:]
             
             # Now concat one column
             R22_mean = R22_array[0,0,0,:];
@@ -115,6 +115,7 @@ if __name__ == '__main__':
             if (np.shape(utilde)[0] < Ny):
                 print("ERROR: Shape mismatch, utilde {}".format(np.shape(utilde)))
                 sys.exit()
-            outputfile = filename_prefix + "utilde_%04d.dat"%tid
-            np.savetxt(outputfile,utilde,delimiter=' ')
-            print("Done writing to {}".format(outputfile))
+            else:
+                outputfile = filename_prefix + "utilde_%04d.dat"%tid
+                np.savetxt(outputfile,utilde,delimiter=' ')
+                print("Done writing to {}".format(outputfile))

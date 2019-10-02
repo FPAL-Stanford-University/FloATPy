@@ -28,9 +28,9 @@ class PoissonSol:
         self.size_x = numSet.chunk_x_size
         self.size_y = numSet.chunk_y_size
         self.size_z = numSet.chunk_z_size
-        self.chunk_x_ind = range(numSet.chunk_z_lo[0],numSet.chunk_z_hi[0]+1)
-        self.chunk_y_ind = range(numSet.chunk_z_lo[1],numSet.chunk_z_hi[1]+1)
-        self.chunk_z_ind = range(numSet.chunk_z_lo[2],numSet.chunk_z_hi[2]+1)
+        self.chunk_x_ind = range(numSet.chunk_3d_lo[0],numSet.chunk_3d_hi[0]+1)
+        self.chunk_y_ind = range(numSet.chunk_3d_lo[1],numSet.chunk_3d_hi[1]+1)
+        self.chunk_z_ind = range(numSet.chunk_3d_lo[2],numSet.chunk_3d_hi[2]+1)
         self.dx = numSet.dx
         self.dy = numSet.dy
         self.dz = numSet.dz

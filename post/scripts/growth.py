@@ -63,13 +63,12 @@ if __name__ == '__main__':
 
     # Compute stats at each step:
     Nsteps = np.size(steps[start_index:])-1
-    time   = np.empty(Nsteps)
-    dtheta = np.empty(Nsteps)
-    domega = np.empty(Nsteps)
+    time   = np.zeros(Nsteps)
+    dtheta = np.zeros(Nsteps)
     dtheta_rate = np.empty(Nsteps)
     i = 0
     if rank == 0:
-        print("Time \t dtheta \t dtheta_rate")
+        print("Time \t domega \t rate")
     for step in steps[start_index:-1]:
         reader.step = step
         time[i] = reader.time
@@ -87,18 +86,13 @@ if __name__ == '__main__':
         I = rho_bar*(0.5*du-utilde)*(0.5*du+utilde)/(inp.r_ref*inp.du**2)
         dtheta[i] = stats.integrate_y(I, dy, reader.grid_partition)
 
-        # vorticity thickness
-        dudx,dudy,dudz = der.gradient(u, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
-        dudy_bar = stats.reynolds_average(avg,dudy)
-        domega[i] = du/np.amax(np.abs(dudy_bar))
-
         # Momentum thickness growth rate
         dudy_tilde = stats.favre_average(avg,rho,dudy,rho_bar=rho_bar)
         I = -2./(inp.r_ref*du**3)*rho_bar*R12*dudy_tilde
         dtheta_rate[i] = stats.integrate_y(I, dy, reader.grid_partition)
 
         if rank == 0:
-            print("{} \t {} \t {} \t {}".format(reader.time,dtheta[i],domega[i],dtheta_rate[i]))
+            print("{} \t {} \t {}".format(reader.time,dtheta[i],dtheta_rate[i]))
         i = i+1; 
     
     # Write to file 
@@ -107,6 +101,5 @@ if __name__ == '__main__':
         array2save[:,0] = time
         array2save[:,1] = dtheta
         array2save[:,2] = dtheta_rate
-        #array2save[:,3] = dtheta_rate
         np.savetxt(outputfile,array2save,delimiter=' ')
         print("Done writing to {}".format(outputfile))

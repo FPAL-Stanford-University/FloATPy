@@ -47,22 +47,30 @@ if __name__ == '__main__':
     steps = sorted(reader.steps)
 
     # Set up the derivative object
-    Nx,Ny,Nz = reader.domain_size
     x, y, z = reader.readCoordinates()
     dx,dy,dz = grid_res(x,y,z)
     der = cd.CompactDerivative(reader.grid_partition, 
             (dx, dy, dz), (10, 10, 10), periodic_dimensions)
 
-    # setup the inputs object
+    # setup the inputs object, get grid info
     dirname = os.path.dirname(filename_prefix)
+    Nx,Ny,Nz,Lx,Ly,Lz = nml.read_grid_params(dirname,verbose=(rank==0))
+    Ny = int(Ny)
     if rank==0: verbose=True
     else: verbose=False
     inp = nml.inputs(dirname,verbose)
     du = inp.du
     if rank==0: print("du = {}".format(inp.du))
+    
+    # Get the grid partition information
+    nx,ny,nz = reader._full_chunk_size
+    nblk_x = int(np.round(Nx/nx))
+    nblk_y = int(np.round(Ny/ny))    
+    nblk_z = int(np.round(Nz/nz))
+    if rank==0: print("Processor decomp: {}x{}x{}".format(nblk_x,nblk_y,nblk_z))
+    #if nblk_y==1: sys.exit()
 
     # Compute stats at each step:
-
     recvbuf = None
     for step in tID_list: 
         reader.step = step
@@ -80,16 +88,42 @@ if __name__ == '__main__':
         Rij[:,3] = np.squeeze(stats.favre_average(avg,rho,vpp*vpp,rho_bar=rbar))
         Rij[:,4] = np.squeeze(stats.favre_average(avg,rho,vpp*wpp,rho_bar=rbar))
         Rij[:,5] = np.squeeze(stats.favre_average(avg,rho,wpp*wpp,rho_bar=rbar))
+       
+        
+        # now gather from all processes for each Rij into another array
+        Rij_array = np.zeros([Ny,6],dtype='f')
+        for i in range(6):
+            root=0
+            recvbuf=comm.gather(Rij[:,i], root)
+            comm.Barrier()
+            recvbuf = np.array(recvbuf)
 
-        #recvbuf = comm.gather(Rij, root=0)
+            if rank==0:
+                try: np.shape(recvbuf)[1] #should be a 2d array
+                except:
+                    print("ERROR: Shape mismatch, recvbuf {}".format(np.shape(recvbuf)))
+                    sys.exit()
+                 
+                # Stack the vectors into the correct order
+                vec_array = np.reshape(recvbuf,[nblk_x,nblk_y,nblk_z,ny],order='F')
+                
+                # Now concat one column
+                vec = vec_array[0,0,0,:];
+                if (nblk_y>1):
+                    for i in range(1,nblk_y):
+                        mat = np.squeeze(vec_array[0,i,0,:])
+                        vec = np.hstack([vec,mat])
+
+
+                if (np.shape(vec)[0] < Ny):
+                    print("ERROR: Shape mismatch, vec {}".format(np.shape(vec)))
+                    sys.exit()
+                else:
+                    Rij_array[:,i] = vec
+                    print("i={}\t{}".format(i,np.sum(Rij[:,i])))
+            comm.Barrier()
+
         if rank==0:
-            #recvbuf = np.empty([Ny,6], dtype='f')
-            #comm.Gather(np.float32(Rij), recvbuf, root=0)
-            #print(np.shape(recvbuf))
-            #recvbuf = np.array(recvbuf)
-            #print(recvbuf[0,:,1])
-            #print(recvbuf[1,:,1])
-            recvbuf = Rij
             outputfile = filename_prefix + 'Rij_%04d.dat'%step
-            np.savetxt(outputfile,recvbuf,delimiter=' ')
+            np.savetxt(outputfile,Rij_array,delimiter=' ')
             print("{}".format(outputfile))

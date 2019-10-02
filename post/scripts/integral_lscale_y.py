@@ -3,6 +3,7 @@ import numpy as np
 import numpy.linalg as la
 import os
 import sys
+import matplotlib.pyplot as plt
 
 import floatpy.derivatives.compact.compact_derivative as cd
 import floatpy.readers.padeops_reader as por
@@ -21,8 +22,33 @@ def grid_res(x,y,z):
     dy = y[0,1,0] - y[0,0,0]
     dz = z[0,0,1] - z[0,0,0]
     return dx,dy,dz
-   
- 
+  
+def get_L99(y,utilde):
+    utilde = np.squeeze(utilde)
+    du = abs(utilde[-1]-utilde[0])
+    utop = 0.99*du/2.
+    ubot = -0.99*du/2.
+    Ny = np.size(y)
+    itop = np.argmin(abs(utilde[Ny/2:]-utop))+Ny/2
+    ibot = np.argmin(abs(utilde[:Ny/2]-ubot))
+    L99 = abs(y[itop]-y[ibot])
+    return L99, itop, ibot
+
+def window_tukey(n,N):
+    alpha = 0.7
+    tmp = alpha*N/2
+    pi = np.pi
+    
+    if n<tmp:
+        return 0.5*(1.+np.cos(pi*(n/tmp-1.)))
+    elif n>=tmp and n<N*(1.-alpha/2.):
+        return 1.
+    elif n>=N*(1.-alpha/2.) and n<=N:
+        return 0.5*(1.+np.cos(pi*(n/tmp-2./alpha+1.)))
+    else:
+        return 0
+
+
 if __name__ == '__main__':
     if len(sys.argv) < 4:
         print "Usage:" 
@@ -34,7 +60,6 @@ if __name__ == '__main__':
         varname  = sys.argv[3] 
     filename_prefix = sys.argv[1]
 
-    
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
     y_bc = (0,0)
@@ -65,6 +90,7 @@ if __name__ == '__main__':
     du = inp.du
     if rank==0: print("\tdu = {}".format(inp.du))
 
+     
     # Setup the fft object
     if rank==0: print('Setting up fft...')
     Nx,Ny,Nz = reader.domain_size
@@ -86,22 +112,42 @@ if __name__ == '__main__':
         print('Processor decomposition: {}x{}x{}'.format(
         nblk_x,nblk_y,nblk_z))
 
-    # Preallocate for means and derivatives
-    Nsteps = np.size(tID_list)
-    Nx,Ny,Nz = reader.domain_size
-    time = np.zeros([Nsteps])
-    Lx = np.zeros([Nsteps])
-    Ly = np.zeros([Nsteps])
-    Lz = np.zeros([Nsteps])
+    # Get the y coordinates
+    Nx,Ny,Nz,Lx,Ly,Lz = nml.read_grid_params(dirname,verbose=(rank==0))
+    yplot = np.linspace(-Ly/2,Ly/2,int(Ny))
     
-    # Compute stats at each step:
-    i = 0
-    thresh = 0.15
     for tid in tID_list:
         reader.step = tid
-        r,q = reader.readData( ('r',varname) )
+        r,q = reader.readData( ('rho',varname) )
         qtilde = stats.favre_average(avg,r,q)
         qpp = q - qtilde
+
+        # Window if supersonic
+        if inp.Mc>=0.6:
+            # Get range to window
+            fname = filename_prefix+'utilde_%04d.dat'%tid 
+            try:
+                utilde = np.fromfile(fname,count=-1,sep=' ')
+            except:
+                if rank==0:
+                    print('Write {}'.format(fname))
+                sys.exit()
+            L99, itop, ibot = get_L99(yplot,utilde)
+
+            # Window based off 99% thickness
+            pad = 100
+            ibot = max(ibot-pad,0)
+            itop = min(itop+pad,Ny)
+            N = abs(itop-ibot)      # total window size
+            for iy_,ylocal in zip(range(ny),y[0,:,0]):
+                if ylocal>yplot[ibot] and ylocal<yplot[itop]:
+                    iy = np.argmin(abs(ylocal-yplot)) #global y index
+                    idx = iy-ibot # distance from bottom bound
+                    assert idx>=0
+                    assert idx<=N
+                    qpp[:,iy_,:] *= window_tukey(idx,N)
+                else:
+                    qpp[:,iy_,:] = 0
 
         # y integral lengthscale
         vpp_hat = ffto._fftY(qpp)
@@ -137,7 +183,6 @@ if __name__ == '__main__':
                     mat = np.squeeze(R22_array[0,i,0,:])
                     R22_mean = np.vstack([R22_mean,mat])
             
-            print("Shape of R22_mean: {}".format(np.size(R22_mean)))
             R22_mean /= np.amax(R22_mean)
 
             outputfile = filename_prefix + "lscale_"+varname+varname+"_%04d.dat"%tid

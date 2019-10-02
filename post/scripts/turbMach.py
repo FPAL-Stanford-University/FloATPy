@@ -24,8 +24,7 @@ if __name__ == '__main__':
     filename_prefix = sys.argv[1]
     start_index = 0
     if len(sys.argv) > 2:
-        start_index = int(sys.argv[2])
-    outputfile  = filename_prefix + "Mt_growth.dat"
+        tID_list = map(int, sys.argv[2].strip('[]').split(',')) 
 
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -43,31 +42,31 @@ if __name__ == '__main__':
             periodic_dimensions=periodic_dimensions)
     reader = pdr.ParallelDataReader(comm, serial_reader)
     avg = red.Reduction(reader.grid_partition, periodic_dimensions)
-    steps = sorted(reader.steps)
 
     x, y, z = reader.readCoordinates()
     Nx,Ny,Nz = reader.domain_size
     dx,dy,dz = grid_res(x,y,z)
     
-    # setup the inputs object
+    # setup the inputs object, get grid info
     dirname = os.path.dirname(filename_prefix)
-    if rank==0: verbosity=True
-    else: verbosity=False
-    inp = nml.inputs(dirname,verbose=verbosity)
+    Nx,Ny,Nz,Lx,Ly,Lz = nml.read_grid_params(dirname,verbose=(rank==0))
+    Ny = int(Ny)
+    if rank==0: verbose=True
+    else: verbose=False
+    inp = nml.inputs(dirname,verbose)
     du = inp.du
-    if rank==0: print("\tdu = {}".format(inp.du))
+    if rank==0: print("du = {}".format(inp.du))
+    
+    # Get the grid partition information
+    nx,ny,nz = reader._full_chunk_size
+    nblk_x = int(np.round(Nx/nx))
+    nblk_y = int(np.round(Ny/ny))
+    nblk_z = int(np.round(Nz/nz))
+    if rank==0: print("Processor decomp: {}x{}x{}".format(nblk_x,nblk_y,nblk_z))
 
     # Compute stats at each step:
-    Nsteps = np.size(steps[start_index:])-1
-    time = np.empty(Nsteps)
-    Mt_max = np.empty(Nsteps)   # Max Mt across all y planes
-    Mt_center = np.empty(Nsteps)# Mt at center plane Ny/2
-    if rank == 0: print("Time \t Max Mt \t Center Mt") 
-    
-    i = 0
-    for step in steps[start_index:-1]:
+    for step in tID_list: 
         reader.step = step
-        time[i] = reader.time
 
         # TKE
         rho, u, v, w, T = reader.readData( ('rho', 'u', 'v', 'w','T') )
@@ -76,22 +75,36 @@ if __name__ == '__main__':
         
         # Speed of sound, xz average
         c3D = np.sqrt(inp.gam*T)
-        c = stats.reynolds_average(avg, c3D)
+        cbar = stats.reynolds_average(avg, c3D)
+        Mt = np.squeeze(tke**0.5/cbar)
 
-        # Turbulent Mach number
-        Mt = np.squeeze(tke**0.5/c)
-        Mt_max[i] = np.amax(Mt);
-        Mt_center[i] = Mt[Ny/2]
+        # now gather from all processes
+        root=0
+        comm.Barrier()
+        recvbuf=comm.gather(Mt, root)
+        comm.Barrier()
+        recvbuf = np.array(recvbuf)
 
-        if rank == 0:
-            print("{} \t {} \t {}".format(reader.time,Mt_max[i],Mt_center[i]))
-        i = i+1
+        if rank==0:
+            try: np.shape(recvbuf)[1] #should be a 2d array
+            except:
+                print("ERROR: Shape mismatch, recvbuf {}".format(np.shape(recvbuf)))
+                sys.exit()
+            
+            # Stack the vectors into the correct order
+            vec_array = np.reshape(recvbuf,[nblk_x,nblk_y,nblk_z,ny],order='F')
+            
+            # Now concat one column
+            vec = vec_array[0,0,0,:];
+            if (nblk_y>1):
+                for i in range(1,nblk_y):
+                    mat = np.squeeze(vec_array[0,i,0,:])
+                    vec = np.hstack([vec,mat])
 
-    # Write to file 
-    if rank==0:
-        array2save = np.empty((Nsteps,3))
-        array2save[:,0] = time
-        array2save[:,1] = Mt_center
-        array2save[:,2] = Mt_max
-        np.savetxt(outputfile,array2save,delimiter=' ')
-        print("Done writing to {}".format(outputfile))
+            if (np.shape(vec)[0] < Ny):
+                print("ERROR: Shape mismatch, vec {}".format(np.shape(vec)))
+                sys.exit()
+            else:
+                outputfile = filename_prefix + 'Mt_%04d.dat'%step
+                np.savetxt(outputfile,vec,delimiter=' ')
+                print("{}".format(outputfile))
