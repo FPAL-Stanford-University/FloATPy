@@ -3,8 +3,9 @@ from mpi4py import MPI
 import numpy as np
 import os
 import sys
-import h5py
 from shutil import copyfile
+sys.path.insert(0,'/home/kmatsuno/h5py/build/lib.linux-x86_64-2.7/')
+import h5py
 
 import floatpy.derivatives.compact.compact_derivative as cd
 import floatpy.readers.padeops_reader as por
@@ -42,34 +43,18 @@ if __name__ == '__main__':
     # Set up the serial Miranda reader
     # Set up the parallel reader
     # Set up the reduction object
-    try:
-        serial_reader = por.PadeopsReader(dir_in+'/restart_',
+    reader = por.PadeopsReader(dir_in+'/restart_',
             periodic_dimensions=periodic_dimensions)
-    except:
-        print('Linking coords...')
-        os.symlink(dir_in + '/shearlayer_coords.h5', dir_in+'/restart_coords.h5')
-        serial_reader = por.PadeopsReader(dir_in+'/restart_',
-            periodic_dimensions=periodic_dimensions)
-    reader = pdr.ParallelDataReader(comm, serial_reader)
-    avg = red.Reduction(reader.grid_partition, periodic_dimensions)
-    steps = sorted(reader.steps)
-
-    # Set up the derivative object
-    x, y, z = reader.readCoordinates()
-    dx,dy,dz = grid_res(x,y,z)
-    der = cd.CompactDerivative(reader.grid_partition, 
-            (dx, dy, dz), (10, 10, 10), periodic_dimensions)
 
     # setup the inputs object
-    verbosity = False
-    if rank == 0: verbosity = True
-    inp_s = nml.inputs(dir_in,verbose=verbosity)
-    inp   = nml.inputs(dir_out,verbose=verbosity)
+    inp_s = nml.inputs(dir_in,verbose=False)
+    inp   = nml.inputs(dir_out,verbose=False)
     if rank==0: 
         print("\tSeed Mc,rr,du = {},{},{}".format(inp_s.Mc,inp_s.rr,inp_s.du))
         print("\tNew  Mc,rr,du = {},{},{}".format(inp.Mc,inp.rr,inp.du))
 
     # Read input restart file, copy these over
+    print("Reading data")
     reader.step = tID
     qlist = ('rhou', 'rhov', 'rhow', 'TE', 'rhoY_0001','rhoY_0002')
     ru, rv, rw, TE, r1, r2  = reader.readData( qlist )
@@ -86,30 +71,7 @@ if __name__ == '__main__':
     # Rescale u so the freestream values are correct
     u *= inp.du/inp_s.du
     
-    # Rescale r1 so the freestream values are correct
-    #def get_rho_vals(inputs):
-    #    lmbda = (inputs.rr-1.)/(inputs.rr+1.)
-    #    r1_top = (1.+lmbda)/(1+inputs.rr)
-    #    r2_top = (1.+lmbda)/(1.+1./inputs.rr)
-    #    r1_bot = (1.-lmbda)/(1+inputs.rr)
-    #    r2_bot = (1.-lmbda)/(1.+1./inputs.rr)
-    #    return r1_top, r2_top, r1_bot, r2_bot
-    #def rescale_rho(r,rmax_old,rmin_old,rmax,rmin):
-    #    r -= rmin_old #subtract -infty to zero
-    #    r /= rmax_old #scale +infty to 1
-    #    r *= (rmax-rmin) #scale to new range
-    #    r += rmin    # scale to new -infty
-    #    print(r[0,0,0],rmin)
-    #    print(r[0,-1,0],rmax)
-    #    return r
-    #r1_top0, r2_top0, r1_bot0, r2_bot0 = get_rho_vals(inp_s)
-    #r1_top, r2_top, r1_bot, r2_bot = get_rho_vals(inp)
-    #r1 = rescale_rho(r1,r1_top0,r1_bot0,r1_top,r1_bot); print('r1 rescaled')
-    #r2 = rescale_rho(r2,r2_top0,r2_bot0,r2_top,r2_bot); print('r2 rescaled')
-    #r = r1+r2;
-    #print(r[0,-1,0]/r[0,0,0])
-    #sys.exit()
-
+    # Rescale r1
     # Add back to total energy
     print("Remaking convservatives")
     TE += 0.5*r*u*u 

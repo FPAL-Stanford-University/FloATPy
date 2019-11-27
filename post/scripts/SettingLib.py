@@ -86,7 +86,7 @@ class NumSetting:
         
         self.x = numpy.linspace(self.XMIN, self.XMAX-self.dx, num=self.NX)[self.chunk_3d_lo[0]:self.chunk_3d_hi[0]+1]
         self.y = numpy.linspace(self.YMIN, self.YMAX-self.dy, num=self.NY)[self.chunk_3d_lo[1]:self.chunk_3d_hi[1]+1]
-        self.z = numpy.linspace(self.ZMIN, self.ZMAX, num=self.NZ)[self.chunk_3d_lo[2]:self.chunk_3d_hi[2]+1]
+        self.z = numpy.linspace(self.ZMIN, self.ZMAX-self.dz, num=self.NZ)[self.chunk_3d_lo[2]:self.chunk_3d_hi[2]+1]
         
         self.CNX = self.chunk_3d_size[0]
         self.CNY = self.chunk_3d_size[1]

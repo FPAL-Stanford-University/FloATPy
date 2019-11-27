@@ -62,14 +62,14 @@ if __name__ == '__main__':
     if rank==0: print("du = {}".format(inp.du))
 
     # Compute stats at each step:
-    Nsteps = np.size(steps[start_index:])-1
+    Nsteps = np.size(steps)
     time   = np.zeros(Nsteps)
     dtheta = np.zeros(Nsteps)
     dtheta_rate = np.empty(Nsteps)
     i = 0
     if rank == 0:
-        print("Time \t domega \t rate")
-    for step in steps[start_index:-1]:
+        print("Time \t dtheta \t rate")
+    for step in steps:
         reader.step = step
         time[i] = reader.time
         
@@ -87,6 +87,7 @@ if __name__ == '__main__':
         dtheta[i] = stats.integrate_y(I, dy, reader.grid_partition)
 
         # Momentum thickness growth rate
+        dudx,dudy,dudz = der.gradient(u, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
         dudy_tilde = stats.favre_average(avg,rho,dudy,rho_bar=rho_bar)
         I = -2./(inp.r_ref*du**3)*rho_bar*R12*dudy_tilde
         dtheta_rate[i] = stats.integrate_y(I, dy, reader.grid_partition)

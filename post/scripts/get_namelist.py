@@ -12,12 +12,12 @@ class inputs:
         T_ref = 1.
         r_ref = 1.
         mu_ref = 1./self.Re
-        Rgas1 = (1.+self.rr)/2.			
-        Rgas2 = (1.+self.rr)/(2.*self.rr) 
-        c1 = (gam*p_ref/(r_ref/Rgas1))**0.5
-        c2 = (gam*p_ref/(r_ref/Rgas2))**0.5
+        self.R1 = (1.+self.rr)/2.			
+        self.R2 = (1.+self.rr)/(2.*self.rr) 
+        self.c1 = (gam*p_ref/(r_ref/self.R1))**0.5
+        self.c2 = (gam*p_ref/(r_ref/self.R2))**0.5
         
-        self.du = self.Mc*(c1+c2)
+        self.du = self.Mc*(self.c1+self.c2)
         self.gam = gam  
         self.p_ref = p_ref 
         self.T_ref = T_ref 
@@ -81,9 +81,9 @@ def read_grid_params(dirname,verbose=False):
 
     # What lines to get
     for line in data_raw:
-        if   'nx ' in line: Nx = get_param(line,verbose=False)
-        elif 'ny ' in line: Ny = get_param(line,verbose=False)
-        elif 'nz ' in line: Nz = get_param(line,verbose=False)
+        if   'nx ' in line: Nx = int(get_param(line,verbose=False))
+        elif 'ny ' in line: Ny = int(get_param(line,verbose=False))
+        elif 'nz ' in line: Nz = int(get_param(line,verbose=False))
         elif 'Lx ' in line: Lx = get_param(line,verbose=False)
         elif 'Ly ' in line: Ly = get_param(line,verbose=False)
         elif 'Lz ' in line: Lz = get_param(line,verbose=False)

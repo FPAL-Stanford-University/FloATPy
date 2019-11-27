@@ -59,9 +59,10 @@ if __name__ == '__main__':
     
     # Get the grid partition information
     nx,ny,nz = reader._full_chunk_size
-    nblk_x = int(np.round(Nx/nx))
-    nblk_y = int(np.round(Ny/ny))
-    nblk_z = int(np.round(Nz/nz))
+    szx,szy,szz = np.shape(x)
+    nblk_x = int(np.round(Nx/(szx-1)))
+    nblk_y = int(np.round(Ny/(szy-1)))    
+    nblk_z = int(np.round(Nz/(szz-1)))
     if rank==0: print("Processor decomp: {}x{}x{}".format(nblk_x,nblk_y,nblk_z))
 
     # Compute stats at each step:

@@ -3,6 +3,8 @@ from mpi4py import MPI
 import numpy as np
 import os
 import sys
+sys.path.insert(0,'/home/kmatsuno/h5py/build/lib.linux-x86_64-2.7/h5py/')
+import h5py
 
 import floatpy.derivatives.compact.compact_derivative as cd
 import floatpy.readers.padeops_reader as por
@@ -14,6 +16,16 @@ from PoissonSol import *
 import statistics as stats
 import get_namelist as nml
 from common import *
+
+"""
+
+        reader.step = tid
+        rho, u, v, w = reader.readData( ('rho', 'u', 'v', 'w') )
+        vorticity = der.curl(u, v, w, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
+        enstrophy = stats.get_enstrophy(vorticity, reader.grid_partition, dx, dy, dz)
+        enstrophy = enstrophy[:,ic,:]
+"""
+
 
 debug = False
 def grid_res(x,y,z):
@@ -84,15 +96,25 @@ if __name__ == '__main__':
     Nx,Ny,Nz = reader.domain_size
     settings = NumSetting(comm, reader.grid_partition,
              NX=Nx, NY=Ny, NZ=Nz,
-             XMIN=0,        XMAX=(Nx)*dx,
-             YMIN=-Ny*dy/2.,YMAX=(Ny)*dy/2.,
-             ZMIN=0,        ZMAX=(Nz)*dz,
+             XMIN=0,        XMAX=Lx,
+             YMIN=-Ly/2.,   YMAX=Ly/2.,
+             ZMIN=0,        ZMAX=Lz,
              order=10)
     ffto = PoissonSol(settings)
     nx,ny,nz = ffto.size_3d
     nblk_x = int(np.ceil(float(Nx)/nx))
     nblk_y = int(np.ceil(float(Ny)/ny))
     nblk_z = int(np.ceil(float(Nz)/nz))
+    
+    #if nblk_y == 1: sys.exit()
+    # set up the writer
+    #settings_writer = NumSetting(comm, reader.grid_partition,
+    #         NX=Nx, NY=1, NZ=Nz,
+    #         XMIN=0,        XMAX=Lx,
+    #         YMIN=-Ly/2.,   YMAX=Ly/2.,
+    #         ZMIN=0,        ZMAX=Lz,
+    #         order=10)
+    #writer = h5_writer(settings_writer)
     
     for tID in tID_list:
         reader.step = tID 
@@ -103,13 +125,15 @@ if __name__ == '__main__':
 
         # Spectra in x,z:
         drdx_hat = ffto._fftX(drdx) 
-        drdz_hat = ffto._fftX(drdz) 
+        drdz_hat = ffto._fftZ(drdz) 
         drdx,drdy,drdz = None,None,None
 
         # Get centerline slice
         ic,yc = get_centerline(dirname,yplot,tID)
-        yc = float(yc)
-        rank_yc = ((yc>=y[0,0,0]) and (yc<=y[0,-1,0]))
+        yc = float(yc) # global centerline y
+        this_ymin = y[0,0,0]-dy
+        this_ymax = y[0,-1,0]
+        rank_yc = ((yc>=this_ymin) and (yc<=this_ymax))
         print('rank {} with yrange ({},{}) contains yc={}? {}'.format(
             rank,y[0,0,0],y[0,-1,0],yc,rank_yc))
         if rank_yc:
@@ -133,7 +157,7 @@ if __name__ == '__main__':
         planex = comm.reduce(blankx,root=0)
         planez = comm.reduce(blankz,root=0)
         if rank==0:
-            data2save = np.zeros([2,Nx,Ny])
+            data2save = np.zeros([2,Nx,Nz])
             data2save[0,:,:] = planex
             data2save[1,:,:] = planez
             outputfile = filename_prefix + 'grad_spec_%04d.dat'%tID

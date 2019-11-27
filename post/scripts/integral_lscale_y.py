@@ -29,9 +29,12 @@ def get_L99(y,utilde):
     utop = 0.99*du/2.
     ubot = -0.99*du/2.
     Ny = np.size(y)
-    itop = np.argmin(abs(utilde[Ny/2:]-utop))+Ny/2
-    ibot = np.argmin(abs(utilde[:Ny/2]-ubot))
-    L99 = abs(y[itop]-y[ibot])
+    ibot = np.argmin(abs(utilde[Ny/2:]-utop)[::-1])
+    itop = np.argmin(abs(utilde[:Ny/2]-ubot)[::-1])+Ny/2
+    #itop = np.argmin(abs(utilde[Ny/2:]-utop))+Ny/2
+    #ibot = np.argmin(abs(utilde[:Ny/2]-ubot))
+    L99 = y[itop]-y[ibot]
+    if L99<0: print('utilde or y misoriented. exiting'); sys.exit()
     return L99, itop, ibot
 
 def window_tukey(n,N):
@@ -48,6 +51,35 @@ def window_tukey(n,N):
     else:
         return 0
 
+# Window if supersonic
+def window_field(filename_prefix,ychunk,yplot,du,tID,q,utilde=None,pad=0):
+    if utilde is None:
+        fname = filename_prefix+'utilde_%04d.dat'%tID
+        try:
+            utilde = np.fromfile(fname,count=-1,sep=' ')
+        except:
+            if rank==0: 
+                print('Write {}'.format(fname))
+                sys.exit()
+    L99, itop, ibot = get_L99(yplot,utilde)
+    #print(L99, itop,ibot,y[itop],y[ibot])
+    Ny = np.size(utilde)
+    
+    # Window based off 99% thickness
+    ibot = max(ibot-pad,0)
+    itop = min(itop+pad,Ny)
+    N = abs(itop-ibot)      # total window size
+    ny = np.shape(q)[1]     # size of chunk
+    for iy_,ylocal in zip(range(ny),ychunk[0,:,0]):
+        if ylocal>yplot[ibot] and ylocal<yplot[itop]:
+            iy = np.argmin(abs(ylocal-yplot)) #global y index
+            idx = iy-ibot # distance from bottom bound
+            assert idx>=0
+            assert idx<=N
+            q[:,iy_,:] *= window_tukey(idx,N)
+        else:
+            q[:,iy_,:] = 0
+    return q
 
 if __name__ == '__main__':
     if len(sys.argv) < 4:
@@ -81,8 +113,6 @@ if __name__ == '__main__':
     # Set up compact derivative object w/ 10th order schemes
     x, y, z = reader.readCoordinates()
     dx,dy,dz = grid_res(x,y,z)
-    der = cd.CompactDerivative(reader.grid_partition, 
-            (dx, dy, dz), (10, 10, 10), periodic_dimensions)
     
     # setup the inputs object
     dirname = os.path.dirname(filename_prefix)
@@ -115,39 +145,22 @@ if __name__ == '__main__':
     # Get the y coordinates
     Nx,Ny,Nz,Lx,Ly,Lz = nml.read_grid_params(dirname,verbose=(rank==0))
     yplot = np.linspace(-Ly/2,Ly/2,int(Ny))
-    
+   
     for tid in tID_list:
         reader.step = tid
-        r,q = reader.readData( ('rho',varname) )
-        qtilde = stats.favre_average(avg,r,q)
-        qpp = q - qtilde
+        if varname=='rho':
+            q = reader.readData( ('rho'))
+            rbar = stats.reynolds_average(avg,q[0])
+            qpp = q[0] - rbar
+        else:
+            r,q = reader.readData( ('rho',varname) )
+            qtilde = stats.favre_average(avg,r,q)
+            qpp = q - qtilde
 
         # Window if supersonic
-        if inp.Mc>=0.6:
-            # Get range to window
-            fname = filename_prefix+'utilde_%04d.dat'%tid 
-            try:
-                utilde = np.fromfile(fname,count=-1,sep=' ')
-            except:
-                if rank==0:
-                    print('Write {}'.format(fname))
-                sys.exit()
-            L99, itop, ibot = get_L99(yplot,utilde)
-
-            # Window based off 99% thickness
-            pad = 100
-            ibot = max(ibot-pad,0)
-            itop = min(itop+pad,Ny)
-            N = abs(itop-ibot)      # total window size
-            for iy_,ylocal in zip(range(ny),y[0,:,0]):
-                if ylocal>yplot[ibot] and ylocal<yplot[itop]:
-                    iy = np.argmin(abs(ylocal-yplot)) #global y index
-                    idx = iy-ibot # distance from bottom bound
-                    assert idx>=0
-                    assert idx<=N
-                    qpp[:,iy_,:] *= window_tukey(idx,N)
-                else:
-                    qpp[:,iy_,:] = 0
+        if inp.Mc>=0.4:
+            qpp=window_field(filename_prefix,y,yplot,inp.du,tid,
+                    qpp,utilde=None,pad=Ny/10)
 
         # y integral lengthscale
         vpp_hat = ffto._fftY(qpp)
@@ -184,7 +197,9 @@ if __name__ == '__main__':
                     R22_mean = np.vstack([R22_mean,mat])
             
             R22_mean /= np.amax(R22_mean)
-
-            outputfile = filename_prefix + "lscale_"+varname+varname+"_%04d.dat"%tid
+            if varname=='rho':
+                outputfile = filename_prefix + "lscale_rr_%04d.dat"%tid
+            else:
+                outputfile = filename_prefix + "lscale_"+varname+varname+"_%04d.dat"%tid
             np.savetxt(outputfile,R22_mean,delimiter=' ')
             print("Done writing to {}".format(outputfile))

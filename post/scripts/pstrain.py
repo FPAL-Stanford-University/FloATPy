@@ -13,9 +13,6 @@ import get_namelist as nml
 from SettingLib import NumSetting
 from PoissonSol import * 
 
-xdir = 0
-zdir = 2
-
 def grid_res(x,y,z):
     dx = x[1,0,0] - x[0,0,0]
     dy = y[0,1,0] - y[0,0,0]
@@ -25,7 +22,7 @@ def grid_res(x,y,z):
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print "Usage:" 
-        print "Computes utilde" 
+        print "Computes pressure strain from a restart file" 
         print "  python {} <prefix> [tID_list (csv)] ".format(sys.argv[0])
         sys.exit()
     start_index = 0;
@@ -78,33 +75,61 @@ if __name__ == '__main__':
     thresh = 0.15
     for tid in tID_list:
         reader.step = tid
-        r,u = reader.readData( ('rho','u') )
-        utilde = stats.favre_average(avg,r,u)
-        utilde = np.squeeze(utilde)
-        
-        # now gather from all processes
+        r,u,v,p = reader.readData( ('rho','u','v','p') )
+        rbar = stats.reynolds_average(avg,r)
+        utilde = stats.favre_average(avg,r,u,rho_bar=rbar)
+        vtilde = stats.favre_average(avg,r,v,rho_bar=rbar)
+        upp = np.array(u-utilde)
+        vpp = np.array(v-vtilde)
+        p = np.array(p)
+
+        # Compute production
+        R12 = stats.reynolds_average(avg,r*upp*vpp)
+        qx,qy,qz = der.gradient(u, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
+        dUdy = stats.favre_average(avg,r,qy,rho_bar=rbar)
+        prod = R12*dUdy
+        r,u,v = None,None,None
+
+        # Copmute sij_pp
+        s = {}
+        qx,qy,qz = der.gradient(upp, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
+        s['11'] = qx
+        s['12'] = qy/2.
+        upp = None
+        qx,qy,qz = der.gradient(vpp, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
+        s['22'] = qy
+        s['12'] += qx/2.
+        vpp = None
+        qx,qy,qz = None,None,None
+       
+        # now gather from all processes 
+        nstats = 4
+        mat = np.zeros([np.shape(p)[1],nstats],dtype='f')
+        mat[:,0] = np.squeeze(prod)
+        mat[:,1] = np.squeeze(stats.reynolds_average(avg,p*s['11']))
+        mat[:,2] = np.squeeze(stats.reynolds_average(avg,p*s['22']))
+        mat[:,3] = np.squeeze(stats.reynolds_average(avg,p*s['12']))
+        recvbuf = {}
         root=0
-        comm.Barrier()
-        recvbuf=comm.gather(utilde, root)
-        comm.Barrier()
-        recvbuf = np.array(recvbuf)
+        for i in range(nstats):
+            recvbuf[i]=comm.gather(mat[:,i], root=0)
+            comm.Barrier()
+            recvbuf[i] = np.array(recvbuf[i])
 
         if rank==0:
-            # Stack the vectors into the correct order
-            R22_array = np.reshape(recvbuf,[nblk_x,nblk_y,nblk_z,ny],order='F')
+            total_array = np.zeros([Ny,nstats],dtype='f')
+            for j in range(nstats):
+                vec_array = np.reshape(recvbuf[j],[nblk_x,nblk_y,nblk_z,ny],order='F')
             
-            # Now concat one column
-            R22_mean = R22_array[0,0,0,:];
-            if (nblk_y>1):
-                for i in range(1,nblk_y):
-                    mat = np.squeeze(R22_array[0,i,0,:])
-                    R22_mean = np.hstack([R22_mean,mat])
-            utilde = R22_mean
 
-            if (np.shape(utilde)[0] < Ny):
-                print("ERROR: Shape mismatch, utilde {}".format(np.shape(utilde)))
-                sys.exit()
-            else:
-                outputfile = filename_prefix + "utilde_%04d.dat"%tid
-                np.savetxt(outputfile,utilde,delimiter=' ')
-                print("Done writing to {}".format(outputfile))
+                # Now concat one column
+                vec = vec_array[0,0,0,:];
+                if (nblk_y>1):
+                    for jj in range(1,nblk_y):
+                        mat = np.squeeze(vec_array[0,jj,0,:])
+                        vec = np.hstack([vec,mat])
+                total_array[:,j] = vec
+           
+            outputfile = filename_prefix + 'pstrain_%04d.dat'%tid
+            np.savetxt(outputfile,total_array,delimiter=' ')
+            print("{}".format(outputfile))

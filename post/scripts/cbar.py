@@ -63,9 +63,10 @@ if __name__ == '__main__':
     
     # Get the grid partition information
     nx,ny,nz = reader._full_chunk_size
-    nblk_x = int(np.round(Nx/nx))
-    nblk_y = int(np.round(Ny/ny))
-    nblk_z = int(np.round(Nz/nz))
+    szx,szy,szz = np.shape(x)
+    nblk_x = int(np.round(Nx/(szx-1)))
+    nblk_y = int(np.round(Ny/(szy-1)))    
+    nblk_z = int(np.round(Nz/(szz-1)))
     if rank==0: print("Processor decomp: {}x{}x{}".format(nblk_x,nblk_y,nblk_z))
 
     # Compute stats at each step:
@@ -87,11 +88,6 @@ if __name__ == '__main__':
         recvbuf = np.array(recvbuf)
 
         if rank==0:
-            try: np.shape(recvbuf)[1] #should be a 2d array
-            except:
-                print("ERROR: Shape mismatch, recvbuf {}".format(np.shape(recvbuf)))
-                sys.exit()
-            
             # Stack the vectors into the correct order
             vec_array = np.reshape(recvbuf,[nblk_x,nblk_y,nblk_z,ny],order='F')
             

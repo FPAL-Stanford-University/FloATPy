@@ -14,6 +14,9 @@ import get_namelist as nml
 from SettingLib import NumSetting
 from PoissonSol import * 
 
+# debug printing?
+debug = True
+
 def grid_res(x,y,z):
     dx = x[1,0,0] - x[0,0,0]
     dy = y[0,1,0] - y[0,0,0]
@@ -58,31 +61,34 @@ if __name__ == '__main__':
     # setup the inputs object
     dirname = os.path.dirname(filename_prefix)
     verbose = False
-    if rank==0: verbose=True
-    inp = nml.inputs(dirname,verbose=verbose)
+    inp = nml.inputs(dirname,verbose=True)
     du = inp.du
-    if rank==0: print("\tdu = {}".format(inp.du))
+    print("\tdu = {}".format(inp.du))
 
     # Setup the fft object
-    if rank==0: print('Setting up fft...')
-    Nx,Ny,Nz = reader.domain_size
-    xmin=x[0,0,0]; xmax=x[-1,0,0]+dx
-    ymin=y[0,0,0]; ymax=y[0,-1,0]+dy
-    zmin=z[0,0,0]; zmax=z[0,0,-1]+dz
+    print('Setting up fft...')
+    Nx,Ny,Nz,Lx,Ly,Lz = nml.read_grid_params(dirname,verbose=(rank==0)) 
     settings = NumSetting( comm, reader.grid_partition, 
              NX=Nx, NY=Ny, NZ=Nz,
-             XMIN=xmin, XMAX=xmax,
-             YMIN=ymin, YMAX=ymax,
-             ZMIN=zmin, ZMAX=zmax,
+             XMIN=0,        XMAX=Lx,
+             YMIN=-Ly/2.,   YMAX=Ly/2.,
+             ZMIN=0,        ZMAX=Lz,
              order=10)
     ffto = PoissonSol(settings)
     szx, szy, szz = ffto.size_3d 
     kx = np.tile(ffto.kx[:,np.newaxis,np.newaxis],[1,szy,szz])
     ky = np.tile(ffto.ky[np.newaxis,:,np.newaxis],[szx,1,szz])
     kz = np.tile(ffto.kz[np.newaxis,np.newaxis,:],[szx,szy,1])
+    #kxmax = ffto.NX * np.pi/ffto.LX
+    #kymax = ffto.NY * np.pi/ffto.LY
+    #kzmax = ffto.NZ * np.pi/ffto.LZ
+    #print(ffto.kx[Nx/2-1:Nx/2+1],kxmax); 
+    #print(ffto.ky[Ny/2-1:Ny/2+1],kymax); 
+    #print(ffto.kz[Nz/2-1:Nz/2+1],kzmax); 
+    #sys.exit()
 
     # vel fluct
-    if rank==0: print('Computing fluctuations...')
+    print('Computing fluctuations...')
     reader.step = tid_list[0]
     r, u, v, w = reader.readData( ('rho','u','v','w') )
     rbar = stats.reynolds_average(avg, r)
@@ -90,7 +96,7 @@ if __name__ == '__main__':
     u -= utilde
 
     # Get perturbations fft in x,z, zero the means
-    if rank==0: print('Computing fluctuations fft...')
+    print('Computing fluctuations fft...')
     uhat = ffto._fftZ(ffto._fftX(u))
     vhat = ffto._fftZ(ffto._fftX(v))
     what = ffto._fftZ(ffto._fftX(w))
@@ -100,12 +106,29 @@ if __name__ == '__main__':
     uhat[:,:,0] = 0
     vhat[:,:,0] = 0
     what[:,:,0] = 0
+    if debug:
+        tmp = stats.reynolds_average(avg,uhat)
+        print(np.amax(tmp))
+        tmp = stats.reynolds_average(avg,vhat)
+        print(np.amax(tmp))
+        tmp = stats.reynolds_average(avg,what)
+        print(np.amax(tmp))
+        #(0.5077095987465812-6.938893903907228e-17j)
+        #(0.23412663621636276+8.326672684688674e-17j)
+        #(0.32394727601018203+0j)
 
     # Get derivative ddy{vhat}, zero the oddball
-    if rank==0: print('Computing ddy vhat ...')
+    print('Computing ddy vhat ...')
     ddy_vhat_hat = 1j*ky*ffto._fftY(vhat)
     ddy_vhat_hat[:,Ny/2,:] = 0
     ddy_vhat = ffto._ifftY(ddy_vhat_hat)
+    if debug:
+        tmp = stats.reynolds_average(avg,ddy_vhat_hat)
+        print(np.amax(tmp))
+        tmp = stats.reynolds_average(avg,ddy_vhat)
+        print(np.amax(tmp))
+        # 2.212896723832909-0.4901971997534521j
+        # 0.23175621471702385-6.938893903907228e-17j
 
     # 1. Get divergence RHS, zero oddballs
     print('Computing divergence fft...')
@@ -113,8 +136,13 @@ if __name__ == '__main__':
     fhat[Nx/2,:,:] = 0
     fhat[:,:,Nz/2] = 0
     fhathat = ffto._fftY(fhat);
+    if debug:
+        tmp = stats.reynolds_average(avg,fhathat)
+        print(np.amax(tmp))
+        # 0.24985901906407545-0.09510710620261113j
 
     # 2. Solve for particular soln and derivative, phi_L, dphi_L, zero means
+    print('Computing scalar phi fft...')
     k2 = (kx**2 + ky**2 + kz**2)
     k2[0,0,0] = 1 #suppress warning
     phihathat  = -fhathat/k2
@@ -123,13 +151,20 @@ if __name__ == '__main__':
     dphihathat[0,0,0] = 0
     dphihathat[0,:,:] = 0
     dphihathat[:,:,0] = 0
-    print('Computing scalar phi fft...')
     phihat_L  = ffto._ifftY(phihathat);
     dphihat_L = ffto._ifftY(dphihathat);
-    
+    if debug:
+        tmp = stats.reynolds_average(avg,phihat_L)
+        print(np.amax(tmp))
+        tmp = stats.reynolds_average(avg,dphihat_L)
+        print(np.amax(tmp))
+        # 0.12184347132611192+2.6020852139652106e-17j
+        # 0.019613656482489538-8.778941053593642e-06j
+
     # 3. Coefficients for homogenous exponetial soln
     # Zero coefficients at zero wavenumber kx=kz=0
-    phiL  = dphihat_L[:,0,:];
+    if rank==0: print('Computing scalar coeffs...')
+    phiL  = phihat_L[:,0,:];
     dphiL = dphihat_L[:,0,:];
     kmat = (kx[:,0,:]**2 + kz[:,0,:]**2)**0.5;
     kmat[0,0] = 1 #to suppress warning
@@ -137,8 +172,19 @@ if __name__ == '__main__':
     tmp[0,0] = 0;
     a_plus = -tmp*(kmat*phiL + dphiL);
     a_minus = tmp*(kmat*phiL - dphiL);
-    aplus  = np.tile(a_plus[:,np.newaxis,:], [1,szy,1])
-    aminus = np.tile(a_minus[:,np.newaxis,:],[1,szy,1])
+    aplus  = np.tile(a_plus[:,np.newaxis,:], [1,1,1])
+    aminus = np.tile(a_minus[:,np.newaxis,:],[1,1,1])
+    if debug:
+        tmp = stats.reynolds_average(avg,np.tile(abs(phiL)[:,np.newaxis,:], [1,1,1]))
+        print(np.amax(tmp))
+        tmp = stats.reynolds_average(avg,abs(aplus))
+        print(np.amax(tmp))
+        tmp = stats.reynolds_average(avg,abs(aminus))
+        print(np.amax(tmp))
+        #0.06407680256581094
+        #0.04322990287105939
+        #0.036996887750879046
+
     
     # 4. Make total solution for phi
     print('Computing scalar phi ...')
@@ -146,8 +192,11 @@ if __name__ == '__main__':
     phihat = phihat_L 
     phihat += aplus*np.exp(kmat*(y-ffto.LY)) 
     phihat += aminus*np.exp(-kmat*(y+ffto.LY))
-    tmp = ffto._ifftX(phihat)
-    phi = ffto._ifftZ(tmp)
+    phi = ffto._ifftZ(ffto._ifftX(phihat))
+    if debug:
+        tmp = stats.reynolds_average(avg,abs(phi))
+        print(np.amax(tmp))
+        # 0.06352658697119544
 
     # 5. Get velocities
     print('Computing ud, us...')

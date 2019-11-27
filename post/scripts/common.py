@@ -9,12 +9,33 @@ xdir = 0
 ydir = 1
 zdir = 2
 
+thresh = 0.15
+
+# 1D integration in y using midpoint rule:
+def integrate_y(y,f):
+    ny = np.size(y)
+    dy = abs(y[0]-y[1])
+    I = 0.
+    for i in range(1,ny-1):
+        I += dy*0.5*(f[i-1]+f[i+1])
+    return I
+
+
 # Get decorrelation length
 def get_lscale(y,Lvv):
     Ny = np.size(Lvv)
     i1 = np.argmin(abs(Lvv[:Ny/2]-thresh))
     i2 = np.argmin(abs(Lvv[Ny/2:]-thresh)) + Ny/2 
     L_int = abs(y[i1]-y[i2])
+    return L_int
+
+# Get integral length
+def get_lscale_int(y,Lvv):
+    Ny = np.size(y)
+    dy = abs(y[0]-y[1])
+    L_int = 0
+    for i in range(Ny/2):
+        L_int += dy*(Lvv[i]+Lvv[i+1])*0.5
     return L_int
 
 # Get 99% thickness
@@ -24,8 +45,8 @@ def get_L99(y,utilde):
     ubot = -0.99*du/2
     Ny = np.size(utilde)
     
-    itop = np.argmin(abs(utilde[:Ny/2]-ubot))
-    ibot = np.argmin(abs(utilde[Ny/2:]-utop)) + Ny/2
+    itop = np.argmin(abs(utilde[:Ny/2]-utop))
+    ibot = np.argmin(abs(utilde[Ny/2:]-ubot)) + Ny/2
     L99 = (y[itop]-y[ibot])
     return L99, itop, ibot
 
@@ -54,7 +75,7 @@ def which_tID(tvec,t):
 # get centerline from Reynolds stresses (vector)
 def get_centerline(directory,y,tID):
     nmodes = 10
-    dat = np.fromfile( directory + 'shearlayer_Rij_%04d'%(tID)+'.dat',dtype=float, count=-1, sep=' ')
+    dat = np.fromfile( directory + '/shearlayer_Rij_%04d'%(tID)+'.dat',dtype=float, count=-1, sep=' ')
     n = np.size(dat)
     nstats=6
     dat = np.reshape(dat,[n/nstats,nstats]) 
@@ -71,4 +92,16 @@ def smooth_modes(f,nmodes):
     fhat[nmodes+1:-(nmodes+1):] = 0
     f = np.fft.ifft(fhat)
     return f
+
+def merge_dicts(old1,old2):
+    new = {}
+    for i in range(3):
+        key = old1.keys()[i]
+        v1 = old1.values()[i][0]
+        v2 = old2.values()[i][0]
+        e1 = old1.values()[i][1]
+        e2 = old2.values()[i][1]
+        err = (e1**2+e2**2)**0.5
+        new[key] = [(v1+v2)/2., err]
+    return new
 

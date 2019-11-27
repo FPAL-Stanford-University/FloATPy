@@ -36,6 +36,6 @@ if __name__ == '__main__':
     domega = dat[:,1]
     Re_omega = inp.r_ref*inp.du*domega/inp.mu_ref
 
-    print('t\tdomega\t\tRe_omega')
+    print('t\tdtheta\t\tdomega\t\tRe_omega\tRe_theta')
     for i in range(len(time)):
-        print('%i\t%2d\t%2d\t%2d\t%2d'%(time[i],dtheta[i],domega[i],Re_omega[i],Re_theta[i]))
+        print('%i\t%f\t%f\t%i\t%i'%(time[i],dtheta[i],domega[i],Re_omega[i],Re_theta[i]))

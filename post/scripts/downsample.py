@@ -32,7 +32,7 @@ if __name__ == '__main__':
     tID     = int(sys.argv[2])
     dir_out = sys.argv[3]
     fname_in = dir_in + '/restart_%04d'%tID + '.h5' 
-    fname_out = dir_out + '/restart_0000.h5' 
+    fname_out = dir_out + '/downsampled.h5' 
     
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -102,7 +102,7 @@ if __name__ == '__main__':
         if rank==0: print('Downsampling y')
         for i in range(Nx):
             for k in range(Nz):
-                interpolater = interp1d(y0,np.real(qtall[i,:,k]),kind='nearest')
+                interpolater = interp1d(y0,np.real(qtall[i,:,k]),kind='cubic')
                 q[i,:,k] = interpolater(y)
         qtall = None
 
