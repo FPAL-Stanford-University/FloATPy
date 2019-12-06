@@ -25,13 +25,12 @@ def grid_res(x,y,z):
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print "Usage:" 
-        print "Computes utilde" 
+        print "Computes ubar,vbar,utilde,vtilde, r'u' and r'v'" 
         print "  python {} <prefix> [tID_list (csv)] ".format(sys.argv[0])
         sys.exit()
     start_index = 0;
     if len(sys.argv) > 2:
-        #tID_list = map(int, sys.argv[2].strip('[]').split(','))
-        tstart = map(int, sys.argv[2].strip('[]').split(','))[0]
+        tID_list = map(int, sys.argv[2].strip('[]').split(',')) 
     filename_prefix = sys.argv[1]
     
     periodic_dimensions = (True,False,True)
@@ -75,36 +74,51 @@ if __name__ == '__main__':
     if rank==0: print("Processor decomp: {}x{}x{}".format(nblk_x,nblk_y,nblk_z))
     
     # Compute stats at each step:
-    #tID_list = steps[steps.index(tstart)] 
-    for tID in steps[1:]:#tID_list:
-        reader.step = tID
-        r,u = reader.readData( ('rho','u') )
-        utilde = stats.favre_average(avg,r,u)
-        utilde = np.squeeze(utilde)
+    i = 0
+    for tid in tID_list:
+        reader.step = tid
+        r,u,v = reader.readData( ('rho','u','v') )
+        rbar = stats.reynolds_average(avg,r)
+        ubar = stats.reynolds_average(avg,u)
+        vbar = stats.reynolds_average(avg,v)
+        utilde = stats.favre_average(avg,r,u,rho_bar=rbar)
+        vtilde = stats.favre_average(avg,r,v,rho_bar=rbar)
         
-        # now gather from all processes
+        rp = r - rbar
+        up = u - ubar
+        vp = v - vbar
+        
+        Rij = np.zeros([np.shape(u)[1],6],dtype='f')
+        Rij[:,0] = np.squeeze(ubar)
+        Rij[:,1] = np.squeeze(vbar)
+        Rij[:,2] = np.squeeze(utilde) 
+        Rij[:,3] = np.squeeze(vtilde)
+        Rij[:,4] = np.squeeze(stats.reynolds_average(avg,rp*up))
+        Rij[:,5] = np.squeeze(stats.reynolds_average(avg,rp*vp))
+        
+        # now gather from all processes for each Rij into another array
+        recvbuf = {}
         root=0
-        comm.Barrier()
-        recvbuf=comm.gather(utilde, root)
-        comm.Barrier()
-        recvbuf = np.array(recvbuf)
+        for i in range(6):
+            recvbuf[i]=comm.gather(Rij[:,i], root=0)
+            recvbuf[i] = np.array(recvbuf[i])
 
         if rank==0:
-            # Stack the vectors into the correct order
-            R22_array = np.reshape(recvbuf,[nblk_x,nblk_y,nblk_z,ny],order='F')
+            total_array = np.zeros([Ny,6],dtype='f')
+            for j in range(6):
+                vec_array = np.reshape(recvbuf[j],[nblk_x,nblk_y,nblk_z,ny],order='F')
             
-            # Now concat one column
-            R22_mean = R22_array[0,0,0,:];
-            if (nblk_y>1):
-                for i in range(1,nblk_y):
-                    mat = np.squeeze(R22_array[0,i,0,:])
-                    R22_mean = np.hstack([R22_mean,mat])
-            utilde = R22_mean
+                # Now concat one column
+                vec = vec_array[0,0,0,:];
+                if (nblk_y>1):
+                    for jj in range(1,nblk_y):
+                        mat = np.squeeze(vec_array[0,jj,0,:])
+                        vec = np.hstack([vec,mat])
 
-            if (np.shape(utilde)[0] < Ny):
-                print("ERROR: Shape mismatch, utilde {}".format(np.shape(utilde)))
-                sys.exit()
-            else:
-                outputfile = filename_prefix + "utilde_%04d.dat"%tID
-                np.savetxt(outputfile,utilde,delimiter=' ')
-                print("Done writing to {}".format(outputfile))
+                total_array[:,j] = vec
+                print("i={}\t{}".format(j,np.sum(vec)))
+           
+            outputfile = dirname + '/massflux_%04d.dat'%tid
+            np.savetxt(outputfile,total_array,delimiter=' ')
+            print("{}".format(outputfile))
+        comm.Barrier()

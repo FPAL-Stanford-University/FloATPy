@@ -159,8 +159,10 @@ if __name__ == '__main__':
 
         # Window if supersonic
         if inp.Mc>=0.4:
+            if inp.Mc==0.8: pad=0
+            else: pad=Ny/10
             qpp=window_field(filename_prefix,y,yplot,inp.du,tid,
-                    qpp,utilde=None,pad=Ny/10)
+                    qpp,utilde=None,pad=pad)
 
         # y integral lengthscale
         vpp_hat = ffto._fftY(qpp)

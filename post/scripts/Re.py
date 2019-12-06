@@ -37,5 +37,6 @@ if __name__ == '__main__':
     Re_omega = inp.r_ref*inp.du*domega/inp.mu_ref
 
     print('t\tdtheta\t\tdomega\t\tRe_omega\tRe_theta')
-    for i in range(len(time)):
-        print('%i\t%f\t%f\t%i\t%i'%(time[i],dtheta[i],domega[i],Re_omega[i],Re_theta[i]))
+    j = min(len(dtheta),len(domega))
+    for i in range(j):
+        print('%i\t%f\t%f\t%i\t\t%i'%(time[i],dtheta[i],domega[i],Re_omega[i],Re_theta[i]))

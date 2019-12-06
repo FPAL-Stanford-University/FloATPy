@@ -14,7 +14,7 @@ import statistics as stats
 import get_namelist as nml
 from SettingLib import NumSetting
 from PoissonSol import * 
-from h5test import h5_writer
+from common import *
 
 def grid_res(x,y,z):
     dx = x[1,0,0] - x[0,0,0]
@@ -25,7 +25,7 @@ def grid_res(x,y,z):
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print "Usage:" 
-        print "Computes filtered pressure, pressure strain fields" 
+        print "Computes autocorr at centerline" 
         print "  python {} <prefix> [tID_list (csv)] ".format(sys.argv[0])
         sys.exit()
     start_index = 0;
@@ -50,8 +50,7 @@ if __name__ == '__main__':
     reader = pdr.ParallelDataReader(comm, serial_reader)
     avg = red.Reduction(reader.grid_partition, periodic_dimensions)
     steps = sorted(reader.steps)
-
-
+    
     # Set up compact derivative object w/ 10th order schemes
     x, y, z = reader.readCoordinates()
     dx,dy,dz = grid_res(x,y,z)
@@ -64,6 +63,10 @@ if __name__ == '__main__':
     Nx,Ny,Nz,Lx,Ly,Lz = nml.read_grid_params(dirname,verbose=(rank==0))
     du = inp.du
     if rank==0: print("\tdu = {}".format(inp.du))
+    xmin = 0.;      xmax = Lx
+    ymin = -Ly/2.;  ymax = Ly/2.
+    zmin = 0.;      zmax = Lz
+    yplot = np.linspace(-Ly/2,Ly/2,int(Ny))
 
     # Get the grid partition information
     nx,ny,nz = reader._full_chunk_size
@@ -72,6 +75,13 @@ if __name__ == '__main__':
     nblk_y = int(np.round(Ny/(szy-1)))    
     nblk_z = int(np.round(Nz/(szz-1)))
     
+    chunkx = abs(x[0,0,0]-x[-1,0,0])
+    chunky = abs(y[0,0,0]-y[0,-1,0])
+    chunkz = abs(z[0,0,0]-z[0,0,-1])
+    blkID = [int((np.amax(x)-xmin)/chunkx)-1,
+            int((np.amax(y)-ymin)/chunky)-1,
+            int((np.amax(z)-zmin)/chunkz)-1]
+
     # Setup the fft object
     if rank==0: print('Setting up fft...')
     Nx,Ny,Nz = reader.domain_size
@@ -82,71 +92,62 @@ if __name__ == '__main__':
              ZMIN=0,        ZMAX=(Nz)*dz,
              order=10)
     ffto = PoissonSol(settings)
+    kxmax = ffto.NX * np.pi/ffto.LX
+    kymax = ffto.NY * np.pi/ffto.LY
+    kzmax = ffto.NZ * np.pi/ffto.LZ
     if rank==0: 
         print("Domain size: {}x{}x{} ({}x{}x{})".format(
         ffto.LX,ffto.LY,ffto.LZ,
         ffto.NX,ffto.NY,ffto.NZ))
         print('Processor decomposition: {}x{}x{}'.format(
         nblk_x,nblk_y,nblk_z))
-    
-    # set up the writer
-    if rank==0: print('Setting up writer...')
-    writer = h5_writer(settings)
+    rank_0x = (0 in ffto.kx)
+    rank_0y = (0 in ffto.ky)
+    rank_0z = (0 in ffto.kz)
+    thresh = 1e-10
+    rank_oddx = (abs(kxmax -np.amax(abs(ffto.kx)))<thresh)
+    rank_oddy = (abs(kymax -np.amax(abs(ffto.ky)))<thresh)
+    rank_oddz = (abs(kzmax -np.amax(abs(ffto.kz)))<thresh)
 
-    def filter_q(p,kc):
-        phat = ffto._fftX(ffto._fftY(ffto._fftZ(p))) 
-        ix = np.where(abs(ffto.kx)>kc)
-        iy = np.where(abs(ffto.ky)>kc)
-        iz = np.where(abs(ffto.kz)>kc)
-        phat[ix,:,:] = 0. 
-        phat[:,iy,:] = 0. 
-        phat[:,:,iz] = 0. 
-        pfilt = ffto._ifftX(ffto._ifftY(ffto._ifftZ(phat))) 
-        return np.real(pfilt)
-
+    def gather_centerline(comm,dat2save,ic=None):
+        blank = np.zeros([Nx,Nz])
+        if rank_oddy:
+            if ic is None: ic = np.argmin(abs(y[0,:,0]))
+            idx0 = blkID[0]*szx
+            idz0 = blkID[2]*szz
+            idx = min(Nx,(blkID[0]+1)*szx)
+            idz = min(Nz,(blkID[2]+1)*szz)
+            blank[idx0:idx,idz0:idz] = dat2save[:,ic,:]
+        plane = comm.reduce(blank,root=0)
+        return plane
     
     # Compute stats at each step:
-    i = 0
-    thresh = 0.15
-    for tid in tID_list:
+    for tID in tID_list:
 
         if rank==0: print('Reading data...')
-        reader.step = tid
-        r,u,v,p = reader.readData( ('rho','u','v','p') )
-        rbar = stats.reynolds_average(avg,r)
-        pbar = stats.reynolds_average(avg,p)
-        utilde = stats.favre_average(avg,r,u,rho_bar=rbar)
-        vtilde = stats.favre_average(avg,r,v,rho_bar=rbar)
-        upp = np.array(u-utilde)
+        reader.step = tID
+        r,v = reader.readData( ('rho','v') )
+        vtilde = stats.favre_average(avg,r,v)
         vpp = np.array(v-vtilde)
-        p = np.array(p-pbar)
+        r,v = None,None
 
-        # Copmute sij_pp
-        if rank==0: print('Compute fluct strain...')
-        s = {}
-        qx,qy,qz = der.gradient(upp, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
-        s['11'] = qx
-        s['12'] = qy/2.
-        upp = None
-        qx,qy,qz = der.gradient(vpp, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
-        s['22'] = qy
-        s['12'] += qx/2.
-        vpp = None
-        qx,qy,qz = None,None,None
+        qDict = {}
+        qDict['qx'] = ffto._ifftX(abs(ffto._fftX(vpp)))
+        qDict['qz'] = ffto._ifftZ(abs(ffto._fftZ(vpp)))
 
-        # filter p and pstrain
-        lscale = Lx/5
-        #kc = 2.*np.pi/lscale
-        kc = ffto.kx[int(Nx/4)]
-        qDict={}
-        if rank==0: print('Filtering with cutoff kc={}'.format(kc))
-        qDict['P11'] = filter_q(p*s['11'],kc)
-        qDict['P22'] = filter_q(p*s['22'],kc)
-        qDict['P12'] = filter_q(p*s['12'],kc)
-        qDict['p'] = filter_q(p,kc); 
+        tmp,yc =  get_centerline(dirname,yplot,tID)
+        ic = np.argmin(abs(y[0,:,0]-yc))
 
-        # write 3d file
-        if rank==0: print('Writing to h5 file...')
-        writer.update(tid,reader.time)
-        writer.saveFields(qDict,filePrefix=filename_prefix+'pstrainFilt_') 
-        qDict = None
+        # Collect a snapshots along centerline and save
+        planes = {}
+        for key in qDict.keys():
+            planes[key] = gather_centerline(comm,qDict[key],ic=ic)
+
+        if rank==0: 
+            print('Writing to file...')
+            outputfile = dirname + '/autocorr_%04d.h5'%tID
+            hf = h5py.File(outputfile, 'w')
+            for key in planes.keys():
+                hf.create_dataset(key, data=planes[key])
+            hf.close()
+            print('Saved to %s'%outputfile)

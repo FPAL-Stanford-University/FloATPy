@@ -33,7 +33,7 @@ class h5_writer:
         self.count = count
         self.time = time
 
-    def saveFields(self, fDict, path='./', filePrefix='hhdecomp_', time=None, count=None, numZeroFill=4):
+    def saveFields(self, fDict, path='./', filePrefix='tmp_', time=None, count=None, numZeroFill=4):
         """
         Save computation ressult to *.h5 file.
         """
@@ -60,17 +60,18 @@ class h5_writer:
         dset = h5_file.create_dataset('NZ', dtype=np.float64, data=domain_size[2])
 
         # Grid coordinates
-        dset = h5_file.create_dataset('x', (domain_size[0],), dtype=np.float64)
+        dset = h5_file.create_dataset('X', (domain_size[0],), dtype=np.float64)
         dset = np.linspace(self.numSet.XMIN, self.numSet.XMAX-self.numSet.dx, num=self.numSet.NX)
-        dset = h5_file.create_dataset('y', (domain_size[1],), dtype=np.float64)
+        dset = h5_file.create_dataset('Y', (domain_size[1],), dtype=np.float64)
         dset = np.linspace(self.numSet.YMIN, self.numSet.YMAX-self.numSet.dy, num=self.numSet.NY)
-        dset = h5_file.create_dataset('z', (domain_size[2],), dtype=np.float64)
+        dset = h5_file.create_dataset('Z', (domain_size[2],), dtype=np.float64)
         dset = np.linspace(self.numSet.ZMIN, self.numSet.ZMAX, num=self.numSet.NZ)
 
         # Other information
-        dset = h5_file.create_dataset('time', data=time, dtype=np.float64)
+        #h5_file.attrs['Time'] = np.array([time])
+        #dset = h5_file.create_dataset('Time', data=time, dtype=np.float64)
         #dset = time
-        dset = h5_file.create_dataset('count', data=count, dtype=np.uint32)
+        #dset = h5_file.create_dataset('count', data=count, dtype=np.uint32)
         #dset = count
 
         h5_file.close()

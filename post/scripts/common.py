@@ -29,15 +29,6 @@ def get_lscale(y,Lvv):
     L_int = abs(y[i1]-y[i2])
     return L_int
 
-# Get integral length
-def get_lscale_int(y,Lvv):
-    Ny = np.size(y)
-    dy = abs(y[0]-y[1])
-    L_int = 0
-    for i in range(Ny/2):
-        L_int += dy*(Lvv[i]+Lvv[i+1])*0.5
-    return L_int
-
 # Get 99% thickness
 def get_L99(y,utilde):
     du = abs(utilde[0]-utilde[-1])
