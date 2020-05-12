@@ -10,6 +10,8 @@ import floatpy.readers.parallel_reader as pdr
 import floatpy.utilities.reduction as red
 import statistics as stats
 import get_namelist as nml
+from SettingLib import NumSetting
+from decorr_lscale_y import transpose2y
 
 debug = False
 def grid_res(x,y,z):
@@ -27,6 +29,7 @@ if __name__ == '__main__':
     start_index = 0
     if len(sys.argv) > 2:
         tID_list = map(int, sys.argv[2].strip('[]').split(',')) 
+    else: tID_list = None
     
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -45,6 +48,7 @@ if __name__ == '__main__':
     reader = pdr.ParallelDataReader(comm, serial_reader)
     avg = red.Reduction(reader.grid_partition, periodic_dimensions)
     steps = sorted(reader.steps)
+    if tID_list is None: tID_list = steps
 
     # Set up the derivative object
     x, y, z = reader.readCoordinates()
@@ -60,30 +64,32 @@ if __name__ == '__main__':
     else: verbose=False
     inp = nml.inputs(dirname,verbose)
     du = inp.du
-    if rank==0: print("du = {}".format(inp.du))
+    settings = NumSetting( comm, reader.grid_partition, 
+             NX=Nx, NY=Ny, NZ=Nz,
+             XMIN=0,        XMAX=Lx,
+             YMIN=-Ly/2.,   YMAX=Ly/2.,
+             ZMIN=0,        ZMAX=Lz,
+             order=10)
     
-    # Get the grid partition information
-    szx,szy,szz = np.shape(x)
-    nx,ny,nz = szx,szy,szz
-    nblk_x = int(np.round(Nx/(szx-1)))
-    nblk_y = int(np.round(Ny/(szy-1)))    
-    nblk_z = int(np.round(Nz/(szz-1)))
-    if rank==0: print("Processor decomp: {}x{}x{}".format(nblk_x,nblk_y,nblk_z))
-    #if nblk_y==1: sys.exit()
-
-    # Get the y coordinates
-    Nx,Ny,Nz,Lx,Ly,Lz = nml.read_grid_params(dirname,verbose=(rank==0))
-    yplot = np.linspace(-Ly/2,Ly/2,int(Ny))
-    # Compute stats at each step:
-    recvbuf = None
-    for step in tID_list: 
-        reader.step = step
+    for tID in tID_list: 
+        reader.step = tID 
         
         # density and streamwise vel, means
-        rho, u, vpp, wpp = reader.readData( ('rho', 'u', 'v','w') )
+        rho, u, v, w = reader.readData( ('rho', 'u', 'v','w') )
+        if procs>1:
+            if rank==0: print('Transposing...')
+            rho = transpose2y(settings,rho)
+            u = transpose2y(settings,u)
+            v = transpose2y(settings,v)
+            w = transpose2y(settings,w)
+            if rank==0: print('Done')
         rbar = stats.reynolds_average(avg,rho)
         utilde = stats.favre_average(avg,rho,u,rho_bar=rbar)
+        vtilde = stats.favre_average(avg,rho,v,rho_bar=rbar)
+        wtilde = stats.favre_average(avg,rho,w,rho_bar=rbar)
         upp = u - utilde
+        vpp = v - vtilde
+        wpp = w - wtilde
        
         Rij = np.zeros([np.shape(u)[1],6],dtype='f')
         Rij[:,0] = np.squeeze(stats.reynolds_average(avg,rho*upp*upp))
@@ -93,29 +99,10 @@ if __name__ == '__main__':
         Rij[:,4] = np.squeeze(stats.reynolds_average(avg,rho*vpp*wpp))
         Rij[:,5] = np.squeeze(stats.reynolds_average(avg,rho*wpp*wpp))
        
-        # now gather from all processes for each Rij into another array
-        recvbuf = {}
-        root=0
-        for i in range(6):
-            recvbuf[i]=comm.gather(Rij[:,i], root=0)
-            #comm.Barrier()
-            recvbuf[i] = np.array(recvbuf[i])
-
-        if rank==0:
-            total_array = np.zeros([Ny,6],dtype='f')
-            for j in range(6):
-                vec_array = np.reshape(recvbuf[j],[nblk_x,nblk_y,nblk_z,ny],order='F')
-            
-                # Now concat one column
-                vec = vec_array[0,0,0,:];
-                if (nblk_y>1):
-                    for jj in range(1,nblk_y):
-                        mat = np.squeeze(vec_array[0,jj,0,:])
-                        vec = np.hstack([vec,mat])
-
-                total_array[:,j] = vec
-                print("i={}\t{}".format(j,np.sum(vec)))
-           
-            outputfile = filename_prefix + 'Rij_%04d.dat'%step
-            np.savetxt(outputfile,total_array,delimiter=' ')
-            print("{}".format(outputfile))
+        if rank==0: 
+            dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/mira/')[-1]
+            dir_out = '/home/kmatsuno/ShearLayerData/production/' + dir_out + '/'
+            outputfile = dir_out+"Rij_%04d.dat"%tID
+            print("Writing to {}".format(outputfile))
+            np.savetxt(outputfile,np.squeeze(Rij),delimiter=' ')
+            print('Done')

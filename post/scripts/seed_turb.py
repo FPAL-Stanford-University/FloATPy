@@ -4,7 +4,7 @@ import numpy as np
 import os
 import sys
 from shutil import copyfile
-sys.path.insert(0,'/home/kmatsuno/h5py/build/lib.linux-x86_64-2.7/')
+#sys.path.insert(0,'/home/kmatsuno/h5py/build/lib.linux-x86_64-2.7/')
 import h5py
 
 import floatpy.derivatives.compact.compact_derivative as cd
@@ -29,7 +29,7 @@ if __name__ == '__main__':
     tID     = int(sys.argv[2])
     dir_out = sys.argv[3]
     fname_in = dir_in + '/restart_%04d'%tID + '.h5' 
-    fname_out = dir_out + '/restart_0000.h5' 
+    fname_out = dir_out + '/seed.h5' 
     
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -49,56 +49,59 @@ if __name__ == '__main__':
     # setup the inputs object
     inp_s = nml.inputs(dir_in,verbose=False)
     inp   = nml.inputs(dir_out,verbose=False)
+    Nx,Ny,Nz,Lx,Ly,Lz = nml.read_grid_params(dir_out,verbose=(rank==0)) 
     if rank==0: 
         print("\tSeed Mc,rr,du = {},{},{}".format(inp_s.Mc,inp_s.rr,inp_s.du))
         print("\tNew  Mc,rr,du = {},{},{}".format(inp.Mc,inp.rr,inp.du))
-
-    # Read input restart file, copy these over
-    print("Reading data")
-    reader.step = tID
-    qlist = ('rhou', 'rhov', 'rhow', 'TE', 'rhoY_0001','rhoY_0002')
-    ru, rv, rw, TE, r1, r2  = reader.readData( qlist )
     
-    # Subtract the KE of the initial u velocity:
-    # TE = r*(e + 0.5*uu)
-    print("Getting primitives")
-    r = r1+r2
-    u = ru/r
-    v = rv/r
-    w = rw/r
-    TE -= 0.5*r*u*u
-
-    # Rescale u so the freestream values are correct
-    u *= inp.du/inp_s.du
-    
-    # Rescale r1
-    # Add back to total energy
-    print("Remaking convservatives")
-    TE += 0.5*r*u*u 
-    ru = r*u
-
-    # Write attributes time and step
+    #  setup seed file
     seedfile = h5py.File(fname_out, 'w' )
     zero = np.zeros(1)
     seedfile.attrs.create('Time',zero.astype('>d'))
     seedfile.attrs.create('step',zero.astype('>i4'))
+    shape = np.array([Nz,Ny,Nx])
+    sz = (4,shape[1],4) 
 
-    # write the new field out size 808094096
-    print("Transposing")
-    ru = np.transpose(ru)
-    rv = np.transpose(rv)
-    rw = np.transpose(rw)
-    TE = np.transpose(TE)
+    # Read input restart file, copy these over
+    reader.step = tID
+   
+    print("Reading density")
+    r1, r2  = reader.readData( ('rhoY_0001','rhoY_0002') )
+    r = r1+r2; 
     r1 = np.transpose(r1)
     r2 = np.transpose(r2)
-    shape = np.shape(ru)
-    sz = (2,shape[1],2) 
-    print("Writing out")
-    rudat = seedfile.create_dataset(qlist[0], shape,data=ru, dtype=np.dtype('>d'),chunks=sz, fillvalue=0)
-    rvdat = seedfile.create_dataset(qlist[1], shape,data=rv, dtype=np.dtype('>d'),chunks=sz, fillvalue=0)
-    rwdat = seedfile.create_dataset(qlist[2], shape,data=rw, dtype=np.dtype('>d'),chunks=sz, fillvalue=0)
-    TEdat = seedfile.create_dataset(qlist[3], shape,data=TE, dtype=np.dtype('>d'),chunks=sz, fillvalue=0)
-    r1dat = seedfile.create_dataset(qlist[4], shape,data=r1, dtype=np.dtype('>d'),chunks=sz, fillvalue=0)
-    r2dat = seedfile.create_dataset(qlist[5], shape,data=r2, dtype=np.dtype('>d'),chunks=sz, fillvalue=0)
+    print("Writing out r1,r2")
+    r1dat = seedfile.create_dataset('rhoY_0001', shape,data=r1, dtype=np.dtype('>d'),chunks=sz, fillvalue=0)
+    r2dat = seedfile.create_dataset('rhoY_0002', shape,data=r2, dtype=np.dtype('>d'),chunks=sz, fillvalue=0)
+    r1,r2 = None, None
+    r1dat,r2dat = None, None
+    
+    # Rescale u so the freestream values are correct
+    print("Updating velocity and total energy")
+    ru,TE = reader.readData(('rhou','TE'))
+    u = ru/r; ru = None
+    TE -= 0.5*r*u*u
+    u *= inp.du/inp_s.du
+    TE += 0.5*r*u*u 
+    ru = r*u 
+    r,u = None,None
+    print("Writing out u,TE")
+    ru = np.transpose(ru)
+    TE = np.transpose(TE)
+    rudat = seedfile.create_dataset('rhou', shape,data=ru, dtype=np.dtype('>d'),chunks=sz, fillvalue=0)
+    TEdat = seedfile.create_dataset('TE', shape,data=TE, dtype=np.dtype('>d'),chunks=sz, fillvalue=0)
+    ru,TE = None,None
+    rudat,TEdat = None,None
 
+    # write the new field out size 808094096
+    rv,rw = reader.readData(('rhov','rhow'))
+    rv = np.transpose(rv)
+    rw = np.transpose(rw)
+    print("Writing out rv,rw")
+    rvdat = seedfile.create_dataset('rhov', shape,data=rv, dtype=np.dtype('>d'),chunks=sz, fillvalue=0)
+    rwdat = seedfile.create_dataset('rhow', shape,data=rw, dtype=np.dtype('>d'),chunks=sz, fillvalue=0)
+    rv,rw = None,None
+    rvdat,rwdat = None,None
     seedfile.close()
+
+    print('Done')

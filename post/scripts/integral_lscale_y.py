@@ -185,11 +185,6 @@ if __name__ == '__main__':
         
             # Stack the vectors into the correct order
             R22_array = np.reshape(recvbuf,[nblk_x,nblk_y,nblk_z,ny],order='F')
-            #for zi in range(nblk_z):
-            #    for yi in range(nblk_y):
-            #        for xi in range(nblk_x):
-            #            idx = xi + yi*(nblk_x) + zi*(nblk_x*nblk_y)
-            #            R22_array[xi,yi,zi,:] = recvbuf[idx,:]
             
             # Now concat one column
             R22_mean = R22_array[0,0,0,:];

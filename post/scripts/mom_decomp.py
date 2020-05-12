@@ -97,9 +97,12 @@ def get_fluct(reader,avg):
     p -= pbar
     return r,p,c2
 
-def get_mom(reader):
+def get_mom(reader,avg):
     r, u, v, w = reader.readData( ('rho','u','v','w') )
-    return r*u,r*v,r*w
+    ru = r*u - stats.reynolds_average(avg,r*u)
+    rv = r*v - stats.reynolds_average(avg,r*v)
+    rw = r*w - stats.reynolds_average(avg,r*w)
+    return ru,rv,rw
 
 # flist, tlist are lists of np arrays
 def ddt(flist,tlist,method='fwd'):
@@ -186,7 +189,8 @@ def solve(fhathat):
     phihat=None
     return phi
 
-def gather_y_plane(comm,reader,dat2save,yslice=0):
+def gather_y_plane(comm,reader,dat2save,y,yslice=0):
+    Nx,Ny,Nz = reader.domain_size
     blank = np.zeros([Nx,Nz])
     flag=((yslice<np.amax(y)) and (yslice>np.amin(y)))
     if flag:
@@ -194,11 +198,6 @@ def gather_y_plane(comm,reader,dat2save,yslice=0):
         lo = reader._full_chunk_lo
         hi = reader._full_chunk_hi
         blank[lo[0]:(hi[0]+1),lo[2]:(hi[2]+1)] = dat2save[:,idy,:]
-        #idx0 = blkID[0]*szx
-        #idz0 = blkID[2]*szz
-        #idx = min(Nx,(blkID[0]+1)*szx)
-        #idz = min(Nz,(blkID[2]+1)*szz)
-        #blank[idx0:idx,idz0:idz] = dat2save[:,idy,:]
     plane = comm.reduce(blank,root=0)
     return plane
 
@@ -344,10 +343,10 @@ if __name__ == '__main__':
             
             if rank==0: print('Getting ddt terms')
             if  name=='total': 
-                rhs = ddt([r,r0],[t,t0])
+                rhs = -ddt([r,r0],[t,t0])
                 r0 = None
             elif name=='acoustic': 
-                rhs = ddt([p,p0],[t,t0])
+                rhs = -ddt([p,p0],[t,t0])
                 rhs /= c2_0
                 p0 = None
 
@@ -376,7 +375,7 @@ if __name__ == '__main__':
                 # Solve for solenoidal part
                 if rank==0: print('Computing solenoidal components...')
                 reader.step = tID0
-                fx,fy,fz = get_mom(reader)
+                fx,fy,fz = get_mom(reader,avg)
                 phix,phiy,phiz = der.gradient(phiDict['total'])
                 fx -= phix
                 fy -= phiy
@@ -406,9 +405,9 @@ if __name__ == '__main__':
             planes_fz = np.zeros([Nx,Nz,len(ylist)])  
             for idx,yslice in enumerate(ylist):
                 #if rank==0: print('Saving planes at y={}'.format(yslice))
-                planes_fx[:,:,idx] = gather_y_plane(comm,reader,fx,yslice=yslice)
-                planes_fy[:,:,idx] = gather_y_plane(comm,reader,fy,yslice=yslice)
-                planes_fz[:,:,idx] = gather_y_plane(comm,reader,fz,yslice=yslice)
+                planes_fx[:,:,idx] = gather_y_plane(comm,reader,fx,y,yslice=yslice)
+                planes_fy[:,:,idx] = gather_y_plane(comm,reader,fy,y,yslice=yslice)
+                planes_fz[:,:,idx] = gather_y_plane(comm,reader,fz,y,yslice=yslice)
             if rank==0:
                 yplanesDict[name] = {}
                 yplanesDict[name]['x'] = planes_fx 

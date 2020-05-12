@@ -26,7 +26,7 @@ if __name__ == '__main__':
     dat = np.reshape(dat,[n/3,3])
     time = dat[:,0]
     dtheta = dat[:,1]
-    Re_theta = inp.r_ref*inp.du*dtheta/inp.mu_ref
+    Re_theta = inp.Re*dtheta
 
     # Get Re_omega
     dat = np.fromfile(filename_prefix+'domega.dat',sep=' ')
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     dat = np.reshape(dat,[n/2,2])
     time = dat[:,0]
     domega = dat[:,1]
-    Re_omega = inp.r_ref*inp.du*domega/inp.mu_ref
+    Re_omega = inp.Re*domega
 
     print('t\tdtheta\t\tdomega\t\tRe_omega\tRe_theta')
     j = min(len(dtheta),len(domega))

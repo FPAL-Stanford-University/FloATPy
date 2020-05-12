@@ -1,7 +1,7 @@
 """
 Module for upsampling data.
 """
-
+import sys
 import numpy
 
 class LagrangeUpsampler(object):
@@ -175,6 +175,8 @@ class LagrangeUpsampler(object):
                 upsampled_data = numpy.repeat(upsampled_data, r[1], axis = 1)
                 upsampled_data = numpy.repeat(upsampled_data, r[0], axis = 2)
 
+                print(data_shape,r[0:dim])
+                sys.exit()
                 upsampled_data = numpy.ravel(upsampled_data, order='C')
                 upsampled_data = upsampled_data.reshape(
                     data_shape*r[0:dim], order='F')

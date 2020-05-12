@@ -15,6 +15,8 @@ import get_namelist as nml
 from SettingLib import NumSetting
 from PoissonSol import * 
 from h5test import h5_writer
+from mom_decomp import gather_y_plane
+from decorr_lscale_y import transpose2y
 
 def grid_res(x,y,z):
     dx = x[1,0,0] - x[0,0,0]
@@ -51,7 +53,6 @@ if __name__ == '__main__':
     avg = red.Reduction(reader.grid_partition, periodic_dimensions)
     steps = sorted(reader.steps)
 
-
     # Set up compact derivative object w/ 10th order schemes
     x, y, z = reader.readCoordinates()
     dx,dy,dz = grid_res(x,y,z)
@@ -68,21 +69,13 @@ if __name__ == '__main__':
     ymin = -Ly/2.;  ymax = Ly/2.
     zmin = 0.;      zmax = Lz
     yplot = np.linspace(-Ly/2,Ly/2,int(Ny))
-
+    kx = np.array([2*np.pi/Lx*j for j in range(int(Nx/2))])
+    kz = np.array([2*np.pi/Lz*j for j in range(int(Nz/2))])
+    
     # Get the grid partition information
     nx,ny,nz = reader._full_chunk_size
     szx,szy,szz = np.shape(x)
-    nblk_x = int(np.round(Nx/(szx-1)))
-    nblk_y = int(np.round(Ny/(szy-1)))    
-    nblk_z = int(np.round(Nz/(szz-1)))
     
-    chunkx = abs(x[0,0,0]-x[-1,0,0])
-    chunky = abs(y[0,0,0]-y[0,-1,0])
-    chunkz = abs(z[0,0,0]-z[0,0,-1])
-    blkID = [int((np.amax(x)-xmin)/chunkx)-1,
-            int((np.amax(y)-ymin)/chunky)-1,
-            int((np.amax(z)-zmin)/chunkz)-1]
-
     # Setup the fft object
     if rank==0: print('Setting up fft...')
     Nx,Ny,Nz = reader.domain_size
@@ -93,29 +86,19 @@ if __name__ == '__main__':
              ZMIN=0,        ZMAX=(Nz)*dz,
              order=10)
     ffto = PoissonSol(settings)
-    kxmax = ffto.NX * np.pi/ffto.LX
-    kymax = ffto.NY * np.pi/ffto.LY
-    kzmax = ffto.NZ * np.pi/ffto.LZ
-    if rank==0: 
-        print("Domain size: {}x{}x{} ({}x{}x{})".format(
-        ffto.LX,ffto.LY,ffto.LZ,
-        ffto.NX,ffto.NY,ffto.NZ))
-        print('Processor decomposition: {}x{}x{}'.format(
-        nblk_x,nblk_y,nblk_z))
-    rank_0x = (0 in ffto.kx)
-    rank_0y = (0 in ffto.ky)
-    rank_0z = (0 in ffto.kz)
-    thresh = 1e-10
-    rank_oddx = (abs(kxmax -np.amax(abs(ffto.kx)))<thresh)
-    rank_oddy = (abs(kymax -np.amax(abs(ffto.ky)))<thresh)
-    rank_oddz = (abs(kzmax -np.amax(abs(ffto.kz)))<thresh)
     
     # set up the writer
     if rank==0: print('Setting up writer...')
     writer = h5_writer(settings)
 
-    def filter_q(p,kc):
-        phat = ffto._fftX(ffto._fftY(ffto._fftZ(p)))
+    def filter_q_all(p,kc):
+        tmpx = ffto._fftX(p)
+        p = None
+        tmpy = ffto._fftY(tmpx)
+        tmpx = None
+        phat = ffto._fftZ(tmpy)
+        tmpy = None
+        comm.Barrier()
         for ix,kx in enumerate(ffto.kx):
             if abs(kx)>kc: phat[ix,:,:] = 0. 
         for iy,ky in enumerate(ffto.ky):
@@ -124,38 +107,67 @@ if __name__ == '__main__':
             if abs(kz)>kc: phat[:,:,iz] = 0.
         pfilt = ffto._ifftX(ffto._ifftY(ffto._ifftZ(phat))) 
         return np.real(pfilt)
+    def filter_q_ydir(p,kc): # for a 3D field p
+        phat = ffto._fftY(p)
+        print('rank {} done with fft'.format(rank))
+        p = None
+        for iy,ky in enumerate(ffto.ky):
+            if abs(ky)>kc: phat[:,iy,:] = 0.
+        print('rank {} done with filtering'.format(rank))
+        pfilt = ffto._ifftY(phat) 
+        print('rank {} done with ifft'.format(rank))
+        return np.real(pfilt)
+    def filter_q_xzdir(q,kc): #q must be a 2D xz plane
+        qhat = np.fft.fft(np.fft.fft(q,axis=0),axis=1)
+        for ix,kx in enumerate(kx):
+            if abs(kx)>kc: qhat[ix,:] = 0. 
+        for iz,kz in enumerate(kz):
+            if abs(kz)>kc: qhat[:,iz] = 0.
+        qfilt = np.fft.fft(np.fft.fft(q,axis=0),axis=1)
+        return np.real(qfilt)
 
-    def gather_centerline(comm,dat2save):
-        blank = np.zeros([Nx,Nz])
-        if rank_oddy:
-            idy = np.argmin(abs(y[0,:,0]))
-            idx0 = blkID[0]*szx
-            idz0 = blkID[2]*szz
-            idx = min(Nx,(blkID[0]+1)*szx)
-            idz = min(Nz,(blkID[2]+1)*szz)
-            blank[idx0:idx,idz0:idz] = dat2save[:,idy,:]
-        plane = comm.reduce(blank,root=0)
-        return plane
+    def get_cutoff(q,thresh=0.8):# 80% of energy for an xz plane
+        spec = np.squeeze(abs(np.fft.fft(q,axis=0)))
+        spec = np.mean(spec[:Nx/2,:Nz/2],axis=1)
+        spec *= kx
+
+        # integrate the spectrum
+        I = 0.
+        cumulative = np.zeros(Nx/2)
+        for i in range(Nx/2-2):
+            I += spec[i]*abs(kx[i]-kx[i+1])
+            cumulative[i] = I
+
+        # Normalize the cumulative spectrum andfind 80% point
+        cumulative /= np.amax(cumulative)
+        ic = np.argmin(abs(cumulative-thresh))
+        return kx[ic]
     
     # Compute stats at each step:
-    i = 0
-    thresh = 0.15
     for tID in tID_list:
-
         if rank==0: print('Reading data...')
         reader.step = tID
-        r,u,v,p = reader.readData( ('rho','u','v','p') )
-        rbar = stats.reynolds_average(avg,r)
+        #r,u,v,p = reader.readData( ('rho','u','v','p') )
+        q = reader.readData( ('p') ); p=q[0]
+        #rbar = stats.reynolds_average(avg,r)
         pbar = stats.reynolds_average(avg,p)
-        utilde = stats.favre_average(avg,r,u,rho_bar=rbar)
-        vtilde = stats.favre_average(avg,r,v,rho_bar=rbar)
-        upp = np.array(u-utilde)
-        vpp = np.array(v-vtilde)
+        #utilde = stats.favre_average(avg,r,u,rho_bar=rbar)
+        #vtilde = stats.favre_average(avg,r,v,rho_bar=rbar)
+        #upp = np.array(u-utilde)
+        #vpp = np.array(v-vtilde)
         p = np.array(p-pbar)
-        r = None
+        #r = None
+        
+        # Cutoff wavenumber
+        kc = 11.46
+        # Filter in y first, then gather, then xz planes
+        if rank==0: print('Filtering y') 
+        tmp = filter_q_ydir(p,kc)
+        print('rank {} done'.format(rank))
+        sys.exit() 
 
         # Unfiltered pressure and strain
-        qDict,s={},{}
+        s,planes={},{}
         if rank==0: print('Compute unfiltered fluct strain...')
         qx,qy,qz = der.gradient(upp, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
         s['11'] = qx
@@ -164,37 +176,35 @@ if __name__ == '__main__':
         s['22'] = qy
         s['12'] += qx/2.
         qx,qy,qz = None,None,None
-        qDict['s11'] = s['11']
-        qDict['s22'] = s['22']
-        qDict['s12'] = s['12']
-        qDict['p']   = p
         upp,vpp = None,None
-
-        # filter p and pstrain
-        lscale = Lx/5
-        #kc = 2.*np.pi/lscale
-        kc = ffto.kx[50]
+        planes['s11'] = gather_y_plane(comm,reader,s['11'],y,yslice=0)
+        planes['s22'] = gather_y_plane(comm,reader,s['22'],y,yslice=0)
+        planes['s12'] = gather_y_plane(comm,reader,s['12'],y,yslice=0)
+        planes['p']   = gather_y_plane(comm,reader,p,y,yslice=0)
+        
+        # Cutoff wavenumber
+        if rank==0: kc = get_cutoff(planes['p'])
+        else: kc = None
+        kc = comm.bcast(kc,root=0)
         if rank==0: print('Filtering with cutoff kc={}'.format(kc))
-        qDict['s11f'] = filter_q(s['11'],kc)
-        qDict['s22f'] = filter_q(s['22'],kc)  
-        qDict['s12f'] = filter_q(s['12'],kc)
-        qDict['pf']   = filter_q(p,kc)
 
-        # Collect a snapshots along centerline and save
-        planes = {}
-        for key in qDict.keys():
-            planes[key] = gather_centerline(comm,qDict[key])
+        # Filter in y first, then gather, then xz planes
+        if rank==0: print('Filtering y') 
+        tmp = filter_q_ydir(s['11'],kc)
+        if rank==0: print('Filtering xz') 
+        qplane = gather_y_plane(comm,reader,tmp,y,yslice=0)
+        if rank==0: qfilt = filter_q_ydir(qplane,kc)
+        print('Done')
+        sys.exit()
+        p,s = None,None
 
         if rank==0: 
             print('Writing to file...')
-            outputfile = dirname + '/xz_pstrain_%04d.h5'%tID
+            dir_out = dirname.split('/projects/ShockInducedMix/')[-1]
+            dir_out = '/home/kmatsuno/' + dir_out + '/'
+            outputfile = dir_out+ '/xz_pstrain_%04d.h5'%tID
             hf = h5py.File(outputfile, 'w')
             for key in planes.keys():
                 hf.create_dataset(key, data=planes[key])
             hf.close()
             print('Saved to %s'%outputfile)
-        
-        # write 3d file
-        #writer.update(tid,reader.time)
-        #writer.saveFields(qDict,filePrefix=directory+'/pstrainFilt_') 
-        #qDict = None

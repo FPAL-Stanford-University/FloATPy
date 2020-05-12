@@ -66,10 +66,13 @@ def integrate_xz(f, dx, dz, grid_partition):
 
     return fint[0]
 
-def integrate_volume(f, dx, dy, dz, grid_partition):
+def integrate_volume(f, dx, dy, dz, grid_partition, mask=None):
     comm = MPI.Comm.f2py(grid_partition.comm3d())
 
-    myfint = np.array([ np.sum( f ) * dx * dy * dz ])
+    if mask is None:
+        mask = np.ones(np.shape(f))
+
+    myfint = np.array([ np.sum( f*mask ) * dx * dy * dz ])
     fint = np.array([ myfint[0] ])
     comm.Allreduce(myfint, fint, op=MPI.SUM)
 

@@ -1,4 +1,4 @@
 #!/bin/bash
 source ~/floatpy_env/bin/activate
-python $PYBIN/domega.py ./shearlayer_
+python $PYBIN/utilde.py $prod/Mc20/rr1/1024x1448x512/restart_0040_fine/shearlayer_ [0,1]
 #python $PYBIN/integral_lengthscale_vv.py ./shearlayer_ [4,5,6,7,8]

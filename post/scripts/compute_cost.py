@@ -88,7 +88,7 @@ if __name__ == '__main__':
         if f.endswith(".cobaltlog"):
            cost += get_cost(dirname+f,verbose=verbosity)
     print("Total cost = %.2E node-hours"%Decimal(cost))
-    print("Total cost = %.2E core-hours"%Decimal(cost*16))
+    print("Total cost = %.2E core-hours"%Decimal(cost*64))
            
 
 

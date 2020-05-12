@@ -12,6 +12,7 @@ import statistics as stats
 import get_namelist as nml
 from SettingLib import NumSetting
 from PoissonSol import * 
+from decorr_lscale_y import transpose2y
 
 xdir = 0
 zdir = 2
@@ -31,6 +32,7 @@ if __name__ == '__main__':
     start_index = 0;
     if len(sys.argv) > 2:
         tID_list = map(int, sys.argv[2].strip('[]').split(',')) 
+    else: tID_list = None
     filename_prefix = sys.argv[1]
     
     periodic_dimensions = (True,False,True)
@@ -50,7 +52,7 @@ if __name__ == '__main__':
     reader = pdr.ParallelDataReader(comm, serial_reader)
     avg = red.Reduction(reader.grid_partition, periodic_dimensions)
     steps = sorted(reader.steps)
-
+    if tID_list is None: tID_list = steps
 
     # Set up compact derivative object w/ 10th order schemes
     x, y, z = reader.readCoordinates()
@@ -58,25 +60,21 @@ if __name__ == '__main__':
     der = cd.CompactDerivative(reader.grid_partition, 
             (dx, dy, dz), (10, 10, 10), periodic_dimensions)
     
-    # setup the inputs object
+    # setup the inputs object, get grid info
     dirname = os.path.dirname(filename_prefix)
-    inp = nml.inputs(dirname,verbose=(rank==0))
     Nx,Ny,Nz,Lx,Ly,Lz = nml.read_grid_params(dirname,verbose=(rank==0))
+    Ny = int(Ny)
+    inp = nml.inputs(dirname,verbose=(rank==0))
     du = inp.du
-    if rank==0: print("\tdu = {}".format(inp.du))
-
-    # Get the grid partition information
-    nx,ny,nz = reader._full_chunk_size
-    szx,szy,szz = np.shape(x)
-    nblk_x = int(np.round(Nx/(szx-1)))
-    nblk_y = int(np.round(Ny/(szy-1)))    
-    nblk_z = int(np.round(Nz/(szz-1)))
-    if rank==0: print("Processor decomp: {}x{}x{}".format(nblk_x,nblk_y,nblk_z))
+    settings = NumSetting( comm, reader.grid_partition, 
+             NX=Nx, NY=Ny, NZ=Nz,
+             XMIN=0,        XMAX=Lx,
+             YMIN=-Ly/2.,   YMAX=Ly/2.,
+             ZMIN=0,        ZMAX=Lz,
+             order=10)
     
-    # Compute stats at each step:
-    i = 0
-    for tid in tID_list:
-        reader.step = tid
+    for tID in tID_list:
+        reader.step = tID
         r,u,v = reader.readData( ('rho','u','v') )
         rbar = stats.reynolds_average(avg,r)
         ubar = stats.reynolds_average(avg,u)
@@ -96,29 +94,10 @@ if __name__ == '__main__':
         Rij[:,4] = np.squeeze(stats.reynolds_average(avg,rp*up))
         Rij[:,5] = np.squeeze(stats.reynolds_average(avg,rp*vp))
         
-        # now gather from all processes for each Rij into another array
-        recvbuf = {}
-        root=0
-        for i in range(6):
-            recvbuf[i]=comm.gather(Rij[:,i], root=0)
-            recvbuf[i] = np.array(recvbuf[i])
-
-        if rank==0:
-            total_array = np.zeros([Ny,6],dtype='f')
-            for j in range(6):
-                vec_array = np.reshape(recvbuf[j],[nblk_x,nblk_y,nblk_z,ny],order='F')
-            
-                # Now concat one column
-                vec = vec_array[0,0,0,:];
-                if (nblk_y>1):
-                    for jj in range(1,nblk_y):
-                        mat = np.squeeze(vec_array[0,jj,0,:])
-                        vec = np.hstack([vec,mat])
-
-                total_array[:,j] = vec
-                print("i={}\t{}".format(j,np.sum(vec)))
-           
-            outputfile = dirname + '/massflux_%04d.dat'%tid
-            np.savetxt(outputfile,total_array,delimiter=' ')
-            print("{}".format(outputfile))
-        comm.Barrier()
+        if rank==0: 
+            dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/mira/')[-1]
+            dir_out = '/home/kmatsuno/ShearLayerData/production/' + dir_out + '/'
+            outputfile = dir_out+"massflux_%04d.dat"%tID
+            print("Writing to {}".format(outputfile))
+            np.savetxt(outputfile,np.squeeze(Rij),delimiter=' ')
+            print('Done')

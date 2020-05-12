@@ -77,6 +77,41 @@ class h5_writer:
         h5_file.close()
         self.numSet.cout("Exported data to file: '{}'.".format(filename))
 
+    def saveFields_padeops(self, fDict, path='./', filePrefix='tmp_', time=None, count=None, numZeroFill=4):
+        """
+        Save computation ressult to *.h5 file.
+        """
+        domain_size = (self.numSet.NX, self.numSet.NY, self.numSet.NZ)
+        ixl, ixh = self.numSet.chunk_3d_lo[0], self.numSet.chunk_3d_hi[0]+1
+        iyl, iyh = self.numSet.chunk_3d_lo[1], self.numSet.chunk_3d_hi[1]+1
+        izl, izh = self.numSet.chunk_3d_lo[2], self.numSet.chunk_3d_hi[2]+1
+        if time==None: time = self.time
+        if count==None: count = self.count
+
+
+        filename = path + filePrefix + str(self.count).zfill(numZeroFill) + ".h5"
+        h5_file = h5py.File(filename, 'w', driver='mpio', comm=self.numSet.comm)
+        self.numSet.cout("Opened file: '{}'.".format(filename))
+    
+        time = np.array([time])
+        step = np.array([count])
+        h5_file.attrs.create('Time',time.astype('>d'))
+        h5_file.attrs.create('step',step.astype('>i4'))
+
+        # Data to be saved
+        self.numSet.cout("Writing fields.".format(filename))
+        shape = domain_size#np.shape(q)
+        sz = (shape[0]/2,shape[1],shape[2]/2) 
+        for fname in fDict:
+            field = np.transpose(fDict[fname])
+            dset = h5_file.create_dataset(fname, domain_size, dtype=np.float64,chunks=sz)
+            dset[ixl:ixh, iyl:iyh, izl:izh] = field
+            #self.numSet.cout("Writing {}.".format(fname))
+        
+
+        h5_file.close()
+        self.numSet.cout("Exported data to file: '{}'.".format(filename))
+
 if __name__ == '__main__':
     dir_in  = sys.argv[1]
     tID     = int(sys.argv[2])

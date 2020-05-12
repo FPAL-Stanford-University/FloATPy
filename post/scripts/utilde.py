@@ -12,27 +12,20 @@ import statistics as stats
 import get_namelist as nml
 from SettingLib import NumSetting
 from PoissonSol import * 
+from common import *
 
 xdir = 0
 zdir = 2
 
-def grid_res(x,y,z):
-    dx = x[1,0,0] - x[0,0,0]
-    dy = y[0,1,0] - y[0,0,0]
-    dz = z[0,0,1] - z[0,0,0]
-    return dx,dy,dz
-   
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print "Usage:" 
         print "Computes utilde" 
         print "  python {} <prefix> [tID_list (csv)] ".format(sys.argv[0])
         sys.exit()
-    start_index = 0;
-    if len(sys.argv) > 2:
-        #tID_list = map(int, sys.argv[2].strip('[]').split(','))
-        tstart = map(int, sys.argv[2].strip('[]').split(','))[0]
     filename_prefix = sys.argv[1]
+    tID_list = map(int, sys.argv[2].strip('[]').split(','))
+
     
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -52,7 +45,6 @@ if __name__ == '__main__':
     avg = red.Reduction(reader.grid_partition, periodic_dimensions)
     steps = sorted(reader.steps)
 
-
     # Set up compact derivative object w/ 10th order schemes
     x, y, z = reader.readCoordinates()
     dx,dy,dz = grid_res(x,y,z)
@@ -65,46 +57,25 @@ if __name__ == '__main__':
     Nx,Ny,Nz,Lx,Ly,Lz = nml.read_grid_params(dirname,verbose=(rank==0))
     du = inp.du
     if rank==0: print("\tdu = {}".format(inp.du))
-
-    # Get the grid partition information
     nx,ny,nz = reader._full_chunk_size
-    szx,szy,szz = np.shape(x)
-    nblk_x = int(np.round(Nx/(szx-1)))
-    nblk_y = int(np.round(Ny/(szy-1)))    
-    nblk_z = int(np.round(Nz/(szz-1)))
-    if rank==0: print("Processor decomp: {}x{}x{}".format(nblk_x,nblk_y,nblk_z))
+    settings = NumSetting( comm, reader.grid_partition, 
+             NX=Nx, NY=Ny, NZ=Nz,
+             XMIN=0,        XMAX=Lx,
+             YMIN=-Ly/2.,   YMAX=Ly/2.,
+             ZMIN=0,        ZMAX=Lz,
+             order=10)
     
-    # Compute stats at each step:
-    #tID_list = steps[steps.index(tstart)] 
-    for tID in steps[1:]:#tID_list:
+    for tID in tID_list:
         reader.step = tID
         r,u = reader.readData( ('rho','u') )
+        r = transpose2y(settings,r)
+        u = transpose2y(settings,u)
         utilde = stats.favre_average(avg,r,u)
         utilde = np.squeeze(utilde)
         
-        # now gather from all processes
-        root=0
-        comm.Barrier()
-        recvbuf=comm.gather(utilde, root)
-        comm.Barrier()
-        recvbuf = np.array(recvbuf)
-
-        if rank==0:
-            # Stack the vectors into the correct order
-            R22_array = np.reshape(recvbuf,[nblk_x,nblk_y,nblk_z,ny],order='F')
-            
-            # Now concat one column
-            R22_mean = R22_array[0,0,0,:];
-            if (nblk_y>1):
-                for i in range(1,nblk_y):
-                    mat = np.squeeze(R22_array[0,i,0,:])
-                    R22_mean = np.hstack([R22_mean,mat])
-            utilde = R22_mean
-
-            if (np.shape(utilde)[0] < Ny):
-                print("ERROR: Shape mismatch, utilde {}".format(np.shape(utilde)))
-                sys.exit()
-            else:
-                outputfile = filename_prefix + "utilde_%04d.dat"%tID
-                np.savetxt(outputfile,utilde,delimiter=' ')
-                print("Done writing to {}".format(outputfile))
+        if rank==0: 
+            #dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/')[-1]
+            dir_out = dirname #'/home/kmatsuno/' + dir_out + '/'
+            outputfile = dir_out+"/shearlayer_utilde_%04d.dat"%tID
+            np.savetxt(outputfile,utilde,delimiter=' ')
+            print("Done writing to {}".format(outputfile))
