@@ -1,6 +1,7 @@
 #!/bin/python
 import numpy as np
 import get_namelist as nml
+import statistics as stats
 
 myblue=[51./255, 105./255, 169./255]
 myred=[200./255, 90./255, 90./255]
@@ -120,3 +121,13 @@ def transpose2y(numSet,q3d):
     numSet.grid_partition.transpose_3d_to_y(q3d,bufy)
     q3d = None
     return bufy
+
+def get_qpp(reader,avg,varname):
+    r,q = reader.readData(('rho',varname))
+    qtilde = stats.favre_average(avg,r,q)
+    return q-qtilde[None,:,None]
+
+def get_qp(reader,avg,varname):
+    q = reader.readData(varname)
+    qbar = stats.reynolds_average(avg,q[0])
+    return q-qbar[None,:,None]

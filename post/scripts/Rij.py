@@ -100,9 +100,10 @@ if __name__ == '__main__':
         Rij[:,5] = np.squeeze(stats.reynolds_average(avg,rho*wpp*wpp))
        
         if rank==0: 
-            dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/mira/')[-1]
-            dir_out = '/home/kmatsuno/ShearLayerData/production/' + dir_out + '/'
-            outputfile = dir_out+"Rij_%04d.dat"%tID
+            #dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/mira/')[-1]
+            #dir_out = '/home/kmatsuno/ShearLayerData/production/' + dir_out + '/'
+            dir_out = dirname
+            outputfile = dir_out+"shearlayer_Rij_%04d.dat"%tID
             print("Writing to {}".format(outputfile))
             np.savetxt(outputfile,np.squeeze(Rij),delimiter=' ')
             print('Done')

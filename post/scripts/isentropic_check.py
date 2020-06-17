@@ -69,22 +69,28 @@ if __name__ == '__main__':
         reader.step =tID
         
         # density and streamwise vel, means
-        r,p = reader.readData( ('rho','p') )
+        T,p = reader.readData( ('T','p') )
         if procs>1: 
-            r = transpose2y(settings,r)
+            T = transpose2y(settings,T)
             p = transpose2y(settings,p)
 
-        # p/rho^gam = constant? check rms error 
+        T0 = 1.0
+        p0 = 1.0
+        ds_cp = np.log(T/T0) - (inp.gam-1)/inp.gam * np.log(p/p0)
+        dat = stats.reynolds_average(avg,ds_cp)
+        # p/rho^gam = constant? check rms error
+        """
         const = p/r**inp.gam
         mean = stats.reynolds_average(avg,const)
         fluct = const-mean
         err = np.sqrt(fluct**2)
-        mean_err = stats.reynolds_average(avg,err)/mean
+        dat = stats.reynolds_average(avg,err)/mean
+        """
 
         if rank==0: 
             dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/mira/')[-1]
             dir_out = '/home/kmatsuno/ShearLayerData/production/' + dir_out + '/'
             outputfile = dir_out+"isentropic_check_%04d.dat"%tID
             print("Writing to {}".format(outputfile))
-            np.savetxt(outputfile,np.squeeze(mean_err),delimiter=' ')
+            np.savetxt(outputfile,np.squeeze(dat),delimiter=' ')
             print('Done')
