@@ -24,12 +24,21 @@ if __name__ == '__main__':
         print "  python {} <prefix> [tID_list (csv)] ".format(sys.argv[0])
         sys.exit()
     filename_prefix = sys.argv[1]
-    tID_list = map(int, sys.argv[2].strip('[]').split(','))
-
+    start_index = 0
+    if len(sys.argv) > 2:
+        tID_list = map(int, sys.argv[2].strip('[]').split(',')) 
+    
+    dirname = os.path.dirname(filename_prefix)
+    if 'Mc04' in dirname:
+        dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/temporal/')[-1]
+        dir_out = '/home/kmatsuno/ShearLayerData/temporal/' + dir_out + '/'
+    else:
+        dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/mira/')[-1]
+        dir_out = '/home/kmatsuno/ShearLayerData/production/' + dir_out + '/'
     
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
-    y_bc = (0,0)
+    y_bc = (1,1)
     z_bc = (0,0)
 
     comm  = MPI.COMM_WORLD
@@ -44,6 +53,7 @@ if __name__ == '__main__':
     reader = pdr.ParallelDataReader(comm, serial_reader)
     avg = red.Reduction(reader.grid_partition, periodic_dimensions)
     steps = sorted(reader.steps)
+    if tID_list is None: tID_list = steps
 
     # Set up compact derivative object w/ 10th order schemes
     x, y, z = reader.readCoordinates()
@@ -74,8 +84,6 @@ if __name__ == '__main__':
         utilde = np.squeeze(utilde)
         
         if rank==0: 
-            #dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/')[-1]
-            dir_out = dirname #'/home/kmatsuno/' + dir_out + '/'
             outputfile = dir_out+"/shearlayer_utilde_%04d.dat"%tID
             np.savetxt(outputfile,utilde,delimiter=' ')
             print("Done writing to {}".format(outputfile))

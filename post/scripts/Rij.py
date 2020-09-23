@@ -12,6 +12,7 @@ import statistics as stats
 import get_namelist as nml
 from SettingLib import NumSetting
 from decorr_lscale_y import transpose2y
+from common import *
 
 debug = False
 def grid_res(x,y,z):
@@ -30,6 +31,12 @@ if __name__ == '__main__':
     if len(sys.argv) > 2:
         tID_list = map(int, sys.argv[2].strip('[]').split(',')) 
     else: tID_list = None
+    
+    dirname = os.path.dirname(filename_prefix)
+    #dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/mira/')[-1]
+    #dir_out = '/home/kmatsuno/ShearLayerData/production/' + dir_out + '/'
+    dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/temporal/')[-1]
+    dir_out = '/home/kmatsuno/ShearLayerData/temporal/' + dir_out + '/'
     
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -100,10 +107,7 @@ if __name__ == '__main__':
         Rij[:,5] = np.squeeze(stats.reynolds_average(avg,rho*wpp*wpp))
        
         if rank==0: 
-            #dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/mira/')[-1]
-            #dir_out = '/home/kmatsuno/ShearLayerData/production/' + dir_out + '/'
-            dir_out = dirname
             outputfile = dir_out+"shearlayer_Rij_%04d.dat"%tID
             print("Writing to {}".format(outputfile))
             np.savetxt(outputfile,np.squeeze(Rij),delimiter=' ')
-            print('Done')
+    print('Done')

@@ -30,10 +30,19 @@ if __name__ == '__main__':
         print "Computes autocorr at centerline" 
         print "python {} <prefix> [tID_list (csv)] varname".format(sys.argv[0])
         sys.exit()
-    if len(sys.argv) > 2:
-        tID_list = map(int, sys.argv[2].strip('[]').split(',')) 
     filename_prefix = sys.argv[1]
-    varname  = sys.argv[3] 
+    varname  = sys.argv[2] 
+    if len(sys.argv) > 3:
+        tID_list = map(int, sys.argv[3].strip('[]').split(',')) 
+    else: tID_list = None
+            
+    dirname = os.path.dirname(filename_prefix)
+    if 'Mc04' in dirname:
+        dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/temporal/')[-1]
+        dir_out = '/home/kmatsuno/ShearLayerData/temporal/' + dir_out + '/'
+    else:
+        dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/mira/')[-1]
+        dir_out = '/home/kmatsuno/ShearLayerData/production/' + dir_out + '/'
     
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -52,6 +61,7 @@ if __name__ == '__main__':
     reader = pdr.ParallelDataReader(comm, serial_reader)
     avg = red.Reduction(reader.grid_partition, periodic_dimensions)
     steps = sorted(reader.steps)
+    if tID_list is None: tID_list = steps
     
     # Set up compact derivative object w/ 10th order schemes
     x, y, z = reader.readCoordinates()
@@ -97,12 +107,15 @@ if __name__ == '__main__':
         else:  qpp = get_qpp(reader,avg,varname)
         
         # Get utilde
-        fname = filename_prefix+'utilde_%04d.dat'%tID 
-        utilde = np.fromfile(fname,count=-1,sep=' ')
+        try:
+            fname = filename_prefix+'utilde_%04d.dat'%tID 
+            utilde = np.fromfile(fname,count=-1,sep=' ')
+        except:
+            fname = dir_out+'/shearlayer_utilde_%04d.dat'%tID 
+            utilde = np.fromfile(fname,count=-1,sep=' ')
 
         # get thicknesses
-        L99,itop,ibot = get_L99(yplot,utilde)
-        dtheta = get_dtheta(dirname,reader.time)
+        L99,itop,ibot = get_L99(-yplot,utilde)
 
         # Collect a snapshots along centerline and save
         if inp.rr==1:
@@ -110,7 +123,8 @@ if __name__ == '__main__':
         else:
             ic = np.argmin(abs(utilde))
             yc = yplot[ic]
-        offset = L99/4.#dtheta/2.
+            if rank==0: print('Centerline y[{}] = {}'.format(ic,yc))
+        offset = L99/4.
         y0_list = [yc,yc+offset,yc-offset]
 
         corrx = np.zeros([Nx,3])
@@ -140,8 +154,6 @@ if __name__ == '__main__':
 
         if rank==0: 
             print('Writing out...')
-            dir_out = dirname.split('/projects/ShockInducedMix/')[-1]
-            dir_out = '/home/kmatsuno/' + dir_out + '/'
             if varname=='rho':
                 outputfile = dir_out+"autocorr_rr_%04d.h5"%tID
             else:

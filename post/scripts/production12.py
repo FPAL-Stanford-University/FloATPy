@@ -12,28 +12,21 @@ import statistics as stats
 import get_namelist as nml
 from SettingLib import NumSetting
 from PoissonSol import * 
-from decorr_lscale_y import transpose2y
+from common import *
 
 xdir = 0
 zdir = 2
 
-def grid_res(x,y,z):
-    dx = x[1,0,0] - x[0,0,0]
-    dy = y[0,1,0] - y[0,0,0]
-    dz = z[0,0,1] - z[0,0,0]
-    return dx,dy,dz
-   
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print "Usage:" 
-        print "Computes ubar,vbar,utilde,vtilde, r'u' and r'v'" 
+        print "Computes utilde" 
         print "  python {} <prefix> [tID_list (csv)] ".format(sys.argv[0])
         sys.exit()
-    start_index = 0;
+    filename_prefix = sys.argv[1]
     if len(sys.argv) > 2:
         tID_list = map(int, sys.argv[2].strip('[]').split(',')) 
     else: tID_list = None
-    filename_prefix = sys.argv[1]
     
     dirname = os.path.dirname(filename_prefix)
     if 'Mc04' in dirname:
@@ -68,12 +61,13 @@ if __name__ == '__main__':
     der = cd.CompactDerivative(reader.grid_partition, 
             (dx, dy, dz), (10, 10, 10), periodic_dimensions)
     
-    # setup the inputs object, get grid info
+    # setup the inputs object
     dirname = os.path.dirname(filename_prefix)
-    Nx,Ny,Nz,Lx,Ly,Lz = nml.read_grid_params(dirname,verbose=(rank==0))
-    Ny = int(Ny)
     inp = nml.inputs(dirname,verbose=(rank==0))
+    Nx,Ny,Nz,Lx,Ly,Lz = nml.read_grid_params(dirname,verbose=(rank==0))
     du = inp.du
+    if rank==0: print("\tdu = {}".format(inp.du))
+    nx,ny,nz = reader._full_chunk_size
     settings = NumSetting( comm, reader.grid_partition, 
              NX=Nx, NY=Ny, NZ=Nz,
              XMIN=0,        XMAX=Lx,
@@ -84,29 +78,32 @@ if __name__ == '__main__':
     for tID in tID_list:
         reader.step = tID
         r,u,v = reader.readData( ('rho','u','v') )
-        r = transpose2y(settings,r)
-        u = transpose2y(settings,u)
-        v = transpose2y(settings,v)
-        rbar = stats.reynolds_average(avg,r)
-        ubar = stats.reynolds_average(avg,u)
-        vbar = stats.reynolds_average(avg,v)
-        utilde = stats.favre_average(avg,r,u,rho_bar=rbar)
-        vtilde = stats.favre_average(avg,r,v,rho_bar=rbar)
+        utilde = stats.favre_average(avg,r,u)
+        vtilde = stats.favre_average(avg,r,v)
+        upp = u - utilde
+        vpp = v - vtilde
         
-        rp = r - rbar
-        up = u - ubar
-        vp = v - vbar
+        R12 = stats.reynolds_average(avg,r*upp*vpp)
+        R22 = stats.reynolds_average(avg,r*vpp*vpp)
+        upp,vpp = None,None
+
+        qx,tmp,qz = der.gradient(u, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
+        if (procs>1) and (np.shape(tmp)[1]<Ny): 
+            tmp = transpose2y(settings,tmp)
+        dudy = stats.favre_average(avg,r,tmp)
+        u,qx,qz = None,None,None
+        qx,tmp,qz = der.gradient(v, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
+        if (procs>1) and (np.shape(tmp)[1]<Ny): 
+            tmp = transpose2y(settings,tmp)
+        dvdy = stats.favre_average(avg,r,tmp)
+        v,qx,qz = None,None,None
         
-        Rij = np.zeros([np.shape(u)[1],6],dtype='f')
-        Rij[:,0] = np.squeeze(ubar)
-        Rij[:,1] = np.squeeze(vbar)
-        Rij[:,2] = np.squeeze(utilde) 
-        Rij[:,3] = np.squeeze(vtilde)
-        Rij[:,4] = np.squeeze(stats.reynolds_average(avg,rp*up))
-        Rij[:,5] = np.squeeze(stats.reynolds_average(avg,rp*vp))
-        
+        # P12 = -(R11*dvdx + R12*dvdy + R13*dvdz
+        #       + R21*dudx + R22*dudy + R23*dudz)
+        #     = -(R12*dvdy + R22*dudy)
+        P = np.squeeze(R12*dvdy + R22*dudy)
+
         if rank==0: 
-            outputfile = dir_out+"massflux_%04d.dat"%tID
-            print("Writing to {}".format(outputfile))
-            np.savetxt(outputfile,np.squeeze(Rij),delimiter=' ')
-            print('Done')
+            outputfile = dir_out+"/shearlayer_production12_%04d.dat"%tID
+            np.savetxt(outputfile,P,delimiter=' ')
+            print("Done writing to {}".format(outputfile))

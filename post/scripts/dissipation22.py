@@ -12,13 +12,7 @@ import statistics as stats
 import get_namelist as nml
 from SettingLib import NumSetting
 from decorr_lscale_y import transpose2y
-
-debug = False
-def grid_res(x,y,z):
-    dx = x[1,0,0] - x[0,0,0]
-    dy = y[0,1,0] - y[0,0,0]
-    dz = z[0,0,1] - z[0,0,0]
-    return dx,dy,dz
+from common import *
     
 if __name__ == '__main__':
     if len(sys.argv) < 2:
@@ -30,6 +24,14 @@ if __name__ == '__main__':
     if len(sys.argv) > 2:
         tID_list = map(int, sys.argv[2].strip('[]').split(',')) 
     else: tID_list = None
+    
+    dirname = os.path.dirname(filename_prefix)
+    if 'Mc04' in dirname:
+        dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/temporal/')[-1]
+        dir_out = '/home/kmatsuno/ShearLayerData/temporal/' + dir_out + '/'
+    else:
+        dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/mira/')[-1]
+        dir_out = '/home/kmatsuno/ShearLayerData/production/' + dir_out + '/'
 
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
@@ -68,39 +70,50 @@ if __name__ == '__main__':
              YMIN=-Ly/2.,   YMAX=Ly/2.,
              ZMIN=0,        ZMAX=Lz,
              order=10)
-    
+
     # Compute stats at each step:
     for tID in tID_list: 
         reader.step = tID
         
-        # density and streamwise vel, means
         u, v, w = reader.readData( ('u','v','w') )
-        if (procs>1) and (np.shape(u)[1]<Ny): 
-            if rank==0: print('Transposing')
-            u = transpose2y(settings,u)
-            v = transpose2y(settings,v)
-            w = transpose2y(settings,w)
-            if rank==0: print('Done')
-        ubar = stats.reynolds_average(avg,u)
-        vbar = stats.reynolds_average(avg,v)
-        wbar = stats.reynolds_average(avg,w)
-        up = u - ubar
-        vp = v - vbar
-        wp = w - wbar
+
+        bulk = 0.0
+        mu =1./ inp.Re
+        bmbda = (4./3.)*mu + bulk
+        lmbda = bulk - (2./3.)*mu
+        if rank==0: print('Computing grad u') 
+        dudx,dudy,dudz = der.gradient(u, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
+        if rank==0: print('Computing grad v') 
+        dvdx,dvdy,dvdz = der.gradient(v, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
+        if rank==0: print('Computing grad w') 
+        dwdx,dwdy,dwdz = der.gradient(w, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
+        if rank==0: print('Computing tau_ij') 
+        tau12 = mu*(dudy + dvdx); dudy,dvdx=None,None    
+        tau23 = mu*(dvdz + dwdy); dvdz,dwdy=None,None
+        dudz,dwdx=None,None 
+        tau22 = bmbda*dvdy + lmbda*(dudx + dwdz) 
+        dudx,dvdy,dwdz=None,None,None
+
+        if rank==0: print('Computing upp,vpp,wpp') 
+        q = reader.readData( ('rho') )
+        r = q[0]; q=None
+        vtilde = stats.favre_average(avg,r,v)
+        vpp = v - vtilde
+        r,u,v,w = None,None,None,None
+        if rank==0: print('Computing grad vpp')
+        dvdx,dvdy,dvdz = der.gradient(vpp, x_bc=x_bc, y_bc=y_bc, z_bc=z_bc)
+        tmp = 2*(tau12*dvdx + tau22*dvdy + tau23*dvdz)
+        vpp,dvdx,dvdy,dvdz = None,None,None,None 
        
-        Rij = np.zeros([Ny,6],dtype='f')
-        Rij[:,0] = np.squeeze(stats.reynolds_average(avg,up*up))
-        Rij[:,1] = np.squeeze(stats.reynolds_average(avg,up*vp))
-        Rij[:,2] = np.squeeze(stats.reynolds_average(avg,up*wp))
-        Rij[:,3] = np.squeeze(stats.reynolds_average(avg,vp*vp))
-        Rij[:,4] = np.squeeze(stats.reynolds_average(avg,vp*wp))
-        Rij[:,5] = np.squeeze(stats.reynolds_average(avg,wp*wp))
+        tau12,tau22,tau23=None,None,None
+
+        if (procs>1) and (np.shape(tmp)[1]<Ny): 
+            if rank==0: print('Transposing')
+            tmp = transpose2y(settings,tmp)
+        D22 = np.squeeze(stats.reynolds_average(avg,tmp))
+        tmp=None
 
         if rank==0: 
-            dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/mira/')[-1]
-            dir_out = '/home/kmatsuno/ShearLayerData/production/' + dir_out + '/'
-            outputfile = dir_out+"kinematic_Rij_%04d.dat"%tID
-            print("Writing to {}".format(outputfile))
-            np.savetxt(outputfile,np.squeeze(Rij),delimiter=' ')
-            print('Done')
-       
+            outputfile = dir_out+"/dissipation22_%04d.dat"%tID
+            np.savetxt(outputfile,D22,delimiter=' ')
+            print("Done writing to {}".format(outputfile))

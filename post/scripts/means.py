@@ -10,14 +10,13 @@ import floatpy.readers.parallel_reader as pdr
 import floatpy.utilities.reduction as red
 import statistics as stats
 import get_namelist as nml
+from SettingLib import NumSetting
+from PoissonSol import * 
+from common import *
 
-debug = False
-def grid_res(x,y,z):
-    dx = x[1,0,0] - x[0,0,0]
-    dy = y[0,1,0] - y[0,0,0]
-    dz = z[0,0,1] - z[0,0,0]
-    return dx,dy,dz
-    
+xdir = 0
+zdir = 2
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print "Usage: "
@@ -27,6 +26,14 @@ if __name__ == '__main__':
     start_index = 0
     if len(sys.argv) > 2:
         tID_list = map(int, sys.argv[2].strip('[]').split(',')) 
+    
+    dirname = os.path.dirname(filename_prefix)
+    if 'Mc04' in dirname:
+        dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/temporal/')[-1]
+        dir_out = '/home/kmatsuno/ShearLayerData/temporal/' + dir_out + '/'
+    else:
+        dir_out = dirname.split('/lus/theta-fs0/projects/HighMachTurbulence/ShearLayerData/mira/')[-1]
+        dir_out = '/home/kmatsuno/ShearLayerData/production/' + dir_out + '/'
     
     periodic_dimensions = (True,False,True)
     x_bc = (0,0)
